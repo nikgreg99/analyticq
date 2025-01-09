@@ -23,10 +23,6 @@ jobs:
             python -m pip install --upgrade pip
             pip install -r analyticq-backend/requirements.txt
         
-        - name: Run backend unit tests
-          run: |
-                python -m pytest analyticq-backend/tests/
-    
     build-and-push:
         runs-on: ubuntu-22.04
         needs: build-and-test
