@@ -42,7 +42,7 @@ jobs:
 
            - name: Build and tag backend Docker image
              run: |
-                docker build -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} /analyticq-backend/Dockerfile
+                docker build -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} -f /analyticq-backend/Dockerfile
            
            - name: Push Docker image to Github Container registry
              run: |
