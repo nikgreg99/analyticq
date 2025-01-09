@@ -1,6 +1,11 @@
 
 name: CI/CD for analyticq-backend
 
+permissions:
+  contents: read  
+  packages: write
+  actions: read  
+
 on:
     push:
         branches:
