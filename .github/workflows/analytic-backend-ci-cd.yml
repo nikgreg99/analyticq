@@ -45,11 +45,7 @@ jobs:
            - name: Set up Docker Buildx
              uses: docker/setup-buildx-action@v2
 
-           - name: Build and tag backend Docker image
+           - name: Build and push backend Docker image
              run: |
                  docker buildx create --use 
                  docker buildx build -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} -f ./analyticq-backend/Dockerfile ./analyticq-backend --push
-           
-           - name: Push Docker image to Github Container registry
-             run: |
-                    docker push ghcr.io/${{ github.repository }}/analyticq-backend
