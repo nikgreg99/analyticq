@@ -16,7 +16,7 @@ class ConfigCodebaseManager():
         return cls._instance
 
     def __init__(self, config_path: Optional[str] = None):
-        default_path = Path.home() / "analyticq"
+        default_path = Path.home() / ".analyticq"
         default_path.mkdir(exist_ok=True)
         self.config_path = Path(config_path) if config_path else default_path / "codebase_manager_config.json"
         self.config = self._load_config()
@@ -27,7 +27,7 @@ class ConfigCodebaseManager():
                 return json.load(conf_file)
         else:
             default_config = {
-                "base_dir": self.config_path,
+                "base_dir": str(self.config_path),
                 "default_branch": "main",
                 "retention_days": 15
             }
