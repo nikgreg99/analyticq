@@ -35,7 +35,7 @@ jobs:
         - name: Run SAST analysis backend with Bandit
           run: |
             python -m pip install bandit
-            TIMESTAMP=$(date + "%Y$m%d_%H%M%S")
+            TIMESTAMP=$(date +"%Y$m%d_%H%M%S")
             bandit -r analyticq-backend -o baandit-report_$TIMESTAMP.txt -f txt
 
         - name: Upload Bandit report as artifact
