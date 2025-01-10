@@ -38,8 +38,8 @@ jobs:
             TIMESTAMP=$(date + "%Y$m%d_%H%M%S")
             bandit -r analyticq-backend -o baandit-report_$TIMESTAMP.txt -f txt
 
-        - name: Upload Bandit report as artificat
-          uses: actions/upload-artifact@v2
+        - name: Upload Bandit report as artifact
+          uses: actions/upload-artifact@v3
           with:
             name: bandit-report-${{ github.run_number}} ${{ github.sha }}
             path: bandit-report*.txt
