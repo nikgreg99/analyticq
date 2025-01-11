@@ -1,0 +1,20 @@
+# Ignore virtual environment directories
+venv/
+.env/
+
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+
+.git
+.gitmodules
+*.gitingore
+
+tests/
+test
+*.log
+
+*.dev
+*.prod
+*.test

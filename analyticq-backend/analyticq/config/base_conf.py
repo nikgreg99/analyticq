@@ -1,45 +1,68 @@
-import os
 import json
-import yaml
 import logging
+import os
+from typing import Optional
+
+import yaml
+from analyticq.utils import get_backend_config_path
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
-from pydantic import ValidationError
-from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
 
-class BaseConfig(BaseSettings):
-    app_name: ClassVar[str] = "AnalyticQ-Backend"
-    debug: bool = False
+class AnalyticqBaseConfig(BaseSettings):
+    app_name: str
+    debug: bool
+    host: str
+    port: int
+    workers: int
     secret_key: str
 
-    host: str = "0.0.0.0"
-    port: int = 8080
-    workers: int = 1
-
     class Config:
-        env_file: str = ".env"
+        env_file: Optional[str] = None  # Dynamically set during runtime
         env_file_encoding: str = "utf-8"
 
     @classmethod
-    def from_file(cls, path: str) -> "BaseConfig":
-        if not os.path.exists(path):
-            log_message = f"Config file not found: {path}"
-            logger.error(log_message)
+    def load_environment(cls, profile: str) -> None:
+        conf_path_env = str(get_backend_config_path() / f".env.{profile}")
+        if os.path.exists(conf_path_env):
+            load_dotenv(conf_path_env)
+            logger.info(f"Loaded {profile} profile...")
+        else:
+            logger.warning(f".env file for profile {profile} was not found at: {conf_path_env}")
+
+    @classmethod
+    def load_config_file(cls, conf_filename: str) -> dict:
+        conf_path = str(get_backend_config_path() / conf_filename)
+        if not os.path.exists(conf_path):
+            log_message = f"Config file not found: {conf_path}"
             raise FileNotFoundError(log_message)
-        with open(path, "r") as f:
-            if path.endswith(".json"):
-                config_data = json.load(f)
-            elif path.endswith(".yaml") or path.endswith(".yml"):
-                config_data = yaml.safe_load(f)
+        with open(conf_path, "r") as f:
+            if conf_path.endswith(".json"):
+                return json.load(f)
+            elif conf_path.endswith(".yaml") or conf_path.endswith(".yml"):
+                return yaml.safe_load(f)
             else:
-                log_message = f"Unsupported config file format: {path}  Use JSON or YAML instead"
-                logger.error(log_message)
+                log_message = f"Unsupported config file format: {conf_path}  Use JSON or YAML instead"
                 raise ValueError(log_message)
+
+    @classmethod
+    def from_file(cls, conf_filename: str, profile: str = "dev") -> "AnalyticqBaseConfig":
         try:
-            return cls(**config_data)
-        except ValidationError as e:
-            log_error = f"Error loading config file: {e}"
-            logger.error(log_error)
-            raise ValueError(log_error)
+            cls.load_environment(profile)
+            config_data = cls.load_config_file(conf_filename)
+            profile_data = config_data.get(profile)
+
+            if not profile_data:
+                raise ValueError(f"Profile {profile} not found in config file")
+
+            # Load sensitive data here
+            secret_key_env = os.getenv(f"SECRET_KEY_{profile.upper()}")
+            if secret_key_env:
+                profile_data["secret_key"] = secret_key_env
+            return cls(**profile_data)
+        except FileNotFoundError as e:
+            logger.error(f"{e}")
+        except ValueError as e:
+            logger.error(f"lError loading config file: {e}")
