@@ -19,3 +19,12 @@ repos:
     hooks:
     - id: flake8
       args: ["--config=.flake8"]
+
+  - repo: local
+    hooks:
+      - id: update-backend-requirements
+        name: Check if AnalyticQ backend dependencies are updated
+        entry: python scripts/update_backend_requirements.py
+        language: python
+        always_run: true
+        pass_filenames: false
