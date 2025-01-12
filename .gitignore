@@ -91,7 +91,8 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
+!.env.sample
+.env.test
 .env.dev
 .env.prod
 analytiq-backend/analytiq/config.env.test
