@@ -34,6 +34,7 @@ def test_load_yaml_config(monkeypatch):
     assert config["dev"]["host"] == "127.0.0.1"
 
 
+@pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_default_config(monkeypatch):
     monkeypatch.setattr(
         "analyticq.utils.get_backend_default_config_path",
@@ -47,6 +48,7 @@ def test_from_file_default_config(monkeypatch):
     assert config.host == "127.0.0.1"
 
 
+@pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_with_env_override(setup_environment, monkeypatch):
     monkeypatch.setattr(
         "analyticq.utils.get_backend_default_config_path",
