@@ -94,7 +94,7 @@ celerybeat-schedule
 .env
 .env.dev
 .env.prod
-.env.test
+analytiq-backend/analytiq/config.env.test
 .venv
 env/
 venv/
