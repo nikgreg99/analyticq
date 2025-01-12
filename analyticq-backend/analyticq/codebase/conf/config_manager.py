@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 from threading import Lock
-from typing import Optional, Dict
+from typing import Dict, Optional
+
+from analyticq.utils import get_home_analyticq_path
 
 
 class ConfigCodebaseManager():
@@ -16,9 +18,10 @@ class ConfigCodebaseManager():
         return cls._instance
 
     def __init__(self, config_path: Optional[str] = None):
-        default_path = Path.home() / ".analyticq"
-        default_path.mkdir(exist_ok=True)
-        self.config_path = Path(config_path) if config_path else default_path / "codebase_manager_config.json"
+        if config_path is None:
+            default_path = get_home_analyticq_path()
+            default_path.mkdir(exist_ok=True)
+            self.config_path = Path(config_path) if config_path else default_path / "codebase_manager_config.json"
         self.config = self._load_config()
 
     def _load_config(self) -> Dict:

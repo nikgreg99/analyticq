@@ -4,7 +4,7 @@ from analyticq.routes.test_route import router as test_router  # noqa
 
 if __name__ == "__main__":
 
-    app = create_app("analyticq_backend_config.yml", "dev")
+    app = create_app("analyticq_backend_config.json", "dev")
     config = app.state.config
     app.include_router(test_router, prefix="/api/v1")
 

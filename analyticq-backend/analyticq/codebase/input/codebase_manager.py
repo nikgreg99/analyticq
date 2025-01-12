@@ -1,10 +1,12 @@
 import logging
 from threading import Lock
+
 from analyticq.exception import CloneRepositoryError
 from conf import ConfigCodebaseManager
+
+from .codebase_handler import CodebaseHadler
 from .credential_manager import CredentialCodeBaseManager
 from .retention_manager import RetentioncCodebaseManager
-from .codebase_handler import CodebaseHadler
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +29,21 @@ class CodebaseManager:
             self.credential_manager = CredentialCodeBaseManager()
             base_dir = self.config_path.get("base_dir")
             retentions_days = self.config_manager.get("retention_days")
-            self.retions_manager = RetentioncCodebaseManager(base_dir, retentions_days)
+            self.retention_manager = RetentioncCodebaseManager(base_dir, retentions_days)
             self.codebase_handler = CodebaseHadler(base_dir, self.config_manager)
 
-    async def clone_repository(self, codebase_url, branch=None, credentials=None):
+    async def clone_rempte_codebase(self, codebase_url, branch=None, credentials=None):
         try:
-            return await self.codebase_handler.c(codebase_url, branch, credentials)
+            return await self.codebase_handler.clone_remote_codebase(codebase_url, branch, credentials)
         except CloneRepositoryError as e:
             logger.error(f"Error cloning repository: {e.message}")
             return None
 
+    async def clone_local_codebase(self, codebase_path):
+        return await self.codebase_handler.clone_local_codebase(codebase_path)
+
     async def copy_local_script(self, script_path: str):
-        return await self.codebase_handler.copy_local_script(script_path)
+        return await self.codebase_handler.clone_local_script(script_path)
+
+    async def cleanup_old_codebases(self):
+        await self.retention_manager.cleanup_old_codebases()
