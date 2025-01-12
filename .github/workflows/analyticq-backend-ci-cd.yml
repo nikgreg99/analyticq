@@ -30,7 +30,7 @@ jobs:
         - name: Run unit tests with Pytest
           run: |
             python -m pip install pytest pytest-asyncio
-            pytest analyticq-backend/tests/
+            pytest -v analyticq-backend/tests
 
         - name: Run SAST analysis backend with Bandit
           run: |

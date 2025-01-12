@@ -9,6 +9,13 @@ TEST_DIR = os.path.dirname(__file__)
 TEST_FILES_DIR = os.path.join(TEST_DIR, "test_files")
 
 
+@pytest.fixture
+def setup_environment():
+    os.environ["SECRET_KEY_TEST"] = "test_env_secret_key"
+    yield
+    del os.environ["SECRET_KEY_TEST"]
+
+
 def test_load_json_config(monkeypatch):
     monkeypatch.setattr(
         "analyticq.utils.get_backend_default_test_path",
