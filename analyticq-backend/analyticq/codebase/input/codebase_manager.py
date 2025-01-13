@@ -1,12 +1,9 @@
 import logging
 from threading import Lock
 
-from analyticq.exception import CloneRepositoryError
-from conf import ConfigCodebaseManager
-
-from .codebase_handler import CodebaseHadler
+from .codebase_cleaner import CodebaseCleaner
+from .codebase_cloner import CodebaseCloner
 from .credential_manager import CredentialCodeBaseManager
-from .retention_manager import RetentioncCodebaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,25 +22,18 @@ class CodebaseManager:
     def _init_(self, config_path=None):
         if not hasattr(self, "_initialized"):
             self.inizialed = True
-            self.config_manager = ConfigCodebaseManager(config_path)
             self.credential_manager = CredentialCodeBaseManager()
-            base_dir = self.config_path.get("base_dir")
-            retentions_days = self.config_manager.get("retention_days")
-            self.retention_manager = RetentioncCodebaseManager(base_dir, retentions_days)
-            self.codebase_handler = CodebaseHadler(base_dir, self.config_manager)
+            self.codebase_cleaner = CodebaseCleaner()
+            self.codebase_cloner = CodebaseCloner()
 
-    async def clone_rempte_codebase(self, codebase_url, branch=None, credentials=None):
-        try:
-            return await self.codebase_handler.clone_remote_codebase(codebase_url, branch, credentials)
-        except CloneRepositoryError as e:
-            logger.error(f"Error cloning repository: {e.message}")
-            return None
+    async def clone_remote_codebase(self, codebase_url, branch=None, credentials=None):
+        await self.codebase_cloner.clone_remote_codebase(codebase_url, branch, credentials)
 
     async def clone_local_codebase(self, codebase_path):
-        return await self.codebase_handler.clone_local_codebase(codebase_path)
+        await self.codebase_cloner.clone_local_codebase(codebase_path)
 
     async def copy_local_script(self, script_path: str):
-        return await self.codebase_handler.clone_local_script(script_path)
+        await self.codebase_cloner.clone_local_script(script_path)
 
-    async def cleanup_old_codebases(self):
-        await self.retention_manager.cleanup_old_codebases()
+    async def cleanup_old_codebase(self):
+        await self.codebase_cleaner.cleanup_old_codebase()

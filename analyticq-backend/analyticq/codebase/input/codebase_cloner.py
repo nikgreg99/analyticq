@@ -6,9 +6,14 @@ from pathlib import Path
 from threading import Lock
 from urllib.parse import urlparse
 
-from analyticq.exception import CloneRepositoryError
+from analyticq.config import AnalyticQBaseConfig
+from analyticq.exception import (CloneLocalRepositoryException,
+                                 CloneLocalScriptException,
+                                 CloneRemoteRepositoryException,
+                                 CodebaseNotFoundException)
 from analyticq.utils import (create_folder_if_not_exists,
-                             get_codebase_repos_path, get_codebase_script_path)
+                             get_codebase_repositories_folder_path,
+                             get_codebase_scripts_folder_path)
 from git import GitCommandError, Repo
 
 logger = logging.getLogger(__name__)
@@ -20,7 +25,7 @@ class CodebaseProtocolType(Enum):
     SSH = "ssh"
 
 
-class CodebaseHadler:
+class CodebaseCloner:
 
     _instance = None
     _lock = Lock()
@@ -31,9 +36,9 @@ class CodebaseHadler:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, base_dir: str, config_manager):
-        self.base_dir = base_dir
-        self.config_manager = config_manager
+    def __init__(self):
+        codebase_config = AnalyticQBaseConfig.get("codebase")
+        self.default_branch = codebase_config["default_branch"]
 
     def _get_protocol(self, codebase_url: str):
         parsed_codebase_url = urlparse(codebase_url)
@@ -46,16 +51,18 @@ class CodebaseHadler:
     async def clone_remote_codebase(self, codebase_url: str, branch: str = None, credentials: str = None):
         protocol = self._get_protocol(codebase_url)
         repo_name = codebase_url.split("/")[-1].replace(".git", "")
-        repo_path = get_codebase_repos_path() / repo_name
+        repo_path = get_codebase_repositories_folder_path() / repo_name
 
         if not create_folder_if_not_exists(repo_path.parent):
             logger.info(f"{repo_path.parent} creation already exists")
 
         if repo_path.exists():
             logger.info(f"Codebase already exists locally at {repo_path}. Skipping cloning...")
-            return repo_path
+            return None
 
-        branch = branch or self.config_manager.get("default_branch", "main")
+        if branch is None:
+            branch = self.default_branch
+
         logger.info(f"Cloning codebase from {codebase_url} at branch {branch} using protocol {protocol}...")
 
         if credentials and credentials.auth_token:
@@ -64,38 +71,49 @@ class CodebaseHadler:
             await asyncio.to_thread(Repo.clone, codebase_url, repo_path, branch=branch)
             logger.info(f"Repository cloned succesfully at {repo_path}")
         except GitCommandError:
-            raise CloneRepositoryError(f"Failed to clone repository from {codebase_url}")
+            raise CloneRemoteRepositoryException(f"Failed to clone repository from {codebase_url}")
         return repo_path
 
     async def clone_local_codebase(self, source_codebase_path):
         source_codebase_path = Path(source_codebase_path)
         if not source_codebase_path.exists():
-            logger.error(f"Source codebase directory does not exist: {source_codebase_path} ")
-            return None
+            raise CodebaseNotFoundException(f"Source codebase directory does not exist at: {source_codebase_path}")
 
         repo_name = source_codebase_path.name
-        dest_codebase_path = get_codebase_repos_path() / repo_name
+        dest_codebase_path = get_codebase_repositories_folder_path() / repo_name
 
         if not create_folder_if_not_exists(dest_codebase_path.parent):
-            logger.info(f"{dest_codebase_path.parent} creation already exists")
+            logger.warning(f"{dest_codebase_path.parent} creation already exists")
 
         if dest_codebase_path.exists():
             logger.info(f"Codebase already exists locally at {dest_codebase_path}. Skipping copying...")
+            return None
 
         logger.info(f"Copying local codebase from {source_codebase_path} to {dest_codebase_path}")
-        await asyncio.to_thread(shutil.copytree, source_codebase_path, dest_codebase_path)
+
+        try:
+            await asyncio.to_thread(shutil.copytree, source_codebase_path, dest_codebase_path)
+        except Exception as e:
+            raise CloneLocalRepositoryException(f"Failed to copy codebase from {source_codebase_path} to {dest_codebase_path}: {str(e)}")
         logger.info(f"Codebase copied succesfully at {dest_codebase_path}")
 
-    async def clone_local_script(self, script_path: str):
-        script_path = get_codebase_script_path()
+    async def clone_local_script(self, script_path):
+        script_path = Path(script_path)
+        script_codebase_path = get_codebase_scripts_folder_path()
 
-        script_dest = script_path / Path(script_path).name
+        if not script_path.exists():
+            raise CodebaseNotFoundException.error(f"Script source path does not exist at: {script_codebase_path}")
 
-        if script_dest.exists():
-            logger.info(f"Script already exists locally at {script_dest}. Skipping script copying...")
-            return script_dest
+        script_dest_path = script_codebase_path / script_codebase_path.name
 
-        logger.info(f"Copying script from {script_path} to {script_dest}...")
-        await asyncio.to_thread(shutil.copy, script_path, script_dest)
-        logger.info(f"Script copied succesfully at {script_dest}")
-        return script_dest
+        if script_dest_path.exists():
+            logger.warning(f"Script already exists locally at {script_dest_path}. Skipping script copying...")
+            return None
+
+        logger.info(f"Copying script from {script_codebase_path} to {script_dest_path}...")
+        try:
+            await asyncio.to_thread(shutil.copy, script_path, script_dest_path)
+        except Exception as e:
+            raise CloneLocalScriptException(e)
+        logger.info(f"Failed to copy local script from {script_codebase_path} to {script_dest_path}")
+        return script_dest_path

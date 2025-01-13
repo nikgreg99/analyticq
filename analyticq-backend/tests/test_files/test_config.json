@@ -4,6 +4,10 @@
     "debug": true,
     "host": "127.0.0.1",
     "port": 8000,
-    "workers": 2
+    "workers": 2,
+    "codebase": {
+      "default_branch": "main",
+      "retention": 5
+    }
   }
 }

@@ -1,14 +1,16 @@
 import asyncio
 import logging
 import shutil
-from pathlib import Path
-from threading import Lock
 from datetime import datetime, timedelta
+from threading import Lock
+
+from analyticq.config import AnalyticQBaseConfig
+from analyticq.utils import AnalytiCQConfigConst, get_home_analyticq_path
 
 logger = logging.getLogger(__name__)
 
 
-class RetentioncCodebaseManager:
+class CodebaseCleaner:
 
     _instance = None
     _lock = Lock()
@@ -19,13 +21,14 @@ class RetentioncCodebaseManager:
                 _instance = super._new__(cls)
         return _instance
 
-    def __init__(self, base_dir: str, retention_days: int = 15):
-        self.base_dir = Path(base_dir)
-        self.retention_days = retention_days
+    def __init__(self):
+        self.base_dir = get_home_analyticq_path()
+        codebase_config = AnalyticQBaseConfig.get("codebase")
+        self.retention_days = codebase_config["retention"]
 
-    async def cleanup_old_codebases(self):
+    async def cleanup_old_codebase(self):
         retention_period = timedelta(days=self.retention_days)
-        for subdir in ['repositories', 'scripts']:
+        for subdir in [AnalytiCQConfigConst.ANALYTICQ_REPOS_FOLDER, AnalytiCQConfigConst.ANALYTICQ_SCRIPTS_FOLDER]:
             dir_path = self.base_dir / subdir
             if dir_path.exists():
                 for item in dir_path.iterdir():

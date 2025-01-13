@@ -4,6 +4,9 @@ dev:
   host: "127.0.0.1"
   port: 5000
   workers: 1
+  codebase:
+    default_branch: "main"
+    retention: 5
 
 prod:
   app_name: "AnalyticQ-Backend"
@@ -11,6 +14,9 @@ prod:
   host: "0.0.0.0"
   port: 8000
   workers: 4
+  codebase:
+    default_branch: "main"
+    retention: 5
 
 test:
   app_name: "AnalyticQ-Backend"
@@ -18,3 +24,6 @@ test:
   host: "127.0.0.1"
   port: 8080
   workers: 1
+  codebase:
+    default_branch: "main"
+    retention: 5

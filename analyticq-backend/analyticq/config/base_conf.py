@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any, Dict
 
 import yaml
 from analyticq.utils import (get_backend_default_config_path,
@@ -8,22 +9,16 @@ from analyticq.utils import (get_backend_default_config_path,
                              get_default_analyticq_config_filename,
                              path_to_str)
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class AnalyticQBaseConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_file=None, env_file_encoding=".utf8")
-    app_name: str
-    debug: bool
-    host: str
-    port: int
-    workers: int
-    secret_key: str
+class AnalyticQBaseConfig(BaseModel):
+    settings: Dict[str, Any]
 
-    @classmethod
-    def __parse_config_file(cls, file, conf_path: str):
+    @staticmethod
+    def __parse_config_file(file, conf_path: str):
         SUPPORTED_FORMATS = {"json": json.load, "yaml": yaml.safe_load, "yml": yaml.safe_load}
         ext = conf_path.rsplit(".", 1)[-1]
         if ext in SUPPORTED_FORMATS:
@@ -57,7 +52,7 @@ class AnalyticQBaseConfig(BaseSettings):
                 cls.save_to_json(config_path, config_data)
             else:
                 config_data = cls.load_config_file(get_config_analyticq_path(), conf_filename)
-            profile_data = config_data.get(profile)
+            profile_data: dict = config_data.get(profile)
 
             if not profile_data:
                 raise ValueError(f"Profile {profile} not found in config file")
@@ -66,7 +61,8 @@ class AnalyticQBaseConfig(BaseSettings):
             secret_key_env = os.getenv(f"SECRET_KEY_{profile.upper()}")
             if secret_key_env:
                 profile_data["secret_key"] = secret_key_env
-            return cls(**profile_data)
+
+            cls.settings = profile_data
         except FileNotFoundError as e:
             logger.error(f"{e}")
         except ValueError as e:
@@ -81,10 +77,9 @@ class AnalyticQBaseConfig(BaseSettings):
             logger.error("Error saving  configuration")
             return None
 
-    @classmethod
-    def get_config_member(cls, key: str):
-        try:
-            return getattr(cls, key)
-        except AttributeError:
-            logger.error(f"Key '{key} not found in config")
-            return None
+    @staticmethod
+    def get(key: str, default_value: Any = None) -> Any:
+        if hasattr(AnalyticQBaseConfig, 'settings'):
+            return AnalyticQBaseConfig.settings.get(key, default_value)
+        logger.error("Settings are not initialized. Ensure 'from_file' has been called.")
+        return default_value
