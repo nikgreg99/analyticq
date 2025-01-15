@@ -65,24 +65,13 @@ def get_codebase_scripts_folder_path_str() -> str:
 
 
 def create_folder_if_not_exists(folder_path: Path) -> bool:
-    if not folder_path.exists():
-        try:
+    try:
+        if not folder_path.exists():
             folder_path.mkdir(exist_ok=True, parents=True)
             logger.info(f"Folder created at {path_to_str(folder_path)}")
             return True
-        except FileNotFoundError as e:
-            logger.error(
-                f"Invalid path specified for folder creation: {path_to_str(folder_path)}. Error: {e}"
-            )
-        except PermissionError as e:
-            logger.error(
-                f"Permission denied while creating folder: {path_to_str(folder_path)}. Error: {e}"
-            )
-        except OSError as e:
-            logger.error(
-                f"OS error occurred while creating folder: {path_to_str(folder_path)}. Error: {e}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to create folder at given location: {path_to_str(folder_path)}... Error {e}")
-        return False
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        logger.error(f"Error while creating folder at {folder_path}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error while creating folder at {folder_path}: {e}")
     return False

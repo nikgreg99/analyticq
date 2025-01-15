@@ -1,1 +1,1 @@
-from .codebase_cloner import CodebaseCloner, CodebaseProtocolType
+from .input_cloner import InputCloner, InputClonerProtocolType

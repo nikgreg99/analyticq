@@ -26,7 +26,7 @@ class CredentialCodeBaseManager:
             logger.info(f"SSH credentials configured using with private key at {private_key_path}")
         else:
             os.environ.pop("GIT_SSH_COMMMAND", None)
-            logger.warning("SSH confituatio ")
+            logger.warning("SSH configuration cleared")
 
     def configure_token(self, token):
         self._auth_token = token
