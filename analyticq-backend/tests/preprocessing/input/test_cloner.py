@@ -3,11 +3,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from analyticq.codebase import InputCloner, InputClonerProtocolType
 from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
+from analyticq.preprocessing import InputCloner, InputClonerProtocolType
 from analyticq.utils import (get_codebase_repositories_folder_path,
                              get_codebase_scripts_folder_path, path_to_str)
 from git.exc import GitCommandError

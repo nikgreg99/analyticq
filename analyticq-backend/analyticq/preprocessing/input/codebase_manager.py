@@ -1,8 +1,8 @@
 import logging
 from threading import Lock
 
+from .cloner import InputCloner
 from .codebase_cleaner import CodebaseCleaner
-from .codebase_cloner import CodebaseCloner
 from .credential_manager import CredentialCodeBaseManager
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class CodebaseManager:
             self.inizialed = True
             self.credential_manager = CredentialCodeBaseManager()
             self.codebase_cleaner = CodebaseCleaner()
-            self.codebase_cloner = CodebaseCloner()
+            self.codebase_cloner = InputCloner()
 
     async def clone_remote_codebase(self, codebase_url, branch=None, credentials=None):
         await self.codebase_cloner.clone_remote_codebase(codebase_url, branch, credentials)

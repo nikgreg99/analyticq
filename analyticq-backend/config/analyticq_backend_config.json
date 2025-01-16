@@ -7,7 +7,16 @@
       "workers": 1,
       "codebase": {
         "default_branch": "main",
-        "retention": 5
+        "retention": 5,
+        "file_filter": {
+            "extensions_excluded": [".exe", ".jpg"],
+            "filenames_excluded": ["LICENSE", "README.md"],
+            "max_file_size": 52428800
+        },
+        "dir_filter": {
+            "excluded_dirs": [".git"],
+            "max_depth": 5
+        }
       }
     },
     "prod": {
@@ -18,7 +27,16 @@
       "workers": 4,
       "codebase": {
         "default_branch": "main",
-        "retention": 5
+        "retention": 5,
+        "file_filter": {
+            "extensions_excluded": [".exe", ".jpg"],
+            "filenames_excluded": ["LICENSE", "README.md"],
+            "max_file_size": 52428800
+        },
+        "dir_filter": {
+            "excluded_dirs": [".git"],
+            "max_depth": 5
+        }
       }
     },
     "test": {
@@ -29,7 +47,16 @@
       "workers": 1,
       "codebase": {
         "default_branch":"main",
-        "retention": 5
+        "retention": 5,
+        "file_filter": {
+            "extensions_excluded": [".exe", ".jpg"],
+            "filenames_excluded": ["LICENSE", "README.md"],
+            "max_file_size": 52428800
+        },
+        "dir_filter": {
+            "excluded_dirs": [".git"],
+            "max_depth": 5
+        }
       }
     }
   }

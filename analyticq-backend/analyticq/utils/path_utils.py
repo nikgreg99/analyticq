@@ -1,17 +1,17 @@
 import logging
 from pathlib import Path
 
-from .const import AnalytiCQConfigConst
+from .const import AnalytiCQConst
 
 logger = logging.getLogger(__name__)
 
 
-def get_default_analyticq_config_filename(config_file_format: str = AnalytiCQConfigConst.JSON_EXTENSION) -> str:
+def get_default_analyticq_config_filename(config_file_format: str = AnalytiCQConst.JSON_EXTENSION) -> str:
     extensions = {
-        AnalytiCQConfigConst.JSON_EXTENSION: f"{AnalytiCQConfigConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConfigConst.JSON_EXTENSION}",
-        AnalytiCQConfigConst.YAML_EXTENSION: f"{AnalytiCQConfigConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConfigConst.YAML_EXTENSION}",
+        AnalytiCQConst.JSON_EXTENSION: f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.JSON_EXTENSION}",
+        AnalytiCQConst.YAML_EXTENSION: f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.YAML_EXTENSION}",
     }
-    return extensions.get(config_file_format, f"{AnalytiCQConfigConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConfigConst.YML_EXTENSION}")
+    return extensions.get(config_file_format, f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.YML_EXTENSION}")
 
 
 def path_to_str(path_obj: Path) -> str:
@@ -30,28 +30,32 @@ def get_current_cwd_path() -> Path:
     return Path.cwd()
 
 
+def get_last_dir_name(file_path: Path) -> str:
+    return file_path.name
+
+
 def get_home_analyticq_path() -> Path:
-    return get_os_home_path() / AnalytiCQConfigConst.ANALYTICQ_BASE_DIR
+    return get_os_home_path() / AnalytiCQConst.ANALYTICQ_BASE_DIR
 
 
 def get_config_analyticq_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConfigConst.ANALYTICQ_CONFIG_FOLDER
+    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_CONFIG_FOLDER
 
 
 def get_backend_default_config_path() -> Path:
-    return get_current_cwd_path() / AnalytiCQConfigConst.ANALYTICQ_CONFIG_FOLDER
+    return get_current_cwd_path() / AnalytiCQConst.ANALYTICQ_CONFIG_FOLDER
 
 
 def get_backend_default_test_path() -> Path:
-    return get_current_cwd_path() / AnalytiCQConfigConst.ANALYTICQ_TEST_FILE_FOLDER
+    return get_current_cwd_path() / AnalytiCQConst.ANALYTICQ_TEST_FILE_FOLDER
 
 
 def get_codebase_repositories_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConfigConst.ANALYTICQ_REPOS_FOLDER
+    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_REPOS_FOLDER
 
 
 def get_codebase_scripts_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConfigConst.ANALYTICQ_SCRIPTS_FOLDER
+    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_SCRIPTS_FOLDER
 
 
 def get_codebase_repositories_folder_path_str() -> str:
