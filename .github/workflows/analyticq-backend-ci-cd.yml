@@ -48,7 +48,7 @@ jobs:
             bandit -r analyticq-backend -o bandit-report_$TIMESTAMP.txt -f txt --exit-zero
 
         - name: Upload Bandit report as artifact
-          uses: actions/upload-artifact@v3
+          uses: actions/upload-artifact@v4
           with:
             name: bandit-report-${{ github.run_number}} ${{ github.sha }}
             path: bandit-report*.txt
