@@ -27,10 +27,10 @@ def main():
         print(f"Error: pip command not found at {venv_pip}. Are you sure your venv is and running?")
         exit(1)
 
-    with open("requirements.txt", "w") as f:
+    with open("analyticq-backend/requirements.txt", "w") as f:
         subprocess.run([venv_pip, "freeze"], stdout=f)
 
-    result = subprocess.run(["git", "diff", "--exit-code", "requirements.txt"])
+    result = subprocess.run(["git", "diff", "--exit-code", "analyticq-backend/requirements.txt"])
     if result.returncode != 0:
         print("requirements.txt is outdated. Please update it before committing.")
         exit(1)
