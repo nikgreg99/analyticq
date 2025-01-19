@@ -4,10 +4,9 @@ import os
 from typing import Any, Dict
 
 import yaml
-from analyticq.utils import (get_backend_default_config_path,
-                             get_config_analyticq_path,
-                             get_default_analyticq_config_filename,
-                             path_to_str)
+from analyticq.util import (get_backend_default_config_path,
+                            get_config_analyticq_path,
+                            get_default_analyticq_config_filename, path_to_str)
 from dotenv import load_dotenv
 from pydantic import BaseModel
 

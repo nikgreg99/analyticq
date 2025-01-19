@@ -11,8 +11,8 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
-from analyticq.utils import (get_codebase_repositories_folder_path,
-                             get_codebase_scripts_folder_path)
+from analyticq.util import (get_codebase_repositories_folder_path,
+                            get_codebase_scripts_folder_path)
 from git import Repo
 from git.exc import GitCommandError
 

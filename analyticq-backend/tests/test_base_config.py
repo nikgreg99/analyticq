@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from analyticq.config import AnalyticQBaseConfig
-from analyticq.utils import get_current_cwd_path
+from analyticq.util import get_current_cwd_path
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILES_DIR = os.path.join(TEST_DIR, "test_files")
@@ -35,7 +35,7 @@ def mock_config_data():
 
 def test_load_json_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.utils.get_backend_default_test_path",
+        "analyticq.util.get_backend_default_test_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.json")
@@ -44,7 +44,7 @@ def test_load_json_config(monkeypatch):
 
 def test_load_yaml_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.utils.get_backend_default_test_path",
+        "analyticq.util.get_backend_default_test_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.yml")
@@ -54,11 +54,11 @@ def test_load_yaml_config(monkeypatch):
 @pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_default_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.utils.get_backend_default_config_path",
+        "analyticq.util.get_backend_default_config_path",
         lambda: TEST_FILES_DIR
     )
     monkeypatch.setattr(
-        "analyticq.utils.get_default_analyticq_config_filename",
+        "analyticq.util.get_default_analyticq_config_filename",
         lambda: "test_config.json"
     )
     config = AnalyticQBaseConfig.from_file(profile="dev")
@@ -68,7 +68,7 @@ def test_from_file_default_config(monkeypatch):
 @pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_with_env_override(setup_environment, monkeypatch):
     monkeypatch.setattr(
-        "analyticq.utils.get_backend_default_config_path",
+        "analyticq.util.get_backend_default_config_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.from_file(profile="test")
@@ -83,7 +83,7 @@ def test_config_file_not_found():
 
 def test_missing_profile(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.utils.get_config_analyticq_path",
+        "analyticq.util.get_config_analyticq_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.from_file(conf_filename="test_config.json", profile="missing_profile")

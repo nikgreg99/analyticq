@@ -8,8 +8,8 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
 from analyticq.preprocessing import InputCloner, InputClonerProtocolType
-from analyticq.utils import (get_codebase_repositories_folder_path,
-                             get_codebase_scripts_folder_path, path_to_str)
+from analyticq.util import (get_codebase_repositories_folder_path,
+                            get_codebase_scripts_folder_path, path_to_str)
 from git.exc import GitCommandError
 
 
@@ -34,7 +34,7 @@ async def test_clone_remote_codebase_succcess(input_cloner):
 
     expected_repo_path = get_codebase_repositories_folder_path() / repo_name
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path') , \
+    with patch('analyticq.util.get_codebase_repositories_folder_path') , \
          patch("pathlib.Path.exists", return_value=False), \
          patch("git.Repo.clone_from") as mock_Repo:
 
@@ -54,7 +54,7 @@ async def test_clone_remote_codebase_with_default_branch(input_cloner):
 
     expected_repo_path = get_codebase_repositories_folder_path() / repo_name
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path') , \
+    with patch('analyticq.util.get_codebase_repositories_folder_path') , \
          patch("pathlib.Path.exists", return_value=False), \
          patch("git.Repo.clone_from") as mock_repo:
 
@@ -71,7 +71,7 @@ async def test_clone_remote_codease_already_existing(input_cloner):
 
     codebase_url = "https://github.com/fake/repo.git"
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path') , \
+    with patch('analyticq.util.get_codebase_repositories_folder_path') , \
          patch("pathlib.Path.exists", return_value=True), \
          patch("git.Repo.clone_from") as mock_repo:
 
@@ -87,7 +87,7 @@ async def test_clone_remote_codebase_failure(input_cloner):
 
     codebase_url = "https://github.com/fake/repo.git"
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path') , \
+    with patch('analyticq.util.get_codebase_repositories_folder_path') , \
          patch("pathlib.Path.exists", return_value=False), \
          patch("git.Repo.clone_from", side_effect=GitCommandError("Git Error")):
 
@@ -105,7 +105,7 @@ async def test_clone_remote_codebase_with_credentials(input_cloner):
 
     expected_repo_path = get_codebase_repositories_folder_path() / repo_name
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path', return_value=MagicMock()) , \
+    with patch('analyticq.util.get_codebase_repositories_folder_path', return_value=MagicMock()) , \
          patch("pathlib.Path.exists", return_value=False), \
          patch("git.Repo.clone_from") as mock_clone_from:
 
@@ -124,7 +124,7 @@ async def test_clone_local_codebase_success(input_cloner):
     source_path = Path("/source/repo")
     dest_base_path = get_codebase_repositories_folder_path()
 
-    with patch('analyticq.utils.get_codebase_repositories_folder_path') as mock_path, \
+    with patch('analyticq.util.get_codebase_repositories_folder_path') as mock_path, \
          patch('pathlib.Path.exists') as mock_exists, \
          patch('shutil.copytree') as mock_copy:
 
@@ -148,7 +148,7 @@ async def test_clone_local_codebase_not_found(input_cloner):
 async def test_clone_local_codebase_copy_failure(input_cloner):
     source_path = "/source/repo"
     dest_base_path = get_codebase_repositories_folder_path()
-    with patch("analyticq.utils.get_codebase_repositories_folder_path") as mock_path, \
+    with patch("analyticq.util.get_codebase_repositories_folder_path") as mock_path, \
          patch("pathlib.Path.exists") as mock_exists, \
          patch("shutil.copytree", side_effect=shutil.Error('Simulate copy error')):
 
@@ -164,7 +164,7 @@ async def test_clone_local_script_success(input_cloner):
     script_path = Path("/source/script.py")
     dest_path = get_codebase_scripts_folder_path()
 
-    with patch('analyticq.utils.get_codebase_scripts_folder_path') as mock_path, \
+    with patch('analyticq.util.get_codebase_scripts_folder_path') as mock_path, \
          patch('pathlib.Path.exists') as mock_exists, \
          patch('shutil.copy') as mock_copy:
 
@@ -190,7 +190,7 @@ async def test_clone_local_script_failure(input_cloner):
     script_path = Path("/source/script.py")
     dest_path = get_codebase_repositories_folder_path()
 
-    with patch("analyticq.utils.get_codebase_repositories_folder_path") as mock_path, \
+    with patch("analyticq.util.get_codebase_repositories_folder_path") as mock_path, \
          patch("pathlib.Path.exists") as mock_exists, \
          patch("shutil.copy", side_effect=shutil.Error('Simulate copy error')):
 

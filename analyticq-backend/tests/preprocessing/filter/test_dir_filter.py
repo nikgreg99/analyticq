@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from analyticq.preprocessing import DirFilter
-from analyticq.utils import path_to_str
+from analyticq.util import path_to_str
 
 
 @pytest.fixture(scope="function")

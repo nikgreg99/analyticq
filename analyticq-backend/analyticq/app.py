@@ -1,8 +1,8 @@
 from analyticq.routes.test_route import router as test_router
-from analyticq.utils import (create_folder_if_not_exists,
-                             get_codebase_repositories_folder_path,
-                             get_codebase_scripts_folder_path,
-                             get_home_analyticq_path)
+from analyticq.util import (create_folder_if_not_exists,
+                            get_codebase_repositories_folder_path,
+                            get_codebase_scripts_folder_path,
+                            get_home_analyticq_path)
 from fastapi import FastAPI
 
 from .config.base_conf import AnalyticQBaseConfig

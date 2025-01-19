@@ -1,5 +1,5 @@
 
-class AnalytiCQConst:
+class AnalyticQConst:
 
     JSON_EXTENSION: str = "json"
     YAML_EXTENSION: str = "yaml"

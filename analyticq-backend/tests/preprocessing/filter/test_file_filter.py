@@ -146,7 +146,7 @@ def test_is_file_relevant(mock_file_filter_conf):
         mock_filename.return_value = False
 
         relevant_file = Path("/path/to/validfile.py")
-        result = FileFilter.is_file_relevant(relevant_file)
+        result = FileFilter.is_relevant_file(relevant_file)
         assert result is True, f"Expected True for relevant file {relevant_file}, got {result}"
 
 
@@ -164,5 +164,5 @@ def test_is_file_non_relevant(mock_file_filter_conf):
         mock_filename.return_value = False
 
         irrelevant_file = Path("/path/to/emptyfile.txt")
-        result = FileFilter.is_file_relevant(irrelevant_file)
+        result = FileFilter.is_relevant_file(irrelevant_file)
         assert result is False, f"Expected False for irrelevant file {irrelevant_file}, got {result}"

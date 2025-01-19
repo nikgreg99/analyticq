@@ -1,17 +1,17 @@
 import logging
 from pathlib import Path
 
-from .const import AnalytiCQConst
+from .const import AnalyticQConst
 
 logger = logging.getLogger(__name__)
 
 
-def get_default_analyticq_config_filename(config_file_format: str = AnalytiCQConst.JSON_EXTENSION) -> str:
+def get_default_analyticq_config_filename(config_file_format: str = AnalyticQConst.JSON_EXTENSION) -> str:
     extensions = {
-        AnalytiCQConst.JSON_EXTENSION: f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.JSON_EXTENSION}",
-        AnalytiCQConst.YAML_EXTENSION: f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.YAML_EXTENSION}",
+        AnalyticQConst.JSON_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.JSON_EXTENSION}",
+        AnalyticQConst.YAML_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YAML_EXTENSION}",
     }
-    return extensions.get(config_file_format, f"{AnalytiCQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalytiCQConst.YML_EXTENSION}")
+    return extensions.get(config_file_format, f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YML_EXTENSION}")
 
 
 def path_to_str(path_obj: Path) -> str:
@@ -35,27 +35,27 @@ def get_last_dir_name(file_path: Path) -> str:
 
 
 def get_home_analyticq_path() -> Path:
-    return get_os_home_path() / AnalytiCQConst.ANALYTICQ_BASE_DIR
+    return get_os_home_path() / AnalyticQConst.ANALYTICQ_BASE_DIR
 
 
 def get_config_analyticq_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_CONFIG_FOLDER
+    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_CONFIG_FOLDER
 
 
 def get_backend_default_config_path() -> Path:
-    return get_current_cwd_path() / AnalytiCQConst.ANALYTICQ_CONFIG_FOLDER
+    return get_current_cwd_path() / AnalyticQConst.ANALYTICQ_CONFIG_FOLDER
 
 
 def get_backend_default_test_path() -> Path:
-    return get_current_cwd_path() / AnalytiCQConst.ANALYTICQ_TEST_FILE_FOLDER
+    return get_current_cwd_path() / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
 
 
 def get_codebase_repositories_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_REPOS_FOLDER
+    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_REPOS_FOLDER
 
 
 def get_codebase_scripts_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalytiCQConst.ANALYTICQ_SCRIPTS_FOLDER
+    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_SCRIPTS_FOLDER
 
 
 def get_codebase_repositories_folder_path_str() -> str:

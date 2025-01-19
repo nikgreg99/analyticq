@@ -69,7 +69,7 @@ class FileFilter:
     def is_filename_excluded(file_path: Path) -> bool:
         return file_path.name.upper() in FileFilter.filename_excluded()
 
-    def is_file_relevant(file_path: Path) -> bool:
+    def is_relevant_file(file_path: Path) -> bool:
         return (
             not FileFilter.is_empty_file(file_path)
             and not FileFilter.is_binary_file(file_path)

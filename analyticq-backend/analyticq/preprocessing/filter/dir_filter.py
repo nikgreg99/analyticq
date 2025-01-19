@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from analyticq.config import AnalyticQBaseConfig
-from analyticq.utils import get_last_dir_name
+from analyticq.util import get_last_dir_name
 
 
 class DirFilter:
@@ -33,7 +33,7 @@ class DirFilter:
         return dir_path.is_dir() and not any(dir_path.iterdir())
 
     @staticmethod
-    def is_dir_excluded(dir_path: Path) -> bool:
+    def is_excluded_dir(dir_path: Path) -> bool:
         last_folder = get_last_dir_name(dir_path)
         return last_folder in DirFilter.excluded_dirs()
 
@@ -58,7 +58,7 @@ class DirFilter:
     def is_relevant_dir(dir_path: Path) -> bool:
         return not (
             DirFilter.is_empty_dir(dir_path)
-            or DirFilter.is_dir_excluded(dir_path)
+            or DirFilter.is_excluded_dir(dir_path)
             or DirFilter.is_max_depth(dir_path)
             or DirFilter.is_read_only_dir(dir_path)
             or DirFilter.is_non_local_dir(dir_path)
