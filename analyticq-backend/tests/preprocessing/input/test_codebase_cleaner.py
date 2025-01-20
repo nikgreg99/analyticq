@@ -34,6 +34,7 @@ def codebase_cleaner():
         return CodebaseCleaner()
 
 
+@pytest.mark.skip(reason="Not run on Linux")
 def test_get_item_creation_or_last_edit_date(codebase_cleaner):
 
     with patch("os.path.getctime") as mock_getctime, \

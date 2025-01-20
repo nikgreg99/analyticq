@@ -50,14 +50,14 @@ def test_get_backend_default_test_AnalyticQ_path():
     assert result == expected_path, f"Expected equality for {expected_path}, got {result}"
 
 
-async def test_get_codebase_repositories_folder_AnalyticQ_path():
+def test_get_codebase_repositories_folder_AnalyticQ_path():
     mock_cwd_path = Path.home()
     expected_path = mock_cwd_path / AnalyticQConst.ANALYTICQ_BASE_DIR / AnalyticQConst.ANALYTICQ_REPOS_FOLDER
     result = get_codebase_repositories_folder_AnalyticQ_path()
     assert result == expected_path, f"Expected equality for {expected_path}, got {result}"
 
 
-async def test_get_codebase_scripts_folder_AnalyticQ_path():
+def test_get_codebase_scripts_folder_AnalyticQ_path():
     mock_cwd_path = Path.home()
     expected_path = mock_cwd_path / AnalyticQConst.ANALYTICQ_BASE_DIR / AnalyticQConst.ANALYTICQ_SCRIPTS_FOLDER
     result = get_codebase_scripts_folder_AnalyticQ_path()
