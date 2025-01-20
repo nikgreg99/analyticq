@@ -18,10 +18,6 @@ def path_to_str(path_obj: Path) -> str:
     return str(path_obj)
 
 
-def get_path_as_str(path_func: callable):
-    return str(path_func())
-
-
 def get_os_home_path() -> Path:
     return Path.home()
 
@@ -31,7 +27,10 @@ def get_current_cwd_path() -> Path:
 
 
 def get_last_dir_name(file_path: Path) -> str:
-    return file_path.name
+    dir_name = file_path.name
+    if dir_name == "":
+        raise ValueError
+    return dir_name
 
 
 def get_home_AnalyticQ_path() -> Path:
