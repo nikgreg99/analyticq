@@ -46,6 +46,8 @@ def test_get_item_creation_or_last_edit_date(codebase_cleaner):
         if os.name == "nt":
             result = codebase_cleaner._get_item_creation_or_last_edit_date(item) == datetime.fromtimestamp(1609459200)
         else:
+            mock_stat.return_value.st_mtime = 1609459200  # Set mock modification time
+            mock_stat.return_value.st_mtime = 1609459200  # Set mock modification time for fallback
             result = codebase_cleaner._get_item_creation_or_last_edit_date(item) == datetime.fromtimestamp(1609459200)
 
         assert result is True, f"Expected True based on the sample timestamp used above, got {result}"
