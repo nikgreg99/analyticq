@@ -6,7 +6,7 @@ from .const import AnalyticQConst
 logger = logging.getLogger(__name__)
 
 
-def get_default_analyticq_config_filename(config_file_format: str = AnalyticQConst.JSON_EXTENSION) -> str:
+def get_default_AnalyticQ_config_filename(config_file_format: str = AnalyticQConst.JSON_EXTENSION) -> str:
     extensions = {
         AnalyticQConst.JSON_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.JSON_EXTENSION}",
         AnalyticQConst.YAML_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YAML_EXTENSION}",
@@ -34,41 +34,41 @@ def get_last_dir_name(file_path: Path) -> str:
     return file_path.name
 
 
-def get_home_analyticq_path() -> Path:
+def get_home_AnalyticQ_path() -> Path:
     return get_os_home_path() / AnalyticQConst.ANALYTICQ_BASE_DIR
 
 
-def get_config_analyticq_path() -> Path:
-    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_CONFIG_FOLDER
+def get_config_AnalyticQ_path() -> Path:
+    return get_home_AnalyticQ_path() / AnalyticQConst.ANALYTICQ_CONFIG_FOLDER
 
 
-def get_backend_default_config_path() -> Path:
+def get_backend_default_config_AnalyticQ_path() -> Path:
     return get_current_cwd_path() / AnalyticQConst.ANALYTICQ_CONFIG_FOLDER
 
 
-def get_backend_default_test_path() -> Path:
+def get_backend_default_test_AnalyticQ_path() -> Path:
     return get_current_cwd_path() / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
 
 
-def get_codebase_repositories_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_REPOS_FOLDER
+def get_codebase_repositories_folder_AnalyticQ_path() -> Path:
+    return get_home_AnalyticQ_path() / AnalyticQConst.ANALYTICQ_REPOS_FOLDER
 
 
-def get_codebase_scripts_folder_path() -> Path:
-    return get_home_analyticq_path() / AnalyticQConst.ANALYTICQ_SCRIPTS_FOLDER
+def get_codebase_scripts_folder_AnalyticQ_path() -> Path:
+    return get_home_AnalyticQ_path() / AnalyticQConst.ANALYTICQ_SCRIPTS_FOLDER
 
 
-def get_codebase_repositories_folder_path_str() -> str:
-    codebase_repo_path = get_codebase_repositories_folder_path()
+def get_codebase_repositories_folder_path_AnalyticQ_str() -> str:
+    codebase_repo_path = get_codebase_repositories_folder_AnalyticQ_path()
     return path_to_str(codebase_repo_path)
 
 
-def get_codebase_scripts_folder_path_str() -> str:
-    codebase_script_path = get_codebase_scripts_folder_path()
+def get_codebase_scripts_folder_path_AnalyticQ_str() -> str:
+    codebase_script_path = get_codebase_scripts_folder_AnalyticQ_path()
     return path_to_str(codebase_script_path)
 
 
-def create_folder_if_not_exists(folder_path: Path) -> bool:
+async def create_folder_if_not_exists_async(folder_path: Path) -> bool:
     try:
         if not folder_path.exists():
             folder_path.mkdir(exist_ok=True, parents=True)

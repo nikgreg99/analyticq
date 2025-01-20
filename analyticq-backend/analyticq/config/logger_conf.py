@@ -23,7 +23,3 @@ LOGGING_CONFIG = {
 
 def logging_init():
     dictConfig(LOGGING_CONFIG)
-
-
-# Init logging backend
-logging_init()

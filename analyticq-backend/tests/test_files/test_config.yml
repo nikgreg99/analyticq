@@ -1,5 +1,5 @@
 dev:
-  app_name: "AnalyticqDev"
+  app_name: "AnalyticQDev"
   debug: true
   host: "127.0.0.1"
   port: 8000

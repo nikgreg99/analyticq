@@ -12,3 +12,4 @@ class AnalyticQConst:
     ANALYTICQ_BASE_DIR: str = ".analyticq"
 
     DEFAULT_ANALYTICQ_CONFIG_FILE: str = "analyticq_backend_config"
+    DEFAULT_ANALYTICQ_PROFILE: str = "dev"

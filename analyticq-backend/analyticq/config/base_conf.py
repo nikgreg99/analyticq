@@ -4,9 +4,9 @@ import os
 from typing import Any, Dict
 
 import yaml
-from analyticq.util import (get_backend_default_config_path,
-                            get_config_analyticq_path,
-                            get_default_analyticq_config_filename, path_to_str)
+from analyticq.util import (get_backend_default_config_AnalyticQ_path,
+                            get_config_AnalyticQ_path,
+                            get_default_AnalyticQ_config_filename, path_to_str)
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
@@ -25,7 +25,7 @@ class AnalyticQBaseConfig(BaseModel):
 
     @classmethod
     def load_environment(cls, profile: str) -> None:
-        conf_path_env = str(get_backend_default_config_path() / f".env.{profile}")
+        conf_path_env = str(get_backend_default_config_AnalyticQ_path() / f".env.{profile}")
         if os.path.exists(conf_path_env):
             load_dotenv(conf_path_env)
             logger.info(f"Loaded {profile} profile...")
@@ -33,7 +33,7 @@ class AnalyticQBaseConfig(BaseModel):
             logger.warning(f".env file for profile {profile} was not found at: {conf_path_env}")
 
     @classmethod
-    def load_config_file(cls, conf_file_path, conf_filename: str) -> dict:
+    def load_config_file(cls, conf_file_path: str , conf_filename: str) -> dict:
         conf_path = str(conf_file_path / conf_filename)
         if not os.path.exists(conf_path):
             raise FileNotFoundError(f"Config file not found: {conf_path}")
@@ -41,18 +41,17 @@ class AnalyticQBaseConfig(BaseModel):
             return cls.__parse_config_file(f, conf_path)
 
     @classmethod
-    def from_file(cls, conf_filename: str = None, profile: str = "dev") -> "AnalyticQBaseConfig":
+    def from_file(cls, conf_filename: str, profile: str = "dev") -> "AnalyticQBaseConfig":
         try:
             cls.load_environment(profile)
-            if conf_filename is None or not os.path.exists(conf_filename):
-                default_filename = get_default_analyticq_config_filename()
-                config_data = cls.load_config_file(get_backend_default_config_path(), default_filename)
-                config_path = path_to_str(get_config_analyticq_path() / get_default_analyticq_config_filename())
+            if not os.path.exists(conf_filename):
+                default_filename = get_default_AnalyticQ_config_filename()
+                config_data = cls.load_config_file(get_backend_default_config_AnalyticQ_path(), default_filename)
+                config_path = path_to_str(get_config_AnalyticQ_path() / default_filename)
                 cls.save_to_json(config_path, config_data)
             else:
-                config_data = cls.load_config_file(get_config_analyticq_path(), conf_filename)
+                config_data = cls.load_config_file(get_config_AnalyticQ_path(), conf_filename)
             profile_data: dict = config_data.get(profile)
-
             if not profile_data:
                 raise ValueError(f"Profile {profile} not found in config file")
 
@@ -73,7 +72,7 @@ class AnalyticQBaseConfig(BaseModel):
             with open(conf_file_path, "w") as conf_file:
                 json.dump(config_data, conf_file , indent=4)
         except Exception:
-            logger.error("Error saving  configuration")
+            logger.error("Error saving configuration")
             return None
 
     @staticmethod

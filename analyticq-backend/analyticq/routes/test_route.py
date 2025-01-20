@@ -4,5 +4,5 @@ router = APIRouter()
 
 
 @router.get("/test")
-def test_endpoint():
+def endpoint():
     return {"message": "Test endpoint is working!"}

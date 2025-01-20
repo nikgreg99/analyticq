@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from pathlib import Path
+from threading import Lock
 from typing import Any, Dict
 
 import aiofiles
@@ -15,10 +16,21 @@ from ..filter.file_filter import FileFilter
 logger = logging.getLogger(__name__)
 
 
-class LanguageScanner:
+class CodebaseLangScanner:
+
+    _instance = None
+    _lock = Lock()
+
+    def __new__(cls, *arg, **kwargs):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self) -> None:
-        self.metrics_collector = CodebaseMetricsCollector()
+        if not hasattr("initialized"):
+            self.metrics_collector = CodebaseMetricsCollector()
+            self.initizalied = True
 
     async def detect_language(self, file_path: Path) -> str:
         try:
