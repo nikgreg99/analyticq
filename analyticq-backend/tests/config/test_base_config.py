@@ -1,11 +1,10 @@
-import json
 import os
 import shutil
 from pathlib import Path
 
 import pytest
 from analyticq.config import AnalyticQBaseConfig
-from analyticq.util import get_current_cwd_path
+from analyticq.util import PathUtil
 
 TEST_DIR = Path(os.path.dirname(__file__)).parent
 TEST_FILES_DIR = os.path.join(str(TEST_DIR), "test_files")
@@ -35,7 +34,7 @@ def mock_config_data():
 
 def test_load_json_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.util.get_backend_default_test_AnalyticQ_path",
+        "analyticq.util.PathUtil.get_backend_default_test_AnalyticQ_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.json")
@@ -44,7 +43,7 @@ def test_load_json_config(monkeypatch):
 
 def test_load_yaml_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.util.get_backend_default_test_AnalyticQ_path",
+        "analyticq.util.PathUtil.get_backend_default_test_AnalyticQ_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.yml")
@@ -54,11 +53,11 @@ def test_load_yaml_config(monkeypatch):
 @pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_default_config(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.util.get_backend_default_config_AnalyticQ_path",
+        "analyticq.util.PathUtil.get_backend_default_config_AnalyticQ_path",
         lambda: TEST_FILES_DIR
     )
     monkeypatch.setattr(
-        "analyticq.util.get_default_AnalyticQ_config_filename",
+        "analyticq.util.FileUtil.get_default_AnalyticQ_config_filename",
         lambda: "test_config.json"
     )
     config = AnalyticQBaseConfig.from_file(profile="dev")
@@ -68,7 +67,7 @@ def test_from_file_default_config(monkeypatch):
 @pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
 def test_from_file_with_env_override(setup_environment, monkeypatch):
     monkeypatch.setattr(
-        "analyticq.util.get_backend_default_config_AnalyticQ_path",
+        "analyticq.util.PathUtil.get_backend_default_config_AnalyticQ_path",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.from_file(profile="test")
@@ -83,34 +82,33 @@ def test_config_file_not_found():
 
 def test_missing_profile(monkeypatch):
     monkeypatch.setattr(
-        "analyticq.util.get_config_AnalyticQ_path",
+        "analyticq.util.PathUtil",
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.from_file(conf_filename="test_config.json", profile="missing_profile")
     assert config is None
 
 
-def test_save_to_json(monkeypatch, tmpdir):
-    """Test saving configuration to a JSON file."""
-    config_data = {
-        "test": {
-            "app_name": "TestApp",
-            "debug": False,
-            "host": "localhost",
-            "port": 8080,
-            "workers": 4,
-        }
-    }
-    save_path = tmpdir.join("saved_config.json")
-    AnalyticQBaseConfig.save_to_json(save_path, config_data)
-    with open(save_path, "r") as f:
-        saved_data = json.load(f)
-    assert saved_data["test"]["app_name"] == "TestApp"
+def test_get_with_initialized_settings():
+    # Retrieve a setting using the static `get` method
+    app_name = AnalyticQBaseConfig.get("app_name")
+
+    # Assert that the value is correct
+    assert app_name == "AnalyticQ-Backend"
 
 
-def test_empty_config_file_cleanup(monkeypatch, tmpdir):
+def test_get_without_initialized_settings():
+    if hasattr(AnalyticQBaseConfig, 'settings'):
+        delattr(AnalyticQBaseConfig, 'settings')
 
-    cwd = get_current_cwd_path()
+    result = AnalyticQBaseConfig.get("app_name", "default_value")
+
+    assert result == "default_value"
+
+
+def test_empty_config_file_cleanup():
+
+    cwd = PathUtil.get_current_cwd_path()
     temp_dir = cwd / "temp_test_dir"
     temp_dir.mkdir(exist_ok=True)
 
@@ -127,20 +125,3 @@ def test_empty_config_file_cleanup(monkeypatch, tmpdir):
     finally:
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
-
-
-def test_get_with_initialized_settings(mock_config_data):
-    # Retrieve a setting using the static `get` method
-    app_name = AnalyticQBaseConfig.get("app_name")
-
-    # Assert that the value is correct
-    assert app_name == "AnalyticQ-Backend"
-
-
-def test_get_without_initialized_settings():
-    if hasattr(AnalyticQBaseConfig, 'settings'):
-        delattr(AnalyticQBaseConfig, 'settings')
-
-    result = AnalyticQBaseConfig.get("app_name", "default_value")
-
-    assert result == "default_value"

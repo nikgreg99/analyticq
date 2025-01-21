@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from analyticq.config import AnalyticQBaseConfig
-from analyticq.util import get_last_dir_name
+from analyticq.util import PathUtil
 
 
 class DirFilter:
@@ -34,7 +34,7 @@ class DirFilter:
 
     @staticmethod
     def is_excluded_dir(dir_path: Path) -> bool:
-        last_folder = get_last_dir_name(dir_path)
+        last_folder = PathUtil.get_last_dir_name(dir_path)
         return last_folder in DirFilter.excluded_dirs()
 
     @staticmethod

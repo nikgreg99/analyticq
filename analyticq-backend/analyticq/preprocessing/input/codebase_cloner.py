@@ -11,8 +11,7 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
-from analyticq.util import (get_codebase_repositories_folder_AnalyticQ_path,
-                            get_codebase_scripts_folder_AnalyticQ_path)
+from analyticq.util import PathUtil
 from git import Repo
 from git.exc import GitCommandError
 
@@ -68,7 +67,9 @@ class CodebaseCloner:
         """
         protocol = self._get_protocol(codebase_url)
         repo_name = codebase_url.split("/")[-1].replace(".git", "")
-        repo_path = get_codebase_repositories_folder_AnalyticQ_path() / repo_name
+        repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
+
+        print(str(repo_path))
 
         if repo_path.exists():
             logger.info(f"Codebase already exists locally at {repo_path}. Skipping cloning...")
@@ -108,7 +109,7 @@ class CodebaseCloner:
             raise CodebaseNotFoundException(f"Source codebase directory does not exists at: {source_codebase_path}")
 
         repo_name = source_codebase_path.name
-        dest_codebase_path = get_codebase_repositories_folder_AnalyticQ_path() / repo_name
+        dest_codebase_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
 
         if dest_codebase_path.exists():
             logger.info(f"Codebase already exists locally at {dest_codebase_path}. Skipping copying...")
@@ -134,7 +135,7 @@ class CodebaseCloner:
             Path: Path to the copied script.
         """
         script_path = Path(script_path)
-        script_codebase_path = get_codebase_scripts_folder_AnalyticQ_path()
+        script_codebase_path = PathUtil.get_codebase_scripts_AnalyticQ_path()
 
         if not script_path.exists():
             raise CodebaseNotFoundException(f"Script source path does not exists at: {script_codebase_path}")

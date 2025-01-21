@@ -20,7 +20,7 @@ RETENTION_DAYS = 30
 def setup_cleaner_conf():
     retention_period = timedelta(days=RETENTION_DAYS)
 
-    with patch('analyticq.util.get_home_AnalyticQ_path', return_value=TEST_BASE_DIR), \
+    with patch('analyticq.util.PathUtil', return_value=TEST_BASE_DIR), \
          patch('analyticq.config.AnalyticQBaseConfig.get', return_value={'retention': RETENTION_DAYS}):
         yield TEST_BASE_DIR, retention_period
 
@@ -73,7 +73,6 @@ def test_is_item_not_old(codebase_cleaner):
 @pytest.mark.asyncio
 async def test_delete_item_dry_run(setup_cleaner_conf):
     codebase_cleaner = CodebaseCleaner()
-    base_dir, retention_period = setup_cleaner_conf
 
     with patch("shutil.rmtree") as mock_rmtree, \
          patch("analyticq.preprocessing.input.codebase_cleaner.logger") as mock_logger:

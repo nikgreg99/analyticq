@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from analyticq.preprocessing import DirFilter
-from analyticq.util import path_to_str
+from analyticq.util import PathUtil
 
 
 @pytest.fixture(scope="function")
@@ -109,11 +109,11 @@ def test_is_non_relevant_dir_use_case(mock_dir_filter_conf, tmp_path):
 
     excluded_dir = tmp_path / ".git"
     excluded_dir.mkdir()
-    assert DirFilter.is_relevant_dir(excluded_dir) is False, f"Expected False for {path_to_str(excluded_dir)}"
+    assert DirFilter.is_relevant_dir(excluded_dir) is False, f"Expected False for {PathUtil.path_to_str(excluded_dir)}"
 
     deep_dir = Path("/a/b/c/d/e/f")
-    assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {path_to_str(deep_dir)}"
+    assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {PathUtil.path_to_str(deep_dir)}"
 
     with patch("os.path.ismount", return_value=True):
         external_dir = Path("/mnt/external")
-        assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {path_to_str(external_dir)}"
+        assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {PathUtil.path_to_str(external_dir)}"

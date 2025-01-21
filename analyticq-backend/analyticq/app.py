@@ -3,10 +3,7 @@ from contextlib import asynccontextmanager
 from typing import List
 
 from analyticq.routes.test_route import router as test_router
-from analyticq.util import (AnalyticQConst, create_folder_if_not_exists_async,
-                            get_codebase_repositories_folder_AnalyticQ_path,
-                            get_codebase_scripts_folder_AnalyticQ_path,
-                            get_config_AnalyticQ_path, get_home_AnalyticQ_path)
+from analyticq.util import AnalyticQConst, PathUtil
 from fastapi import FastAPI
 
 from .config.base_conf import AnalyticQBaseConfig
@@ -15,16 +12,20 @@ from .config.logger_conf import logging_init
 logger = logging.getLogger(__name__)
 
 
-async def create_AnalayticQ_root_structure():
-    required_folders_path: List[str] = [  # Listing dir should be respected
-        get_home_AnalyticQ_path(),
-        get_config_AnalyticQ_path(),
-        get_codebase_repositories_folder_AnalyticQ_path(),
-        get_codebase_scripts_folder_AnalyticQ_path()
+def get_AnalyticQ_root_structure() -> List[str]:
+    [  # Listing dir should be respected
+        PathUtil.get_home_AnalyticQ_path(),
+        PathUtil.get_config_AnalyticQ_path(),
+        PathUtil.get_codebase_repositories_AnalyticQ_path(),
+        PathUtil.get_codebase_scripts_AnalyticQ_path()
     ]
+
+
+async def create_AnalayticQ_root_structure():
+    required_folders_path: List[str] = get_AnalyticQ_root_structure()
     try:
         for folder_path in required_folders_path:
-            await create_folder_if_not_exists_async(folder_path)
+            await PathUtil.create_folder_if_not_exists_async(folder_path)
             logger.debug(f"Created or verified folder existence at: {folder_path}")
     except Exception as e:
         logger.error(f"Failed to create folder structure: {str(e)}")

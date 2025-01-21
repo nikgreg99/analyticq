@@ -1,7 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 
-from analyticq.util import path_to_str
+from analyticq.util import PathUtil
 
 
 class CodebaseMetricsCollector:
@@ -26,7 +26,7 @@ class CodebaseMetricsCollector:
         largest_file = self.languages_stasts[language]["largest_file"]
         if largest_file is None or size > largest_file["size"]:
             self.languages_stasts[language]["largest_file"] = {
-                "path": path_to_str(file_path),
+                "path": PathUtil.path_to_str(file_path),
                 "size" : size
             }
 
@@ -34,14 +34,14 @@ class CodebaseMetricsCollector:
         smallest_file = self.languages_stasts[language]["smallest_file"]
         if smallest_file is None or size < smallest_file["smallest_file"]:
             self.languages_stasts[language]["smallest_file"] = {
-                "path": path_to_str(file_path),
+                "path": PathUtil.path_to_str(file_path),
                 "size": size
             }
 
     def add_file_statistics(self, file_path: Path, language: str, size: int):
         self.languages_stasts[language]["count"] += 1
         self.languages_stasts[language]["total_size"] += size
-        self.languages_stasts[language]["files"].append(path_to_str(file_path))
+        self.languages_stasts[language]["files"].append(PathUtil.path_to_str(file_path))
 
         self._update_largest_file(file_path, language, size)
         self._update_smallest_file(file_path, language, size)
@@ -55,7 +55,7 @@ class CodebaseMetricsCollector:
         self.excluded_file_size += size
 
     def add_excluded_dir(self, dir_path: Path):
-        self.excluded_dirs.append(path_to_str(dir_path))
+        self.excluded_dirs.append(PathUtil.path_to_str(dir_path))
 
     def compute_languages_metrics(self):
         languages_metrics = {}

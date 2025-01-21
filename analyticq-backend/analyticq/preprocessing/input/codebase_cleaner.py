@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import Lock
 
 from analyticq.config import AnalyticQBaseConfig
-from analyticq.util import AnalyticQConst, get_home_AnalyticQ_path
+from analyticq.util import AnalyticQConst, PathUtil
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class CodebaseCleaner:
 
     def __init__(self):
         if not hasattr(self, "initialized"):
-            self.base_dir = get_home_AnalyticQ_path()
+            self.base_dir = PathUtil.get_home_AnalyticQ_path()
             codebase_config = AnalyticQBaseConfig.get("codebase")
             self.retention_days = codebase_config["retention"]
             self.initialized = True
