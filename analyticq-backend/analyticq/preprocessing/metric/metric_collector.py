@@ -58,7 +58,7 @@ class CodebaseMetricsCollector:
 
         self._update_file_size_extremes(file_path, language, size)
 
-    def _batch_genertor(self, files: List[Path], language: str, batch_size: int) -> Generator[List[Path, None, None]]:
+    def _batch_genertor(self, files: List[Path], batch_size: int) -> Generator[List[Path], None, None]:
         """Generator function that yields batches of files."""
         for i in range(0, len(files), batch_size):
             yield files[i:i + batch_size]
