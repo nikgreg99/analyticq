@@ -69,8 +69,6 @@ class CodebaseCloner:
         repo_name = codebase_url.split("/")[-1].replace(".git", "")
         repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
 
-        print(str(repo_path))
-
         if repo_path.exists():
             logger.info(f"Codebase already exists locally at {repo_path}. Skipping cloning...")
             return None

@@ -9,9 +9,9 @@ import aiofiles
 from pygments.lexers import get_lexer_for_filename, guess_lexer
 from pygments.util import ClassNotFound
 
-from ..collector.codebase_metrics_collector import CodebaseMetricsCollector
 from ..filter.dir_filter import DirFilter
 from ..filter.file_filter import FileFilter
+from ..metric.metric_collector import CodebaseMetricsCollector
 
 logger = logging.getLogger(__name__)
 
