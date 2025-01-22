@@ -11,7 +11,7 @@ class CodebaseMetricsReporter:
         self.calculator = calculator
 
     def get_codebase_metric_report(self) -> Dict:
-        collected_data = self.collector.get__collected_data()
+        collected_data = self.collector.get_collected_data()
         computed_metrics = self.calculator.compute_language_metrics(
             collected_data["language_stats"], collected_data["total_files"]
         )

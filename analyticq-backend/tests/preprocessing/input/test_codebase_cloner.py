@@ -167,7 +167,7 @@ async def test_clone_local_codebase_not_found(codebase_cloner):
 async def test_clone_local_codebase_copy_failure(codebase_cloner):
     source_path = "/source/repo"
     dest_base_path = PathUtil.get_codebase_repositories_AnalyticQ_path()
-    with patch("analyticq.util.Path") as mock_path, \
+    with patch("analyticq.util.PathUtil") as mock_path, \
          patch("pathlib.Path.exists") as mock_exists, \
          patch("shutil.copytree", side_effect=shutil.Error('Simulate copy error')):
 

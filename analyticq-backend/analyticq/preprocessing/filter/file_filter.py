@@ -47,6 +47,10 @@ class FileFilter:
         return file_path.stat().st_size == 0
 
     @staticmethod
+    def is_symlink_file(file_path: Path) -> bool:
+        return file_path.is_symlink()
+
+    @staticmethod
     def is_binary_file(file_path: Path) -> bool:
         try:
             kind = filetype.guess(file_path)

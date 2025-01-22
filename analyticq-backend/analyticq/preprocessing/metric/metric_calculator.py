@@ -9,7 +9,7 @@ class CodebaseMetricsCalculator:
 
     @staticmethod
     def _percentage_files(data: Dict, total_files: int):
-        return (data["count"] / total_files) * 100 if total_files > 0 else 0,
+        return (data["count"] / total_files) * 100 if total_files > 0 else 0
 
     @staticmethod
     def compute_language_metrics(language_stats: Dict[str, Dict], total_files: int) -> Dict:
@@ -21,7 +21,7 @@ class CodebaseMetricsCalculator:
                 "largest_file": data["largest_file"],
                 "smallest_file": data["smallest_file"],
                 "average_size": CodebaseMetricsCalculator._average_size(data),
-                "percentage_files": CodebaseMetricsCalculator._average_size(data, total_files)
+                "percentage_files": CodebaseMetricsCalculator._percentage_files(data, total_files)
             }
             for lang, data in language_stats.items()
         }

@@ -20,7 +20,7 @@ class FileStastics:
 class CodebaseMetricsCollector:
 
     def __init__(self) -> None:
-        self.languages_stats = defaultdict(lambda : {
+        self.language_stats = defaultdict(lambda : {
             "count": 0,
             "total_size": 0,
             "files": [],
@@ -37,7 +37,7 @@ class CodebaseMetricsCollector:
         self.lock = Lock()
 
     def _update_file_size_extremes(self, file_path: Path, language: str, size: int):
-        stats = self.languages_stats[language]
+        stats = self.language_stats[language]
         file_info = {"path": PathUtil.path_to_str(file_path), "size": size}
 
         if stats["largest_file"] is None or size > stats["largest_file"]["size"]:
@@ -48,31 +48,35 @@ class CodebaseMetricsCollector:
 
     def _process_file(self, file_path: Path, language: str):
         size = file_path.stat().st_size
+
         with self.lock:
-            self.languages_stats[language]["count"] += 1
-            self.languages_stats[language]["total_size"] += size
-            self.languages_stats[language]["files"].append(PathUtil.path_to_str(file_path))
+            self.language_stats[language]["count"] += 1
+            self.language_stats[language]["total_size"] += size
+            self.language_stats[language]["files"].append(PathUtil.path_to_str(file_path))
 
             self.total_files += 1
             self.total_size += size
 
         self._update_file_size_extremes(file_path, language, size)
 
-    def _batch_genertor(self, files: List[Path], batch_size: int) -> Generator[List[Path], None, None]:
+    def _batch_generator(self, files: List[Path], batch_size: int) -> Generator[List[Path], None, None]:
         """Generator function that yields batches of files."""
         for i in range(0, len(files), batch_size):
             yield files[i:i + batch_size]
 
     def add_files_parallel(self, files: List[Path], language: str, batch_size: int = 1000, max_workers: int = 8):
-        for batch in self._batch_genertor(files, batch_size):
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {executor.submit(self._process_file, file, language): file for file in batch}
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
 
-                for future in as_completed(futures):
-                    try:
-                        future.result()
-                    except Exception as e:
-                        logger.error(f"Error processing {future[future]}: {e}")
+            for batch in self._batch_generator(files, batch_size):
+                for file in batch:
+                    futures.append(executor.submit(self._process_file, file, language))
+
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"Error processing file: {e}")
 
     def add_excluded_file(self, file_path: Path, size: int):
         with self.lock:
