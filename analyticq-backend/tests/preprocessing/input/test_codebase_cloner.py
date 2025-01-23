@@ -141,7 +141,7 @@ async def test_clone_remote_codebase_with_credentials(codebase_cloner):
 @pytest.mark.asyncio
 async def test_clone_local_codebase_success(codebase_cloner):
     source_path = Path("/source/repo")
-    dest_base_path = PathUtil.get_codebase_repositories_AnalyticQ_path()
+    dest_base_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / source_path.name
 
     with patch('analyticq.util.PathUtil') as mock_path, \
          patch('pathlib.Path.exists') as mock_exists, \
@@ -152,7 +152,7 @@ async def test_clone_local_codebase_success(codebase_cloner):
 
         await codebase_cloner.clone_local_codebase(PathUtil.path_to_str(source_path))
 
-        mock_copy.assert_called_once_with(source_path, dest_base_path / "repo")
+        mock_copy.assert_called_once_with(source_path, dest_base_path)
 
 
 @pytest.mark.asyncio
@@ -181,7 +181,7 @@ async def test_clone_local_codebase_copy_failure(codebase_cloner):
 @pytest.mark.asyncio
 async def test_clone_local_script_success(codebase_cloner):
     script_path = Path("/source/script.py")
-    dest_path = PathUtil.get_codebase_scripts_AnalyticQ_path()
+    dest_path = PathUtil.get_codebase_scripts_AnalyticQ_path() / script_path.name
 
     with patch('analyticq.util.PathUtil') as mock_path, \
          patch('pathlib.Path.exists') as mock_exists, \
@@ -193,7 +193,7 @@ async def test_clone_local_script_success(codebase_cloner):
 
         await codebase_cloner.clone_local_script(script_path)
         # Assert with the exact path that's being used in the code
-        mock_copy.assert_called_once_with(script_path, dest_path / "scripts")
+        mock_copy.assert_called_once_with(script_path, dest_path)
 
 
 @pytest.mark.asyncio

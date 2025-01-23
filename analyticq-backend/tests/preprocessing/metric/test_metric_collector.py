@@ -1,4 +1,3 @@
-from concurrent.futures import Future
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -12,7 +11,29 @@ def metric_collector():
     return CodebaseMetricsCollector()
 
 
-def test_init_metric_collector(metric_collector):
+@pytest.fixture
+def mock_file():
+    mock_path = MagicMock(spec=Path)
+    mock_path.__str__.return_value = "C:/test/file.py"
+    mock_path.__fspath__.return_value = "C:/test/file.py"
+    mock_stat = MagicMock()
+    mock_stat.st_size = 100
+    mock_path.stat.return_value = mock_stat
+    return mock_path
+
+
+@pytest.fixture
+def mock_file_2():
+    mock_path = MagicMock(spec=Path)
+    mock_path.__str__.return_value = "C:/test/file.js"
+    mock_path.__fspath__.return_value = "C:/test/file.js"
+    mock_stat = MagicMock()
+    mock_stat.st_size = 50
+    mock_path.stat.return_value = mock_stat
+    return mock_path
+
+
+def test_init_metric_collector(metric_collector: CodebaseMetricsCollector):
     assert metric_collector.total_files == 0, "Expected null"
     assert metric_collector.total_size == 0, "Expected null"
     assert metric_collector.excluded_file_count == 0, "Expected null"
@@ -20,7 +41,7 @@ def test_init_metric_collector(metric_collector):
     assert metric_collector.language_stats == {}, "Expected empty"
 
 
-def test_add_excluded_file(metric_collector):
+def test_add_excluded_file(metric_collector: CodebaseMetricsCollector):
     file_path = Path("/path/to/excluded/excluded_file.py")
     size = 1024
 
@@ -31,66 +52,62 @@ def test_add_excluded_file(metric_collector):
     assert metric_collector.excluded_file_size == size, f"Expected equal to {size}"
 
 
-def test_add_excluded_dir(metric_collector):
+def test_add_excluded_dir(metric_collector: CodebaseMetricsCollector):
     dir_path = Path("/home/.git")
 
     with patch.object(PathUtil, "path_to_str", return_value=str(dir_path)):
         metric_collector.add_excluded_dir(dir_path)
 
-    assert metric_collector.excluded_dirs == [str(dir_path)], f"Expected equat to {str(dir_path)}"
+    assert metric_collector.excluded_dirs == [str(dir_path)], f"Expected equals to {str(dir_path)}"
 
 
-@patch("analyticq.preprocessing.metric.metric_collector.Path.stat")
-def test_process_file(mock_stat, metric_collector):
-    file_path = Path("/path/to/file.py")
-    language = "Python"
-    file_size = 2048
+def test_add_single_file_statistics(metric_collector, mock_file):
 
-    mock_stat.return_value.st_size = file_size
-    with patch.object(PathUtil, "path_to_str", return_value=str(file_path)):
-        metric_collector._process_file(file_path, language)
+    expected_Python_count = 1
+    expected_Python_total_size = 100
+    expected_Python_file = "C:/test/file.py"
 
-    assert metric_collector.language_stats[language]["count"] == 1
-    assert metric_collector.language_stats[language]["total_size"] == file_size
-    assert metric_collector.language_stats[language]["files"] == [str(file_path)], "Expected equality"
-    assert metric_collector.total_files == 1
-    assert metric_collector.total_size == file_size
+    expected_total_files = 1
+    expected_file_size = 100
 
+    metric_collector.add_file_statistics(mock_file, "Python", 100, 10)
 
-def test_batch_generator(metric_collector):
-    files = [Path(f"(/path/to(file{i}.py))") for i in range(10)]
-    batch_size = 3
-    batches = list(metric_collector._batch_generator(files, batch_size))
-
-    assert len(batches) == 4
-    assert batches[-1] == files[9:]
+    assert metric_collector.language_stats["Python"]["count"] == expected_Python_count, f"Expected {expected_Python_count}"
+    assert metric_collector.language_stats["Python"]["total_size"] == expected_Python_total_size, f"Expected {expected_Python_total_size}"
+    assert metric_collector.language_stats["Python"]["files"][0]["file_path"] == "C:/test/file.py", f"Expected list with one filename {expected_Python_file}"
+    assert metric_collector.total_files == expected_total_files, f"Expected {expected_total_files}"
+    assert metric_collector.total_size == expected_file_size, f"Expected {expected_file_size}"
 
 
-@patch("analyticq.preprocessing.metric.metric_collector.ThreadPoolExecutor")
-def test_add_files_parallel(mock_executor, metric_collector):
-    files = [Path(f"/path/to/file{i}.py") for i in range(5)]
-    language = "Python"
+def test_add_multiple_file_statistics(metric_collector, mock_file, mock_file_2):
 
-    # Create mock executor and futures
-    mock_executor_instance = mock_executor.return_value.__enter__.return_value
-    mock_futures = [MagicMock(spec=Future) for _ in range(5)]
-    for future in mock_futures:
-        future.result.return_value = None
+    expected_Python_count = 1
+    expected_Python_total_file_size = 100
+    expected_Python_file = "C:/test/file.py"
 
-    # Make submit return a new future each time
-    mock_executor_instance.submit.side_effect = mock_futures
+    expected_JS_count = 1
+    expected_JS_total_filesize = 50
+    expected_JS_file = "C:/test/file.js"
 
-    # Mock as_completed to return our futures
-    with patch('analyticq.preprocessing.metric.metric_collector.as_completed', return_value=mock_futures):
-        metric_collector.add_files_parallel(files, language, batch_size=2, max_workers=2)
+    expected_total_files = 2
+    expected_file_size = 150
 
-    # Verify interactions
-    assert mock_executor.called
-    assert mock_executor_instance.submit.call_count == len(files)
-    assert all(future.result.called for future in mock_futures)
+    metric_collector.add_file_statistics(mock_file, "Python", 100, 10)
+    metric_collector.add_file_statistics(mock_file_2, "JS", 50, 10)
+
+    assert metric_collector.language_stats["JS"]["count"] == expected_JS_count, f"Expected {expected_JS_count}"
+    assert metric_collector.language_stats["Python"]["total_size"] == expected_Python_total_file_size, f"Expected {expected_Python_total_file_size}"
+    assert metric_collector.language_stats["Python"]["files"][0]["file_path"] == expected_Python_file, f"Expected  {expected_Python_file}"
+
+    assert metric_collector.language_stats["Python"]["count"] == expected_Python_count, f"Expected {expected_Python_count}"
+    assert metric_collector.language_stats["JS"]["total_size"] == expected_JS_total_filesize, f"Expected {expected_JS_total_filesize}"
+    assert metric_collector.language_stats["JS"]["files"][0]["file_path"] == expected_JS_file, f"Expected {expected_JS_file}"
+
+    assert metric_collector.total_files == expected_total_files, f"Expected {expected_total_files}"
+    assert metric_collector.total_size == expected_file_size, f"Expected {expected_file_size}"
 
 
-def test_get_collected_data(metric_collector):
+def test_get_collected_data(metric_collector: CodebaseMetricsCollector):
     data = metric_collector.get_collected_data()
 
     assert "language_stats" in data

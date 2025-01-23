@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import List
 
+# from analyticq.preprocessing import CodebaseCloner
 from analyticq.routes.test_route import router as test_router
 from analyticq.util import AnalyticQConst, PathUtil
 from fastapi import FastAPI
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_AnalyticQ_root_structure() -> List[str]:
-    [  # Listing dir should be respected
+    return [
         PathUtil.get_home_AnalyticQ_path(),
         PathUtil.get_config_AnalyticQ_path(),
         PathUtil.get_codebase_repositories_AnalyticQ_path(),
@@ -45,6 +46,8 @@ async def app_lifespan(app: FastAPI):
     await init_AnalyticQ_backend_context()
     logger.info("Init AnalyticQ backend...")
     try:
+        # codebase_cloner = CodebaseCloner()
+        # await codebase_cloner.clone_remote_codebase("https://github.com/SmartData-Polito/cannypot.git", branch="master")
         yield
     finally:
         logging.shutdown()

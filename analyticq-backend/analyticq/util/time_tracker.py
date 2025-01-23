@@ -6,7 +6,7 @@ from tqdm.asyncio import tqdm
 logger = logging.getLogger(__name__)
 
 
-class TimeTracker:
+class TimeTrackerUtils:
 
     def __init__(self):
         self.progress_bar = None

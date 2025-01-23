@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import re
 import shutil
 from enum import Enum
 from pathlib import Path
@@ -16,6 +18,15 @@ from git import Repo
 from git.exc import GitCommandError
 
 logger = logging.getLogger(__name__)
+
+
+class CodebaseClonerPathType(Enum):
+    """Enumeration for codebase URL TYPE"""
+    LOCAL_REPO = "local"
+    REMOTE_REPO = "remote"
+    GIT_REPO = "repo"
+    SCRIPT = "script"
+    UNKNOWN = "unknown"
 
 
 class CodebaseClonerProtocolType(Enum):
@@ -42,6 +53,29 @@ class CodebaseCloner:
             self.default_branch = codebase_config["default_branch"]
             self._initialized = True
 
+    def _get_codebase_type(self, path: str) -> CodebaseClonerPathType:
+        parsed = urlparse(path)
+
+        # Check if it's a remote repository
+        if parsed.scheme in {"http", "https", "git"} or re.match(r"^(git@|https?://).+\.git$", path):
+            return CodebaseClonerPathType.REMOTE_REPO
+
+        # Check if the path exists first, to avoid redundant os.path.exists calls
+        if not os.path.exists(path):
+            return CodebaseClonerPathType.UNKNOWN  # Path doesn't exist, determined by parsing only
+
+        if os.path.isfile(path):
+            return CodebaseClonerPathType.SCRIPT  # Prioritize script detection
+
+        if os.path.isdir(path):
+            return (
+                CodebaseClonerPathType.GIT_REPO
+                if os.path.exists(os.path.join(path, ".git"))  # No need for a second os.path.exists(codebase_url)
+                else CodebaseClonerPathType.LOCAL_REPO
+            )
+
+        return CodebaseClonerPathType.UNKNOWN  # Fallback case, but should rarely be hit
+
     def _get_protocol(self, codebase_url: str) -> CodebaseClonerProtocolType:
         """
         Determine the protocol type from the codebase URL.
@@ -55,10 +89,10 @@ class CodebaseCloner:
         parsed_url = urlparse(codebase_url)
         scheme = parsed_url.scheme
         if not scheme or scheme == "ssh":
-            return CodebaseClonerProtocolType(CodebaseClonerProtocolType.SSH)
+            return CodebaseClonerProtocolType.SSH
         if scheme in ["http", "https"]:
             return CodebaseClonerProtocolType(scheme)
-        return CodebaseClonerProtocolType(CodebaseClonerProtocolType.HTTPS)
+        return CodebaseClonerProtocolType.HTTPS
 
     def _check_existing_path(self, path: Path) -> bool:
         outcome = path.exists()
@@ -89,6 +123,7 @@ class CodebaseCloner:
         ref = tag if tag else branch or self.default_branch
         logger.info(f"Cloning codebase from {codebase_url} at {('tag ' + tag) if tag else ('branch ' + ref)} using {protocol.value}...")
 
+        auth_url = codebase_url
         if credentials and credentials.auth_token:
             auth_url = codebase_url.replace("https://", f"https://{credentials.auth_token}@")
         else:
@@ -97,8 +132,8 @@ class CodebaseCloner:
         try:
             await asyncio.to_thread(Repo.clone_from, auth_url, repo_path, branch=ref)
             logger.info(f"Repository cloned succesfully at {repo_path}")
-        except GitCommandError:
-            raise CloneRemoteRepositoryException(f"Failed to clone repository from {codebase_url}")
+        except GitCommandError as e:
+            raise CloneRemoteRepositoryException(f"Failed to clone repository from {codebase_url}: {e}")
         return repo_path
 
     async def clone_local_codebase(self, source_path: str):
@@ -140,12 +175,10 @@ class CodebaseCloner:
             Path: Path to the copied script.
         """
         script_path = Path(script_path)
-        script_codebase_path = PathUtil.get_codebase_scripts_AnalyticQ_path()
+        script_dest_path = PathUtil.get_codebase_scripts_AnalyticQ_path() / script_path.name
 
         if not script_path.exists():
-            raise CodebaseNotFoundException(f"Script source path does not exists at: {script_codebase_path}")
-
-        script_dest_path = PathUtil.get_codebase_scripts_AnalyticQ_path() / script_codebase_path.name
+            raise CodebaseNotFoundException(f"Script source path does not exists at: {script_path}")
 
         if self._check_existing_path(script_dest_path):
             return None
@@ -153,7 +186,23 @@ class CodebaseCloner:
         logger.info(f"Copying script from {script_path} to {script_dest_path}...")
         try:
             await asyncio.to_thread(shutil.copy, script_path, script_dest_path)
+            logger.info(f"Script copied successfully to {script_dest_path}")
         except Exception as e:
             raise CloneLocalScriptException(e)
-        logger.info(f"Failed to copy local script from {script_codebase_path} to {script_dest_path}")
+        logger.info(f"Failed to copy local script from {script_path} to {script_dest_path}")
         return script_dest_path
+
+    async def clone(self, codebase_url: str, **kwargs) -> str:
+        codebase_url_type = self._get_codebase_type(codebase_url)
+        path = None
+
+        match codebase_url_type:
+            case CodebaseClonerPathType.REMOTE_REPO:
+                path = await self.clone_remote_codebase(codebase_url)
+            case CodebaseClonerPathType.GIT_REPO | CodebaseClonerPathType.LOCAL_REPO:
+                path = await self.clone_local_codebase(codebase_url)
+            case CodebaseClonerPathType.SCRIPT:
+                path = await self.clone_local_script(codebase_url)
+            case _:
+                logger.error(f"Unknown codebase type: {codebase_url_type}")
+        return path
