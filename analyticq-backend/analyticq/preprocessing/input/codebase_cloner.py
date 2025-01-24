@@ -54,15 +54,22 @@ class CodebaseCloner:
             self._initialized = True
 
     def _get_codebase_type(self, path: str) -> CodebaseClonerPathType:
-        parsed = urlparse(path)
+        """
+        Determine the type of codebase path.
 
+        Args:
+            path (str): The given path of the codebase.
+
+        Returns:
+            CodebaseClonerPathType: Deteced path type
+        """
+        parsed = urlparse(path)
         # Check if it's a remote repository
         if parsed.scheme in {"http", "https", "git"} or re.match(r"^(git@|https?://).+\.git$", path):
             return CodebaseClonerPathType.REMOTE_REPO
 
-        # Check if the path exists first, to avoid redundant os.path.exists calls
         if not os.path.exists(path):
-            return CodebaseClonerPathType.UNKNOWN  # Path doesn't exist, determined by parsing only
+            return CodebaseClonerPathType.UNKNOWN
 
         if os.path.isfile(path):
             return CodebaseClonerPathType.SCRIPT  # Prioritize script detection
@@ -70,7 +77,7 @@ class CodebaseCloner:
         if os.path.isdir(path):
             return (
                 CodebaseClonerPathType.GIT_REPO
-                if os.path.exists(os.path.join(path, ".git"))  # No need for a second os.path.exists(codebase_url)
+                if os.path.exists(os.path.join(path, ".git"))
                 else CodebaseClonerPathType.LOCAL_REPO
             )
 

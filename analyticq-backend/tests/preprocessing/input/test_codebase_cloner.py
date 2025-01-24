@@ -7,7 +7,8 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
-from analyticq.preprocessing import CodebaseCloner, CodebaseClonerProtocolType
+from analyticq.preprocessing import (CodebaseCloner, CodebaseClonerPathType,
+                                     CodebaseClonerProtocolType)
 from analyticq.util import PathUtil
 from git.exc import GitCommandError
 
@@ -217,6 +218,38 @@ async def test_clone_local_script_failure(codebase_cloner):
         mock_exists.side_effect = [True, False]
         with pytest.raises(CloneLocalScriptException):
             await codebase_cloner.clone_local_script(script_path)
+
+
+@pytest.mark.parametrize(
+    ("path", "exists", "is_file", "is_dir", "has_git", "expected"),
+    [
+        # Case 1: Remote repo
+        ("https://github.com/user/repo.git", False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
+        ("git@github.com:user/repo.git", False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
+
+        # Case 2: Simulating non existing path
+        ("/non/existing/path", False, False, False, False, CodebaseClonerPathType.UNKNOWN),
+
+        # Case 3: Local script detection
+        ("/home/user/script.py", True, True, False, False, CodebaseClonerPathType.SCRIPT),
+
+        # Case 4: Local repository (no .git folder)
+        ("/home/user/project", True, False, True, False, CodebaseClonerPathType.LOCAL_REPO),
+
+        # Case 5: Git Repository
+        ("/home/user/git_poject", True, False, True, True, CodebaseClonerPathType.GIT_REPO)
+
+    ]
+)
+def test_get_codebase_type(path, exists, is_file, is_dir, has_git, expected, codebase_cloner):
+
+    with patch("os.path.exists", return_value=exists), \
+         patch("os.path.isfile", return_value=is_file), \
+         patch("os.path.isdir", return_value=is_dir), \
+         patch("os.path.exists", side_effect=lambda p: has_git if p.endswith(".git") else exists):
+
+        result = codebase_cloner._get_codebase_type(path)
+        assert result == expected, f"Failed with path {path}"
 
 
 def test_get_protocol(codebase_cloner):
