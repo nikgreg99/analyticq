@@ -13,11 +13,6 @@ from analyticq.util import PathUtil
 from git.exc import GitCommandError
 
 
-class MockCredentials:
-    def __init__(self, auth_token: str):
-        self.auth_token = auth_token
-
-
 @pytest.fixture
 def codebase_cloner():
     with patch('analyticq.config.AnalyticQBaseConfig.get') as mock_config:
@@ -120,7 +115,7 @@ async def test_clone_remote_codebase_with_credentials(codebase_cloner):
 
     codebase_url = "https://github.com/fake/repo.git"
     branch = "dev"
-    credentials = MockCredentials("fake_token")
+    fake_auth_token = "fake_token"
     repo_name = "repo"
 
     expected_repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
@@ -129,11 +124,11 @@ async def test_clone_remote_codebase_with_credentials(codebase_cloner):
          patch("pathlib.Path.exists", return_value=False), \
          patch("git.Repo.clone_from") as mock_clone_from:
 
-        repo_path = await codebase_cloner.clone_remote_codebase(codebase_url, branch, credentials=credentials)
+        repo_path = await codebase_cloner.clone_remote_codebase(codebase_url, branch=branch, tag=None, ssh_auth_token=fake_auth_token, protocol=CodebaseClonerProtocolType.SSH)
         mock_clone_from.assert_called_once_with(
-            f"https://{credentials.auth_token}@github.com/fake/repo.git",
+            f"https://{fake_auth_token}@github.com/fake/repo.git",
             expected_repo_path,
-            branch=branch
+            branch=branch,
         )
 
         assert repo_path is not None

@@ -9,6 +9,14 @@ class ResourceUtil:
 
     @staticmethod
     def max_workers_available(cpu_itensive: bool = True):
+        """
+        Determine the maximum number of worker threads available based on CPU usage and task type.
+        Args:
+            cpu_itensive (bool): If True, the function assumes the tasks are CPU-intensive and allocates fewer workers.
+                                 If False, the function assumes the tasks are I/O-intensive and allocates more workers.
+        Returns:
+            int: The maximum number of worker threads available.
+        """
         cpu_cores = os.cpu_count() or 2
         cpu_load = psutil.cpu_percent(interval=0.5)  # Check CPU load
 
@@ -23,7 +31,16 @@ class ResourceUtil:
         return max_workers
 
     @staticmethod
-    def max_batch_size_available(total_files: int , avg_file_size_kb: int):
+    def max_batch_size_available(total_files: int, avg_file_size_kb: int):
+        """
+        Determines the maximum batch size available for processing files based on the total number of files,
+        average file size, and available system memory.
+        Args:
+            total_files (int): The total number of files to be processed.
+            avg_file_size_kb (int): The average size of each file in kilobytes.
+        Returns:
+            int: The maximum batch size that can be used for processing files.
+        """
         memory = psutil.virtual_memory()
 
         if total_files < 1000:

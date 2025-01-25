@@ -6,6 +6,7 @@ import shutil
 from enum import Enum
 from pathlib import Path
 from threading import Lock
+from typing import Optional
 from urllib.parse import urlparse
 
 from analyticq.config import AnalyticQBaseConfig
@@ -13,6 +14,7 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException)
+from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
 from git import Repo
 from git.exc import GitCommandError
@@ -47,11 +49,12 @@ class CodebaseCloner:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, git_auth_service: GitAuthService = None):
         if not hasattr(self, "_initialized"):
             codebase_config = AnalyticQBaseConfig.get("codebase")
             self.default_branch = codebase_config["default_branch"]
             self._initialized = True
+            self.git_auth_service = git_auth_service or GitAuthService()
 
     def _get_codebase_type(self, path: str) -> CodebaseClonerPathType:
         """
@@ -107,7 +110,14 @@ class CodebaseCloner:
             logger.info(f"Codebase already exists at {path}. Skipping cloning...")
         return outcome
 
-    async def clone_remote_codebase(self, codebase_url: str, branch: str = None, tag: str = None, credentials: str = None):
+    async def clone_remote_codebase(
+        self,
+        codebase_url: str,
+        branch: str = None,
+        tag: Optional[str] = None,
+        ssh_auth_token: Optional[str] = None,
+        protocol: CodebaseClonerProtocolType = CodebaseClonerProtocolType.HTTPS
+    ) -> Path:
         """
         Clone a remote codebase repository.
 
@@ -120,7 +130,6 @@ class CodebaseCloner:
         Returns:
             Path: Path to the cloned repository.
         """
-        protocol = self._get_protocol(codebase_url)
         repo_name = codebase_url.split("/")[-1].replace(".git", "")
         repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
 
@@ -131,10 +140,9 @@ class CodebaseCloner:
         logger.info(f"Cloning codebase from {codebase_url} at {('tag ' + tag) if tag else ('branch ' + ref)} using {protocol.value}...")
 
         auth_url = codebase_url
-        if credentials and credentials.auth_token:
-            auth_url = codebase_url.replace("https://", f"https://{credentials.auth_token}@")
-        else:
-            auth_url = codebase_url
+        print(protocol)
+        if protocol == CodebaseClonerProtocolType.SSH:
+            auth_url = auth_url.replace("https://", f"https://{ssh_auth_token}@")
 
         try:
             await asyncio.to_thread(Repo.clone_from, auth_url, repo_path, branch=ref)
@@ -143,7 +151,7 @@ class CodebaseCloner:
             raise CloneRemoteRepositoryException(f"Failed to clone repository from {codebase_url}: {e}")
         return repo_path
 
-    async def clone_local_codebase(self, source_path: str):
+    async def clone_local_codebase(self, source_path: str) -> Path:
         """
         Clone a local codebase repository.
 
@@ -166,12 +174,12 @@ class CodebaseCloner:
 
         try:
             await asyncio.to_thread(shutil.copytree, source_path, dest_path)
+            logger.info(f"Codebase copied successfully to {dest_path}")
         except Exception as e:
             raise CloneLocalRepositoryException(f"Failed to copy codebase from {source_path} to {dest_path}: {str(e)}")
-        logger.info(f"Codebase copied succesfully at {dest_path}")
         return dest_path
 
-    async def clone_local_script(self, script_path: str):
+    async def clone_local_script(self, script_path: str) -> Path:
         """
         Clone a local script.
 
@@ -195,17 +203,43 @@ class CodebaseCloner:
             await asyncio.to_thread(shutil.copy, script_path, script_dest_path)
             logger.info(f"Script copied successfully to {script_dest_path}")
         except Exception as e:
-            raise CloneLocalScriptException(e)
-        logger.info(f"Failed to copy local script from {script_path} to {script_dest_path}")
+            raise CloneLocalScriptException(f"Failed to copy local script from {script_path} to {script_dest_path}: {e}")
         return script_dest_path
 
-    async def clone(self, codebase_url: str, **kwargs) -> str:
-        codebase_url_type = self._get_codebase_type(codebase_url)
-        path = None
+    async def clone(self, codebase_url: str, **kwargs) -> Path:
+        """
+        Clone a codebase from a given URL.
 
+        This method determines the type of the codebase URL and performs the appropriate
+        cloning operation based on the type. It supports cloning from remote repositories,
+        local repositories, and local scripts.
+
+        Args:
+            codebase_url (str): The URL of the codebase to clone.
+            **kwargs: Additional keyword arguments that may include:
+                - branch (str): The branch to clone from the remote repository. Defaults to the default branch.
+                - tag (str): The tag to clone from the remote repository. Defaults to None.
+                - ssh_key_path (str): The path to the SSH key for authentication. Defaults to None.
+
+        Returns:
+            Path: The path to the cloned codebase.
+
+        Raises:
+            ValueError: If the codebase type is unknown.
+        """
+        codebase_url_type = self._get_codebase_type(codebase_url)
         match codebase_url_type:
             case CodebaseClonerPathType.REMOTE_REPO:
-                path = await self.clone_remote_codebase(codebase_url)
+                credentials = None
+                if kwargs is not None:
+                    branch = kwargs.get("branch", self.default_branch)
+                    tag = kwargs.get("tag", None)
+                    ssk_key_path = kwargs.get("ssh_key_path", None)
+                    protocol = self._get_protocol(codebase_url)
+                    if ssk_key_path:
+                        await self.git_auth_service.configure_git_ssh(ssk_key_path)
+                        credentials = await self.git_auth_service.extract_ssh_auth_token(ssk_key_path)
+                    path = await self.clone_remote_codebase(codebase_url, branch, tag, credentials, protocol)
             case CodebaseClonerPathType.GIT_REPO | CodebaseClonerPathType.LOCAL_REPO:
                 path = await self.clone_local_codebase(codebase_url)
             case CodebaseClonerPathType.SCRIPT:
