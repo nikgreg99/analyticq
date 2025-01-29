@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import List
 
-# from analyticq.preprocessing import CodebaseCloner
+from analyticq.config.di import AnalyticQContainer
 from analyticq.routes.test_route import router as test_router
 from analyticq.util import AnalyticQConst, PathUtil
 from fastapi import FastAPI
@@ -32,25 +32,20 @@ async def create_AnalayticQ_root_structure():
         logger.error(f"Failed to create folder structure: {str(e)}")
 
 
-async def init_AnalyticQ_backend_context():
-    # Init logging first
-    logging_init()
-    logger.info("Iniziatling AnalyticQ backend....")
-
-    # Here define init context
-    await create_AnalayticQ_root_structure()
-
-
 @asynccontextmanager
 async def app_lifespan(app: FastAPI):
-    await init_AnalyticQ_backend_context()
-    logger.info("Init AnalyticQ backend...")
+    logging_init()
+    logger.info("Iniziatling AnalyticQ backend log service...")
+    container = AnalyticQContainer()
+    await create_AnalayticQ_root_structure()
+    logger.info("Init AnalyticQ backend resources...")
     try:
-        # codebase_cloner = CodebaseCloner()
-        # await codebase_cloner.clone_remote_codebase("https://github.com/SmartData-Polito/cannypot.git", branch="master")
+        container.wire(modules=["analyticq"])
         yield
     finally:
+        # Cleanup resources (dependencies, connection, ecc)
         logging.shutdown()
+        container.unwire()
         logger.info("Shutdown AnalyticQ backend...")
 
 
