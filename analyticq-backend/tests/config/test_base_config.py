@@ -103,7 +103,7 @@ def test_get_without_initialized_settings():
 
     result = AnalyticQBaseConfig.get("app_name", "default_value")
 
-    assert result == "default_value"
+    assert result == "default_value", "Expected default value to be returned"
 
 
 def test_empty_config_file_cleanup():
@@ -113,12 +113,10 @@ def test_empty_config_file_cleanup():
     temp_dir.mkdir(exist_ok=True)
 
     try:
-        # Percorso del file di configurazione vuoto
         empty_config_path = temp_dir / "empty_config.json"
 
-        # Creazione del file vuoto
         with open(empty_config_path, "w") as f:
-            f.write("")  # Scrive un file vuoto
+            f.write("")
 
         with pytest.raises(ValueError):
             AnalyticQBaseConfig.load_config_file(temp_dir, "empty_config.json")

@@ -132,7 +132,7 @@ async def test_configure_git_ssh_key_already_loaded(mock_ssh_key_path):
     with patch.object(service, '_is_key_loaded', return_value=True), \
          patch.dict(os.environ, {}, clear=True):
 
-        await service.configure_git_ssh(mock_ssh_key_path)
+        await service.configure_git_ssh(Path(mock_ssh_key_path))
 
         assert os.environ["GIT_SSH_COMMAND"] == \
             f"ssh -i {mock_ssh_key_path} -o IdentitiesOnly=yes"

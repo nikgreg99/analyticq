@@ -16,6 +16,7 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CodebaseNotFoundException)
 from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
+from dependency_injector.wiring import Provide, inject
 from git import Repo
 from git.exc import GitCommandError
 
@@ -49,12 +50,14 @@ class CodebaseCloner:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, git_auth_service: GitAuthService = None):
+    @inject
+    def __init__(self,
+                 git_auth_service: GitAuthService = Provide[GitAuthService]):
         if not hasattr(self, "_initialized"):
             codebase_config = AnalyticQBaseConfig.get("codebase")
             self.default_branch = codebase_config["default_branch"]
             self._initialized = True
-            self.git_auth_service = git_auth_service or GitAuthService()
+            self.git_auth_service = git_auth_service
 
     def _get_codebase_type(self, path: str) -> CodebaseClonerPathType:
         """
@@ -134,13 +137,13 @@ class CodebaseCloner:
         repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
 
         if self._check_existing_path(repo_path):
-            return None
+            return repo_path
 
         ref = tag if tag else branch or self.default_branch
         logger.info(f"Cloning codebase from {codebase_url} at {('tag ' + tag) if tag else ('branch ' + ref)} using {protocol.value}...")
 
         auth_url = codebase_url
-        print(protocol)
+
         if protocol == CodebaseClonerProtocolType.SSH:
             auth_url = auth_url.replace("https://", f"https://{ssh_auth_token}@")
 
@@ -168,7 +171,7 @@ class CodebaseCloner:
         dest_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / source_path.name
 
         if self._check_existing_path(dest_path):
-            return None
+            return dest_path
 
         logger.info(f"Copying local codebase from {source_path} to {dest_path}")
 
@@ -196,7 +199,7 @@ class CodebaseCloner:
             raise CodebaseNotFoundException(f"Script source path does not exists at: {script_path}")
 
         if self._check_existing_path(script_dest_path):
-            return None
+            return script_dest_path
 
         logger.info(f"Copying script from {script_path} to {script_dest_path}...")
         try:
@@ -228,6 +231,7 @@ class CodebaseCloner:
             ValueError: If the codebase type is unknown.
         """
         codebase_url_type = self._get_codebase_type(codebase_url)
+        path = None
         match codebase_url_type:
             case CodebaseClonerPathType.REMOTE_REPO:
                 credentials = None

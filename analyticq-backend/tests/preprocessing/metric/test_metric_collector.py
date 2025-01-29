@@ -1,8 +1,9 @@
+from collections import defaultdict
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from analyticq.preprocessing import CodebaseMetricsCollector
+from analyticq.preprocessing import CodebaseMetricsCollector, FileMetrics
 from analyticq.util import PathUtil
 
 
@@ -12,8 +13,9 @@ def metric_collector():
 
 
 @pytest.fixture
-def mock_file():
+def mock_python_file():
     mock_path = MagicMock(spec=Path)
+    mock_path.exists.return_value = True
     mock_path.__str__.return_value = "C:/test/file.py"
     mock_path.__fspath__.return_value = "C:/test/file.py"
     mock_stat = MagicMock()
@@ -23,8 +25,9 @@ def mock_file():
 
 
 @pytest.fixture
-def mock_file_2():
+def mock_js_file():
     mock_path = MagicMock(spec=Path)
+    mock_path.exists.return_value = True
     mock_path.__str__.return_value = "C:/test/file.js"
     mock_path.__fspath__.return_value = "C:/test/file.js"
     mock_stat = MagicMock()
@@ -33,85 +36,174 @@ def mock_file_2():
     return mock_path
 
 
-def test_init_metric_collector(metric_collector: CodebaseMetricsCollector):
-    assert metric_collector.total_files == 0, "Expected null"
-    assert metric_collector.total_size == 0, "Expected null"
-    assert metric_collector.excluded_file_count == 0, "Expected null"
-    assert metric_collector.excluded_file_size == 0, "Exptected null"
-    assert metric_collector.language_stats == {}, "Expected empty"
+@pytest.fixture
+def python_file_metrics():
+    return FileMetrics(
+        path="C:/test/file.py",
+        size=100,
+        loc=10
+    )
 
 
-def test_add_excluded_file(metric_collector: CodebaseMetricsCollector):
-    file_path = Path("/path/to/excluded/excluded_file.py")
+@pytest.fixture
+def js_file_metrics():
+    return FileMetrics(
+        path="C:/test/file.js",
+        size=50,
+        loc=5
+    )
+
+
+def test_initial_state(metric_collector):
+    """Test the initial state of the collector."""
+    assert metric_collector.total_files == 0, "Expected initial total files count to be 0"
+    assert metric_collector.total_size == 0, "Expected initial total size to be 0"
+    assert metric_collector.excluded_file_count == 0, "Expected initial excluded file count to be 0"
+    assert metric_collector.excluded_file_size == 0, "Expected initial excluded file size to be 0"
+    assert isinstance(metric_collector.language_stats, defaultdict), "Expected language_stats to be a defaultdict"
+    assert len(metric_collector.language_stats) == 0, "Expected language_stats to be empty initially"
+
+
+def test_add_file_statistics_single(metric_collector, mock_python_file, python_file_metrics):
+    """Test adding statistics for a single file."""
+    metric_collector.add_file_statistics(
+        mock_python_file,
+        "Python",
+        python_file_metrics.size,
+        python_file_metrics.loc
+    )
+
+    python_stats = metric_collector.language_stats["Python"]
+
+    assert python_stats["count"] == 1, "Expected exactly one Python file"
+    assert python_stats["total_size"] == python_file_metrics.size, f"Expected total size to be {python_file_metrics.size}"
+    assert python_stats["files"][0]["file_path"] == python_file_metrics.path, f"Expected file path to be {python_file_metrics.path}"
+    assert python_stats["files"][0]["loc"] == python_file_metrics.loc, f"Expected LOC to be {python_file_metrics.loc}"
+
+    assert python_stats["largest_file"] == {
+        "path": python_file_metrics.path,
+        "size": python_file_metrics.size
+    }, "Expected largest file to match the only file added"
+
+    assert python_stats["smallest_file"] == {
+        "path": python_file_metrics.path,
+        "size": python_file_metrics.size
+    }, "Expected smallest file to match the only file added"
+
+    assert metric_collector.total_files == 1, "Expected total files count to be 1"
+    assert metric_collector.total_size == python_file_metrics.size, f"Expected total size to be {python_file_metrics.size}"
+
+
+def test_add_file_statistics_multiple(metric_collector, mock_python_file, mock_js_file, python_file_metrics, js_file_metrics):
+    """Test adding statistics for multiple files."""
+    # Add Python file
+    metric_collector.add_file_statistics(
+        mock_python_file,
+        "Python",
+        python_file_metrics.size,
+        python_file_metrics.loc
+    )
+
+    # Add JavaScript file
+    metric_collector.add_file_statistics(
+        mock_js_file,
+        "JavaScript",
+        js_file_metrics.size,
+        js_file_metrics.loc
+    )
+
+    # Check Python stats
+    python_stats = metric_collector.language_stats["Python"]
+    assert python_stats["count"] == 1, "Expected exactly one Python file"
+    assert python_stats["total_size"] == python_file_metrics.size, f"Expected Python total size to be {python_file_metrics.size}"
+    assert python_stats["largest_file"] == {
+        "path": python_file_metrics.path,
+        "size": python_file_metrics.size
+    }, "Expected Python largest file to match the added file"
+
+    # Check JavaScript stats
+    js_stats = metric_collector.language_stats["JavaScript"]
+    assert js_stats["count"] == 1, "Expected exactly one JavaScript file"
+    assert js_stats["total_size"] == js_file_metrics.size, f"Expected JavaScript total size to be {js_file_metrics.size}"
+    assert js_stats["largest_file"] == {
+        "path": js_file_metrics.path,
+        "size": js_file_metrics.size
+    }, "Expected JavaScript largest file to match the added file"
+
+    # Check totals
+    expected_total_size = python_file_metrics.size + js_file_metrics.size
+    assert metric_collector.total_files == 2, "Expected total files count to be 2"
+    assert metric_collector.total_size == expected_total_size, f"Expected total size to be {expected_total_size}"
+
+
+def test_add_excluded_file(metric_collector, mock_python_file):
+    """Test adding an excluded file."""
     size = 1024
+    metric_collector.add_excluded_file(mock_python_file, size)
 
-    metric_collector.add_excluded_file(file_path, size)
-
-    assert metric_collector.excluded_files == [str(file_path)], f"Expected {file_path}"
-    assert metric_collector.excluded_file_count == 1, "Expected 1 since we add only one file"
-    assert metric_collector.excluded_file_size == size, f"Expected equal to {size}"
-
-
-def test_add_excluded_dir(metric_collector: CodebaseMetricsCollector):
-    dir_path = Path("/home/.git")
-
-    with patch.object(PathUtil, "path_to_str", return_value=str(dir_path)):
-        metric_collector.add_excluded_dir(dir_path)
-
-    assert metric_collector.excluded_dirs == [str(dir_path)], f"Expected equals to {str(dir_path)}"
+    assert str(mock_python_file) in metric_collector.excluded_files, "Expected file to be in excluded files list"
+    assert metric_collector.excluded_file_count == 1, "Expected excluded file count to be 1"
+    assert metric_collector.excluded_file_size == size, f"Expected excluded file size to be {size}"
 
 
-def test_add_single_file_statistics(metric_collector, mock_file):
+def test_add_excluded_dir(metric_collector):
+    """Test adding an excluded directory."""
+    mock_dir = MagicMock(spec=Path)
+    mock_dir.is_dir.return_value = True
+    mock_dir.__str__.return_value = "/home/.git"
 
-    expected_Python_count = 1
-    expected_Python_total_size = 100
-    expected_Python_file = "C:/test/file.py"
+    with patch.object(PathUtil, "path_to_str", return_value=str(mock_dir)):
+        metric_collector.add_excluded_dir(mock_dir)
 
-    expected_total_files = 1
-    expected_file_size = 100
-
-    metric_collector.add_file_statistics(mock_file, "Python", 100, 10)
-
-    assert metric_collector.language_stats["Python"]["count"] == expected_Python_count, f"Expected {expected_Python_count}"
-    assert metric_collector.language_stats["Python"]["total_size"] == expected_Python_total_size, f"Expected {expected_Python_total_size}"
-    assert metric_collector.language_stats["Python"]["files"][0]["file_path"] == "C:/test/file.py", f"Expected list with one filename {expected_Python_file}"
-    assert metric_collector.total_files == expected_total_files, f"Expected {expected_total_files}"
-    assert metric_collector.total_size == expected_file_size, f"Expected {expected_file_size}"
+    assert str(mock_dir) in metric_collector.excluded_dirs, "Expected directory to be in excluded directories list"
 
 
-def test_add_multiple_file_statistics(metric_collector, mock_file, mock_file_2):
+def test_get_collected_data(metric_collector, mock_python_file, python_file_metrics):
+    """Test getting collected data."""
+    metric_collector.add_file_statistics(
+        mock_python_file,
+        "Python",
+        python_file_metrics.size,
+        python_file_metrics.loc
+    )
 
-    expected_Python_count = 1
-    expected_Python_total_file_size = 100
-    expected_Python_file = "C:/test/file.py"
+    mock_dir = MagicMock(spec=Path)
+    mock_dir.is_dir.return_value = True
+    mock_dir.__str__.return_value = "/home/.git"
 
-    expected_JS_count = 1
-    expected_JS_total_filesize = 50
-    expected_JS_file = "C:/test/file.js"
+    with patch.object(PathUtil, "path_to_str", return_value=str(mock_dir)):
+        metric_collector.add_excluded_dir(mock_dir)
 
-    expected_total_files = 2
-    expected_file_size = 150
-
-    metric_collector.add_file_statistics(mock_file, "Python", 100, 10)
-    metric_collector.add_file_statistics(mock_file_2, "JS", 50, 10)
-
-    assert metric_collector.language_stats["JS"]["count"] == expected_JS_count, f"Expected {expected_JS_count}"
-    assert metric_collector.language_stats["Python"]["total_size"] == expected_Python_total_file_size, f"Expected {expected_Python_total_file_size}"
-    assert metric_collector.language_stats["Python"]["files"][0]["file_path"] == expected_Python_file, f"Expected  {expected_Python_file}"
-
-    assert metric_collector.language_stats["Python"]["count"] == expected_Python_count, f"Expected {expected_Python_count}"
-    assert metric_collector.language_stats["JS"]["total_size"] == expected_JS_total_filesize, f"Expected {expected_JS_total_filesize}"
-    assert metric_collector.language_stats["JS"]["files"][0]["file_path"] == expected_JS_file, f"Expected {expected_JS_file}"
-
-    assert metric_collector.total_files == expected_total_files, f"Expected {expected_total_files}"
-    assert metric_collector.total_size == expected_file_size, f"Expected {expected_file_size}"
-
-
-def test_get_collected_data(metric_collector: CodebaseMetricsCollector):
     data = metric_collector.get_collected_data()
 
-    assert "language_stats" in data
-    assert "total_files" in data
-    assert "total_size" in data
-    assert "excluded_files" in data
-    assert "excluded_dirs" in data
+    assert isinstance(data, dict), "Expected data to be a dictionary"
+    assert all(key in data for key in [
+        "language_stats",
+        "total_files",
+        "total_size",
+        "excluded_files",
+        "excluded_dirs"
+    ]), "Expected all required keys in collected data"
+
+    assert data["total_files"] == 1, "Expected total files count to be 1"
+    assert data["total_size"] == python_file_metrics.size, f"Expected total size to be {python_file_metrics.size}"
+    assert "Python" in data["language_stats"], "Expected Python stats to be present"
+    assert str(mock_dir) in data["excluded_dirs"], "Expected excluded directory to be present"
+
+
+def test_file_not_found(metric_collector):
+    """Test handling of non-existent files."""
+    mock_missing_file = MagicMock(spec=Path)
+    mock_missing_file.exists.return_value = False
+
+    with pytest.raises(FileNotFoundError, match="File not found"):
+        metric_collector.add_file_statistics(mock_missing_file, "Python")
+
+
+def test_invalid_directory(metric_collector):
+    """Test handling of invalid directories."""
+    mock_invalid_dir = MagicMock(spec=Path)
+    mock_invalid_dir.is_dir.return_value = False
+
+    with pytest.raises(NotADirectoryError, match="Not a directory"):
+        metric_collector.add_excluded_dir(mock_invalid_dir)

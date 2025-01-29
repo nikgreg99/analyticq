@@ -5,6 +5,7 @@ import platform
 import re
 import subprocess
 from pathlib import Path
+from threading import Lock
 
 import aiofiles
 from analyticq.util import PathUtil
@@ -13,6 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class GitAuthService:
+
+    _instance = None
+    _lock = Lock()
+
+    def __new__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+        return cls._instance
 
     def _is_windows_os(self) -> bool:
         """
@@ -75,7 +85,7 @@ class GitAuthService:
 
         await self._start_ssh_agent()
 
-        if self._is_key_loaded(ssh_key_path):
+        if await self._is_key_loaded(ssh_key_path):
             logger.info("SSH key is already loaded.")
 
         try:
@@ -99,7 +109,7 @@ class GitAuthService:
         Raises:
             Exception: If there is an error loading the SSH key.
         """
-        if await self._is_key_loaded(ssh_key_path):
+        if not await self._is_key_loaded(ssh_key_path):
             await self.load_ssh_key(ssh_key_path)
         os.environ["GIT_SSH_COMMAND"] = f"ssh -i {ssh_key_path} -o IdentitiesOnly=yes"
         logger.info("Git SSH authentication configured successfully.")

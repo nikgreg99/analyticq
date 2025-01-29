@@ -1,3 +1,4 @@
+import logging
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -9,15 +10,19 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CodebaseNotFoundException)
 from analyticq.preprocessing import (CodebaseCloner, CodebaseClonerPathType,
                                      CodebaseClonerProtocolType)
+from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
 from git.exc import GitCommandError
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
 def codebase_cloner():
+    git_auth_service = GitAuthService()
     with patch('analyticq.config.AnalyticQBaseConfig.get') as mock_config:
         mock_config.return_value = {"default_branch": "main"}
-        return CodebaseCloner()
+        return CodebaseCloner(git_auth_service)
 
 
 @pytest.mark.asyncio
@@ -93,7 +98,7 @@ async def test_clone_remote_codebase_already_existing(codebase_cloner):
         mock_repo_instance = MagicMock()
         mock_repo.return_value = mock_repo_instance
         result_path = await codebase_cloner.clone_remote_codebase(codebase_url)
-        assert result_path is None
+        assert result_path is not None
         mock_repo.assert_not_called()
 
 
@@ -251,3 +256,66 @@ def test_get_protocol(codebase_cloner):
     assert codebase_cloner._get_protocol("git@github.com:user/repo.git") == CodebaseClonerProtocolType.SSH
     assert codebase_cloner._get_protocol("https://github.com/user/repo.git") == CodebaseClonerProtocolType.HTTPS
     assert codebase_cloner._get_protocol("http://github.com/user/repo.git") == CodebaseClonerProtocolType.HTTP
+
+
+@pytest.mark.asyncio
+async def test_clone_remote_repo(codebase_cloner):
+    codebase_url = "https://github.com/fake/repo.git"
+    branch = "main"
+    repo_name = "repo"
+    expected_repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
+
+    with patch('analyticq.util.PathUtil'), \
+         patch("pathlib.Path.exists", return_value=False), \
+         patch("git.Repo.clone_from"), \
+         patch.object(CodebaseCloner, 'clone_remote_codebase', return_value=expected_repo_path) as mock_clone_remote:
+
+        result_path = await codebase_cloner.clone(codebase_url, branch=branch)
+        assert result_path == expected_repo_path, f"Expected {expected_repo_path}, got {result_path}"
+        mock_clone_remote.assert_called_once_with(codebase_url, branch, None, None, CodebaseClonerProtocolType.HTTPS)
+
+
+@pytest.mark.asyncio
+async def test_clone_local_repo(codebase_cloner):
+    codebase_url = "home/local/repo"
+    expected_repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / Path(codebase_url).name
+
+    with patch('analyticq.util.PathUtil'), \
+         patch("os.path.exists", return_value=True), \
+         patch("pathlib.Path.exists", return_value=True), \
+         patch("shutil.copytree"), \
+         patch.object(CodebaseCloner, '_get_codebase_type', return_value=CodebaseClonerPathType.LOCAL_REPO), \
+         patch.object(CodebaseCloner, 'clone_local_codebase', return_value=expected_repo_path) as mock_clone_local:
+
+        result_path = await codebase_cloner.clone(codebase_url)
+        assert result_path == expected_repo_path, f"Expected {expected_repo_path}, got {result_path}"
+        mock_clone_local.assert_called_once_with(codebase_url)
+
+
+@pytest.mark.asyncio
+async def test_clone_local_script(codebase_cloner):
+    codebase_url = "/local/script.py"
+    expected_script_path = PathUtil.get_codebase_scripts_AnalyticQ_path() / Path(codebase_url).name
+
+    with patch('analyticq.util.PathUtil'), \
+         patch("pathlib.Path.exists", side_effect=[True, False]), \
+         patch("shutil.copy"), \
+         patch.object(CodebaseCloner, '_get_codebase_type', return_value=CodebaseClonerPathType.SCRIPT), \
+         patch.object(CodebaseCloner, 'clone_local_script', return_value=expected_script_path) as mock_clone_script:
+
+        result_path = await codebase_cloner.clone(codebase_url)
+        assert result_path == expected_script_path, f"Expected {expected_script_path}, git {result_path}"
+        mock_clone_script.assert_called_once_with(codebase_url)
+
+
+@pytest.mark.asyncio
+async def test_clone_unknown_type(codebase_cloner):
+    codebase_url = "/unknown/path"
+
+    with patch('analyticq.util.PathUtil'), \
+         patch("pathlib.Path.exists", return_value=False), \
+         patch.object(CodebaseCloner, '_get_codebase_type', return_value=CodebaseClonerPathType.UNKNOWN):
+
+        result_path = await codebase_cloner.clone(codebase_url)
+        assert result_path is None
+        logger.error("Unknown codebase type: {CodebaseClonerPathType.UNKNOWN}")

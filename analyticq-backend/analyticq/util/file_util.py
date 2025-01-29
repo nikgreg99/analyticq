@@ -32,6 +32,16 @@ class FileUtil:
 
     @staticmethod
     def get_default_AnalyticQ_config_filename(config_file_format: str = AnalyticQConst.JSON_EXTENSION) -> str:
+        """
+        Get the default AnalyticQ configuration filename based on the specified file format.
+
+        Args:
+            config_file_format (str): The desired configuration file format.
+                                      Defaults to AnalyticQConst.JSON_EXTENSION.
+
+        Returns:
+            str: The default configuration filename with the appropriate extension.
+        """
         extensions = {
             AnalyticQConst.JSON_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.JSON_EXTENSION}",
             AnalyticQConst.YAML_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YAML_EXTENSION}",
