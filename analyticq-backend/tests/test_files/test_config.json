@@ -1,13 +1,62 @@
 {
   "dev": {
-    "app_name": "AnalyticQDev",
+    "app_name": "AnalyticQ-Backend",
     "debug": true,
     "host": "127.0.0.1",
-    "port": 8000,
-    "workers": 2,
+    "port": 5000,
+    "workers": 1,
     "codebase": {
       "default_branch": "main",
-      "retention": 5
+      "retention": 5,
+      "file_filter": {
+          "extensions_excluded": [".exe", ".jpg", ".txt"],
+          "filenames_excluded": ["LICENSE", "README.md"],
+          "max_file_size": 52428800
+      },
+      "dir_filter": {
+          "excluded_dirs": [".git"],
+          "max_depth": 5
+      }
+    }
+  },
+  "prod": {
+    "app_name": "AnalyticQ-Backend",
+    "debug": false,
+    "host": "0.0.0.0",
+    "port": 8080,
+    "workers": 4,
+    "codebase": {
+      "default_branch": "main",
+      "retention": 5,
+      "file_filter": {
+          "extensions_excluded": [".exe", ".jpg", ".txt"],
+          "filenames_excluded": ["LICENSE", "README.md"],
+          "max_file_size": 52428800
+      },
+      "dir_filter": {
+          "excluded_dirs": [".git"],
+          "max_depth": 5
+      }
+    }
+  },
+  "test": {
+    "app_name": "AnalyticQ-Backend",
+    "debug": true,
+    "host": "127.0.0.1",
+    "port": 7000,
+    "workers": 1,
+    "codebase": {
+      "default_branch":"main",
+      "retention": 5,
+      "file_filter": {
+          "extensions_excluded": [".exe", ".jpg", ".txt"],
+          "filenames_excluded": ["LICENSE", "README.md"],
+          "max_file_size": 52428800
+      },
+      "dir_filter": {
+          "excluded_dirs": [".git"],
+          "max_depth": 5
+      }
     }
   }
 }

@@ -34,7 +34,7 @@ def codebase_cleaner():
         return CodebaseCleaner()
 
 
-@pytest.mark.skip(reason="Not run on Linux")
+@pytest.mark.skip(reason="Test is not applicable on Linux due to OS-specific behavior")
 def test_get_item_creation_or_last_edit_date(codebase_cleaner):
 
     with patch("os.path.getctime") as mock_getctime, \
@@ -48,7 +48,6 @@ def test_get_item_creation_or_last_edit_date(codebase_cleaner):
             result = codebase_cleaner._get_item_creation_or_last_edit_date(item) == datetime.fromtimestamp(1609459200)
         else:
             mock_stat.return_value.st_mtime = 1609459200  # Set mock modification time
-            mock_stat.return_value.st_mtime = 1609459200  # Set mock modification time for fallback
             result = codebase_cleaner._get_item_creation_or_last_edit_date(item) == datetime.fromtimestamp(1609459200)
 
         assert result is True, f"Expected True based on the sample timestamp used above, got {result}"

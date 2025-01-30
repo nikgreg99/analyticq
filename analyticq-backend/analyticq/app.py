@@ -49,7 +49,8 @@ async def app_lifespan(app: FastAPI):
         logger.info("Shutdown AnalyticQ backend...")
 
 
-def create_app(config_file: str = AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE, env_profile: str = AnalyticQConst.DEFAULT_ANALYTICQ_PROFILE) -> FastAPI:
+def create_app(config_file: str = AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE,
+               env_profile: str = AnalyticQConst.DEFAULT_ANALYTICQ_PROFILE) -> FastAPI:
     AnalyticQBaseConfig.from_file(config_file, env_profile)
     app = FastAPI(
         title=AnalyticQBaseConfig.get("app_name"),

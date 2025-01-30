@@ -4,10 +4,11 @@ import os
 from collections import defaultdict
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import aiofiles
-from analyticq.util import ResourceUtil, TimeTrackerUtils
+from analyticq.util import BatchParameters, BatchUtil, TimeTrackerUtils
+from dependency_injector.wiring import Provide, inject
 from pygments.lexers import get_lexer_for_filename, guess_lexer
 from pygments.util import ClassNotFound
 
@@ -29,36 +30,69 @@ class CodebaseLangScanner:
                 cls._instance = super().__new__(cls)
         return cls._instance
 
+    @inject
     def __init__(self,
-                 metrics_collector: CodebaseMetricsCollector,
-                 time_tracker: TimeTrackerUtils) -> None:
+                 metrics_collector: Provide[CodebaseMetricsCollector],
+                 time_tracker: Provide[TimeTrackerUtils]) -> None:
         if not hasattr(self, "initialized"):
             self.metrics_collector = metrics_collector
             self.time_tracker = time_tracker
-            self.max_concurrency = ResourceUtil.max_workers_available()
-            self.batch_size = ResourceUtil.max_batch_size_available()
-            asyncio.Semaphore(self.max_concurrency)
+            self.batch_util = BatchUtil()
             self.initialized = True
 
-    async def detect_language_and_loc(self, file_path: Path):
+    async def detect_language_and_loc(self, file_path: Path) -> Tuple[str, str]:
+        """
+        Detects the programming language and lines of code (LOC) of a given file.
+
+        Args:
+            file_path (Path): The path to the file to be analyzed.
+
+        Returns:
+            Tuple[str, str]: A tuple containing the detected programming language and the number of lines of code.
+                             If the language cannot be detected, returns ("Unknown", 0).
+
+        Raises:
+            Exception: If an error occurs during language detection or LOC counting, logs the error and returns ("Unknown", 0).
+        """
         try:
-            lexer = get_lexer_for_filename(file_path.name)
-            language = lexer.name
-        except ClassNotFound:
-            try:
-                async with aiofiles.open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
-                    content = await f.read()
-                    if not content.strip():
-                        return "Unknown", 0
-                    lexer = guess_lexer(content)
-                    language == lexer.name
-                    loc = len(content.splitlines())
-                    return language, loc
-            except Exception as e:
-                logger.warning(f"Failed to read file {file_path}: {e}")
+            language = await self._detect_language(file_path)
+            loc = await self._count_lines(file_path) if language != "Unknown" else 0
+            return language, loc
         except Exception as e:
-            logger.error(f"Failed to read file {file_path}: {e}")
-        return "Unknown", 0
+            logger.error(f"Failed to analyze file {file_path}: {e}")
+            return "Unknown", 0
+
+    async def _detect_language(self, file_path: Path) -> str:
+        """Attempts to detect the programming language of the file."""
+        try:
+            # First attempt: detect by filename
+            lexer = get_lexer_for_filename(file_path.name)
+            return lexer.name
+        except ClassNotFound:
+            # Second attempt: detect by content
+            try:
+                content = await self._read_file_content(file_path)
+                if not content.strip():
+                    return "Unknown"
+                lexer = guess_lexer(content)
+                return lexer.name
+            except Exception as e:
+                logger.warning(f"Failed to detect language by content for {file_path}: {e}")
+                return "Unknown"
+
+    async def _read_file_content(self, file_path: Path) -> str:
+        """Reads the content of a file asynchronously."""
+        async with aiofiles.open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
+            return await f.read()
+
+    async def _count_lines(self, file_path: Path) -> int:
+        """Counts the number of lines in a file."""
+        try:
+            content = await self._read_file_content(file_path)
+            return len(content.splitlines())
+        except Exception as e:
+            logger.warning(f"Failed to count lines in {file_path}: {e}")
+            return 0
 
     async def process_file(self, file_path: Path, file_group: defaultdict):
         try:
@@ -80,18 +114,18 @@ class CodebaseLangScanner:
         except OSError as e:
             logger.error(f"OS error while processing file {file_path}: {e}")
 
-    async def batch_process_files(self, language: str, files: List[Path]):
-        """Batch process files for a given language with concurrency control."""
-        file_batches = [files[i:i + self.batch_size] for i in range(0, len(files), self.batch_size)]
+    async def process_files_batch(self, files: List[Path], file_group: defaultdict, params: BatchParameters) -> None:
+        """Process a batch of files concurrently with controlled concurrency."""
+        sem = asyncio.Semaphore(params.max_concurrency)
 
-        for batch in file_batches:
-            tasks = []
-            for file_path in batch:
-                tasks.append(self.process_file(file_path, language))
+        async def process_with_semaphore(file_path: Path) -> None:
+            async with sem:
+                await self.process_file(file_path, file_group)
 
-            # Control concurrency for each batch
-            async with asyncio.Semaphore(self.batch_concurrency):
-                await asyncio.gather(*tasks)
+        await asyncio.gather(
+            *[process_with_semaphore(file_path) for file_path in files],
+            return_exceptions=True
+        )
 
     async def process_dir(self, dir_path: Path, file_group: defaultdict):
 
@@ -100,16 +134,25 @@ class CodebaseLangScanner:
             return
 
         try:
-            entries = [Path(entry.path) for entry in os.scandir(dir_path) if not DirFilter.is_symlink(entry.path)]
+            entries = [
+                Path(entry.path)
+                for entry in os.scandir(dir_path)
+                if not DirFilter.is_symlink(entry)]
 
-            tasks = []
-            for entry in entries:
-                if entry.is_file():
-                    tasks.append(self.process_file(entry, file_group))
-                else:
-                    tasks.append(self.process_dir(entry, file_group))
+            files = [entry for entry in entries if entry.is_file()]
+            directories = [entry for entry in entries if entry.is_dir()]
 
-            await asyncio.gather(*tasks)  # Process tasks concurrently
+            if files:
+                params = await self.batch_util.adjust_parameters()
+                batch_ranges = self.batch_util.get_batch_ranges(len(files))
+
+                for start, end in batch_ranges:
+                    batch = files[start:end]
+                    await self.process_files_batch(batch, file_group, params)
+                    params = await self.batch_util.adjust_parameters()
+
+                for directory in directories:
+                    await self.process_dir(directory, file_group)
 
         except PermissionError:
             logger.warning(f"Permission denied when accessing directory: {dir_path}")
@@ -125,13 +168,6 @@ class CodebaseLangScanner:
         file_groups = defaultdict(list)
 
         await self.process_dir(root_codebase_path, file_groups)
-
-        tasks = []
-        # Once all files are grouped, process them in parallel
-        for language, files in file_groups.items():
-            tasks.append(self.batch_process_files(language, files))
-
-        await asyncio.gather(*tasks)
 
         self.time_tracker.stop()
 

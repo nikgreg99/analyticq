@@ -36,7 +36,7 @@ class CodebaseCleaner:
         """
             Get the creation date or the last edit date of a file or a dir
 
-            For Windows it is retrieves the creation path; for UNIX-based system. It retrieves
+            For Windows it is retrieves the creation path; for UNIX-based system it retrieves
             the birth time if available, otherwise as fallback to the last modification time
 
             Args:
@@ -70,7 +70,7 @@ class CodebaseCleaner:
 
     async def _delete_item(self, item: Path, dry_run: bool) -> None:
         """
-         Delete a given item asynchroniously
+        Delete a given item asynchroniously
 
         if 'dry_run' is True, it simulates the deletion by logging what would have been deleted.
         Otherwise, it attempts to execute the operation logging its outcome.

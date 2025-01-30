@@ -14,4 +14,5 @@ if __name__ == "__main__":
         port=AnalyticQBaseConfig.get("port"),
         log_level=AnalyticQBaseConfig.get("debug"),
         lifespan="on",
+        factory=True,
         reload=True)

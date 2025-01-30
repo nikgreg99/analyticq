@@ -15,6 +15,7 @@ class FileFilter:
     @classmethod
     def load_file_filter_conf(cls):
         codebase_conf = AnalyticQBaseConfig.get("codebase")
+        print(codebase_conf)
         cls.file_filter_conf = codebase_conf.get("file_filter")
 
     @classmethod
@@ -52,6 +53,7 @@ class FileFilter:
 
     @staticmethod
     def is_binary_file(file_path: Path) -> bool:
+        logger.debug(f"Checking if file is binary: {file_path}")
         try:
             kind = filetype.guess(file_path)
             return True if kind is not None else False

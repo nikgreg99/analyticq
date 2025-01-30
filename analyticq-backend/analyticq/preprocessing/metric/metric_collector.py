@@ -11,14 +11,29 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FileMetrics:
-    """Represents metrics for a single file."""
+    """
+    Represents metrics for a single file.
+
+    Attributes:
+        path (str): The file path.
+        size (int): The size of the file in bytes.
+        loc (Optional[int]): The number of lines of code in the file. Defaults to None.
+    """
     path: str
     size: int
     loc: Optional[int] = None
 
 
 class LanguageStats(TypedDict):
-    """Type definition for language statistics."""
+    """
+    LanguageStats is a TypedDict that represents statistics about a programming language in a codebase.
+    Attributes:
+        count (int): The number of files written in the language.
+        total_size (int): The total size of all files written in the language, in bytes.
+        files (List[Dict[str, str | int]]): A list of dictionaries, each containing metadata about a file written in the language.
+        largest_file (Optional[Dict[str, str | int]]): A dictionary containing metadata about the largest file written in the language, or None if there are no files.
+        smallest_file (Optional[Dict[str, str | int]]): A dictionary containing metadata about the smallest file written in the language, or None if there are no files.
+    """
     count: int
     total_size: int
     files: List[Dict[str, str | int]]
@@ -34,7 +49,16 @@ class ExcludedFiles(TypedDict):
 
 
 class CodebaseStatistics(TypedDict):
-    """Type definition for complete codebase statistics."""
+    """
+    Type definition for complete codebase statistics.
+
+    Attributes:
+        language_stats (Dict[str, LanguageStats]): A dictionary where the keys are programming language names and the values are statistics related to those languages.
+        total_files (int): The total number of files in the codebase.
+        total_size (int): The total size of the codebase in bytes.
+        excluded_files (ExcludedFiles): Information about files that are excluded from the statistics.
+        excluded_dirs (List[str]): A list of directories that are excluded from the statistics.
+    """
     language_stats: Dict[str, LanguageStats]
     total_files: int
     total_size: int

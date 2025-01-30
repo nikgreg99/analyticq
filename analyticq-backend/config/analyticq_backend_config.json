@@ -9,7 +9,7 @@
         "default_branch": "main",
         "retention": 5,
         "file_filter": {
-            "extensions_excluded": [".exe", ".jpg"],
+            "extensions_excluded": [".exe", ".jpg", "txt"],
             "filenames_excluded": ["LICENSE", "README.md"],
             "max_file_size": 52428800
         },
@@ -29,7 +29,7 @@
         "default_branch": "main",
         "retention": 5,
         "file_filter": {
-            "extensions_excluded": [".exe", ".jpg"],
+            "extensions_excluded": [".exe", ".jpg", "txt"],
             "filenames_excluded": ["LICENSE", "README.md"],
             "max_file_size": 52428800
         },
@@ -49,7 +49,7 @@
         "default_branch":"main",
         "retention": 5,
         "file_filter": {
-            "extensions_excluded": [".exe", ".jpg"],
+            "extensions_excluded": [".exe", ".jpg", "txt"],
             "filenames_excluded": ["LICENSE", "README.md"],
             "max_file_size": 52428800
         },

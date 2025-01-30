@@ -1,6 +1,8 @@
 import json
 import logging
 
+import yaml
+
 from .const import AnalyticQConst
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,31 @@ class FileUtil:
         except Exception:
             logger.error("Error saving configuration")
             return None
+
+    @staticmethod
+    def save_to_ymal(conf_file_path: str, config_data: str):
+        """
+            Save the configuration data to a YAML file.
+
+            Args:
+                conf_file_path: The file path where the YAML config data will be saved.
+                config_data: The configuration data to be saved.
+
+            Returns:
+                None: If the configuration was saved successfully.
+
+            Raises:
+                Exception: If there is an error while saving the config data.
+        """
+        try:
+            with open(conf_file_path, "w") as conf_file:
+                yaml.dump(config_data, conf_file, default_flow_style=False, allow_unicode=True)
+        except yaml.YAMLError as ex:
+            logger.error(f"Error during YAML serialization: {ex}")
+            raise
+        except Exception as ex:
+            logger.error(f"Unexpected error while saving configuration to YAML: {ex}")
+            raise
 
     @staticmethod
     def get_default_AnalyticQ_config_filename(config_file_format: str = AnalyticQConst.JSON_EXTENSION) -> str:

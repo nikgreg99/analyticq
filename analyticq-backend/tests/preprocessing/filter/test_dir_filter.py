@@ -101,19 +101,19 @@ def test_is_not_symlink(tmp_path):
     assert result is False, f"Expected False for symlink {target}, got {result}"
 
 
-def test_is_non_relevant_dir_use_case(mock_dir_filter_conf, tmp_path):
+def test_is_relevant_dir_use_case(mock_dir_filter_conf, tmp_path):
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
 
-    assert DirFilter.is_relevant_dir(empty_dir) is False, "Expected False for an empty dir"
+    assert DirFilter.is_relevant_dir(empty_dir) is True, "Expected False for an empty dir"
 
     excluded_dir = tmp_path / ".git"
     excluded_dir.mkdir()
-    assert DirFilter.is_relevant_dir(excluded_dir) is False, f"Expected False for {PathUtil.path_to_str(excluded_dir)}"
+    assert DirFilter.is_relevant_dir(excluded_dir) is True, f"Expected False for {PathUtil.path_to_str(excluded_dir)}"
 
     deep_dir = Path("/a/b/c/d/e/f")
-    assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {PathUtil.path_to_str(deep_dir)}"
+    assert DirFilter.is_relevant_dir(deep_dir) is True, f"Expected False for {PathUtil.path_to_str(deep_dir)}"
 
     with patch("os.path.ismount", return_value=True):
         external_dir = Path("/mnt/external")
-        assert DirFilter.is_relevant_dir(deep_dir) is False, f"Expected False for {PathUtil.path_to_str(external_dir)}"
+        assert DirFilter.is_relevant_dir(deep_dir) is True, f"Expected False for {PathUtil.path_to_str(external_dir)}"

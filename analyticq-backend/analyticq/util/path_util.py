@@ -96,12 +96,22 @@ class PathUtil:
     @staticmethod
     def get_backend_default_test_AnalyticQ_path() -> Path:
         """
+        Get the default test path for the AnalyticQ backend.
+
+        Returns:
+            Path: The path to the default test folder for the AnalyticQ backend.
+        """
+        return PathUtil.get_current_cwd_path() / AnalyticQConst.ANALYTICQ_BACKEND_FOLDER / AnalyticQConst.ANALYTICQ_TEST_FOLDER
+
+    @staticmethod
+    def get_backend_default_test_file_AnalyticQ_path() -> Path:
+        """
         Get the backend default test files directory path for AnalyticQ.
 
         Returns:
             Path: The backend default test files directory path for AnalyticQ.
         """
-        return PathUtil.get_current_cwd_path() / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
+        return PathUtil.get_backend_default_test_AnalyticQ_path() / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
 
     @staticmethod
     def get_codebase_repositories_AnalyticQ_path() -> Path:

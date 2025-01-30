@@ -73,9 +73,9 @@ def test_get_backend_default_config_AnalyticQ_path():
 
 def test_get_backend_default_test_AnalyticQ_path():
     mock_cwd_path = Path.cwd()
-    expected_path = mock_cwd_path / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
+    expected_path = mock_cwd_path / PathUtil.get_backend_default_test_AnalyticQ_path() / AnalyticQConst.ANALYTICQ_TEST_FILE_FOLDER
     with patch("pathlib.Path.cwd", return_value=mock_cwd_path):
-        result = PathUtil.get_backend_default_test_AnalyticQ_path()
+        result = PathUtil.get_backend_default_test_file_AnalyticQ_path()
         assert result == expected_path, f"Expected equality for {expected_path}, got {result}"
 
 

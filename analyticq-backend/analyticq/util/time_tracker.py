@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 class TimeTrackerUtils:
 
-    def __init__(self):
+    def __init__(self, codebase_name: Optional[str] = None) -> None:
+        self.codebase_name = codebase_name if codebase_name else "Codebase"
         self.progress_bar: Optional[tqdm] = None
         self.start_time: Optional[float] = None
         self.total_files: int = 0
@@ -37,7 +38,7 @@ class TimeTrackerUtils:
         self.start_time = time.time()
         self.progress_bar = tqdm(
             total=total_files,
-            desc="🔍 Scanning Codebase",
+            desc=f"🔍 Scanning {self.codebase_name}",
             unit="file",
             dynamic_ncols=True
         )

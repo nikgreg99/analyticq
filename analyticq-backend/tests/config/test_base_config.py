@@ -38,7 +38,7 @@ def test_load_json_config(monkeypatch):
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.json")
-    assert config["dev"]["app_name"] == "AnalyticQDev"
+    assert config["dev"]["app_name"] == "AnalyticQ-Backend"
 
 
 def test_load_yaml_config(monkeypatch):

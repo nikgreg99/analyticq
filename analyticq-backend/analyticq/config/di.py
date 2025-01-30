@@ -1,9 +1,9 @@
-from analyticq.preprocessing.input import CodebaseCloner
+from analyticq.preprocessing.input import CodebaseCloner, CodebaseLangScanner
 from analyticq.preprocessing.metric import (CodebaseMetricsCalculator,
                                             CodebaseMetricsCollector,
                                             CodebaseMetricsReporter)
 from analyticq.service import GitAuthService
-from analyticq.util import TimeTrackerUtils
+from analyticq.util import BatchUtil, TimeTrackerUtils
 from dependency_injector import containers, providers
 
 
@@ -13,6 +13,10 @@ class UtilContainer(containers.DeclarativeContainer):
 
     time_tracker = providers.Singleton(
         TimeTrackerUtils
+    )
+
+    batch_util = providers.Factory(
+        BatchUtil
     )
 
 
@@ -35,6 +39,9 @@ class InputContainer(containers.DeclarativeContainer):
     config = providers.Configuration(name='input')
 
     git_auth_service = providers.Dependency()
+    time_tracker = providers.Dependency()
+    metrics_collector = providers.Dependency()
+    batch_util = providers.Dependency()
 
     # Input components
     codebase_cloner = providers.Factory(
@@ -42,8 +49,15 @@ class InputContainer(containers.DeclarativeContainer):
         git_auth_service=git_auth_service
     )
 
+    codebase_lang_scanner = providers.Factory(
+        CodebaseLangScanner,
+        time_tracker=time_tracker,
+        metrics_collector=metrics_collector
+    )
+
 
 class MetricContainer(containers.DeclarativeContainer):
+    """Container for metric related input service"""
 
     config = providers.Configuration(name="metric")
     metric_calcualtor = providers.Factory(
@@ -72,14 +86,21 @@ class PreprocessingContainer(containers.DeclarativeContainer):
         ServiceContainer
     )
 
-    # Input container with properly injected dependencies
-    input = providers.Container(
-        InputContainer,
-        git_auth_service=service.git_auth_service
+    util = providers.Container(
+        UtilContainer
     )
 
     metric = providers.Container(
         MetricContainer
+    )
+
+    # Input container with properly injected dependencies
+    input = providers.Container(
+        InputContainer,
+        git_auth_service=service.git_auth_service,
+        time_tracker=util.time_tracker,
+        metrics_collector=metric.metric_collector,
+        batch_util=util.batch_util
     )
 
 
@@ -94,8 +115,12 @@ class AnalyticQContainer(containers.DeclarativeContainer):
         ServiceContainer
     )
 
+    # Util service containers
+    util = providers.Container(
+        UtilContainer
+    )
+
     # Preprocessing container with its dependencies
     preprocessing = providers.Container(
-        PreprocessingContainer,
-        service=service
+        PreprocessingContainer
     )

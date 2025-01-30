@@ -39,7 +39,6 @@ class DirFilter:
 
     @staticmethod
     def is_max_depth(dir_path: Path) -> bool:
-        print(dir_path.parts)
         return len(dir_path.parts) - 1 > DirFilter.max_depth()
 
     @staticmethod
@@ -56,7 +55,7 @@ class DirFilter:
 
     @staticmethod
     def is_relevant_dir(dir_path: Path) -> bool:
-        return not (
+        return (
             DirFilter.is_empty_dir(dir_path)
             or DirFilter.is_excluded_dir(dir_path)
             or DirFilter.is_max_depth(dir_path)
