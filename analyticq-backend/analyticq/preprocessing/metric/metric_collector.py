@@ -1,8 +1,8 @@
 import logging
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from analyticq.util import PathUtil
 
@@ -24,6 +24,7 @@ class FileMetrics:
     loc: Optional[int] = None
 
 
+@dataclass
 class LanguageStats(TypedDict):
     """
     LanguageStats is a TypedDict that represents statistics about a programming language in a codebase.
@@ -48,6 +49,7 @@ class ExcludedFiles(TypedDict):
     files: List[str]
 
 
+@dataclass
 class CodebaseStatistics(TypedDict):
     """
     Type definition for complete codebase statistics.
@@ -66,25 +68,25 @@ class CodebaseStatistics(TypedDict):
     excluded_dirs: List[str]
 
 
-@dataclass
 class CodebaseMetricsCollector:
     """Collects and manages codebase metrics including file sizes, language statistics, and exclusions."""
 
-    language_stats: DefaultDict[str, LanguageStats] = field(default_factory=lambda: defaultdict(
-        lambda: {
+    def __init__(self):
+        self.language_stats = defaultdict(lambda: {
             "count": 0,
             "total_size": 0,
             "files": [],
+            "file_sizes": [],
+            "code_lines": 0,
             "largest_file": None,
             "smallest_file": None
-        }
-    ))
-    excluded_dirs: List[str] = field(default_factory=list)
-    excluded_files: List[str] = field(default_factory=list)
-    total_files: int = 0
-    total_size: int = 0
-    excluded_file_count: int = 0
-    excluded_file_size: int = 0
+        })
+        self.excluded_dirs: List[str] = []
+        self.excluded_files: List[str] = []
+        self.total_files: int = 0
+        self.total_size: int = 0
+        self.excluded_file_count: int = 0
+        self. excluded_file_size: int = 0
 
     def _update_file_size_extremes(self, file_metrics: FileMetrics, language: str) -> None:
         """
@@ -129,6 +131,8 @@ class CodebaseMetricsCollector:
         lang_stats = self.language_stats[language]
         lang_stats["count"] += 1
         lang_stats["total_size"] += actual_size
+        lang_stats["file_sizes"].append(actual_size)
+        lang_stats["code_lines"] += loc if loc else 0
         lang_stats["files"].append({
             "file_path": file_metrics.path,
             "loc": loc

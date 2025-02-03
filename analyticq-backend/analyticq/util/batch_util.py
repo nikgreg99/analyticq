@@ -5,6 +5,8 @@ from typing import Tuple
 
 import psutil
 
+from .const import AnalyticQConst
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,12 +31,11 @@ class BatchParameters:
 
 class BatchUtil:
     def __init__(self):
-        # Configuration bounds
-        self.MIN_BATCH_SIZE = 50
-        self.MAX_BATCH_SIZE = 2000
-        self.MIN_CONCURRENCY = 1
-        self.MEMORY_USAGE_THRESHOLD = 0.25  # 25% of available memory
-        self.CPU_USAGE_TARGET = 0.75  # 75% of CPU cores
+        self.MIN_BATCH_SIZE = AnalyticQConst.ANALYTICQ_MIN_BATCH_SIZE
+        self.MAX_BATCH_SIZE = AnalyticQConst.ANALYTICQ_MAX_BATCH_SIZE
+        self.MIN_CONCURRENCY = AnalyticQConst.ANALYTICQ_MIN_CONCURRENCY
+        self.MEMORY_USAGE_THRESHOLD = AnalyticQConst.ANALTICQ_MEMORY_USAGE_THRESHOLD  # 2% of available memory
+        self.CPU_USAGE_TARGET = AnalyticQConst.ANALYTICQ_CPU_USAGE_THRESHOLD  # 75% of CPU cores
 
         # Initialize parameters
         self._current_params = self._initialize_parameters()
@@ -157,7 +158,9 @@ class BatchUtil:
 
     @property
     def current_parameters(self) -> BatchParameters:
-        """Get current batch parameters."""
+        """
+        Returns:
+            Get current batch parameters."""
         return self._current_params
 
     def get_batch_ranges(self, total_items: int) -> list[Tuple[int, int]]:

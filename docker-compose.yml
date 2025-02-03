@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+
+  rabbitmq-broker:
+      image: rabbitmq:${RABBITMQ_VERSION}-management
+      container_name: rabbitmq-broker
+      ports:
+        - "${RABBITMQ_AMQP_PORT}:5672"
+        - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+      env_file:
+        .env
+      environment:
+        RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+        RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      volumes:
+        - rabbitmq_data:/var/lib/rabbitmq
+      networks:
+        - analyticq-network
+
+  celery-worker:
+    build:
+      context: ./analyticq-backend
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    env_file: .env
+    environment:
+      CELERY_HOSTNAME: ${CELERY_HOSTNAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CELERY_TASK_SERIALIZER: ${CELERY_TASK_SERIALIZER}
+      CELERY_ACCEPT_CONTENT: ${CELERY_ACCEPT_CONTENT}
+      CELERY_TIMEZONE: ${CELERY_TIMEZONE}
+      CELERY_ENABLE_UTC: ${CELERY_ENABLE_UTC}
+    depends_on:
+        - rabbitmq
+    networks:
+      - analyticq-network
+    command: celery -A analticq.app worker --loglevel=info
+
+  celery-beat:
+    build:
+      context: ./analyticq-backend
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    env_file: .env
+    environment:
+      CELERY_HOSTNAME: ${CELERY_HOSTNAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      CELERY_TASK_SERIALIZER: ${CELERY_TASK_SERIALIZER}
+      CELERY_ACCEPT_CONTENT: ${CELERY_ACCEPT_CONTENT}
+      CELERY_TIMEZONE: ${CELERY_TIMEZONE}
+      CELERY_ENABLE_UTC: ${CELERY_ENABLE_UTC}
+    depends_on:
+        - rabbitmq
+        - celery_worker
+    networks:
+      - analyticq-network
+    command: celery -A analticq.app beat --loglevel=info
+
+
+  analyticq-backend:
+    build:
+      context: ./analyticq-backend
+      dockerfile: Dockerfile
+    container_name: analyticq-backend
+    depends_on:
+    - rabbitmq-broker
+    networks:
+      - analyticq-network
+
+volumes:
+  rabbitmq_data:
+    name: rabbitmq_data
+
+networks:
+  analyticq-network:
+    driver: bridge

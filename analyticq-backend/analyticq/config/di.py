@@ -1,4 +1,5 @@
-from analyticq.preprocessing.input import CodebaseCloner, CodebaseLangScanner
+from analyticq.preprocessing.input import (CodebaseCleaner, CodebaseCloner,
+                                           CodebaseLangScanner)
 from analyticq.preprocessing.metric import (CodebaseMetricsCalculator,
                                             CodebaseMetricsCollector,
                                             CodebaseMetricsReporter)
@@ -48,6 +49,8 @@ class InputContainer(containers.DeclarativeContainer):
         CodebaseCloner,
         git_auth_service=git_auth_service
     )
+
+    codebase_cleaner = providers.Singleton(CodebaseCleaner)
 
     codebase_lang_scanner = providers.Factory(
         CodebaseLangScanner,

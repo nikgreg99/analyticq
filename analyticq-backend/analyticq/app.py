@@ -2,15 +2,20 @@ import logging
 from contextlib import asynccontextmanager
 from typing import List
 
+from analyticq.config import CeleryConf
 from analyticq.config.di import AnalyticQContainer
 from analyticq.routes.test_route import router as test_router
-from analyticq.util import AnalyticQConst, PathUtil
+from analyticq.util import AnalyticQConst, ImportUtil, PathUtil
 from fastapi import FastAPI
+
+import analyticq
 
 from .config.base_conf import AnalyticQBaseConfig
 from .config.logger_conf import logging_init
 
 logger = logging.getLogger(__name__)
+
+celery = None
 
 
 def get_AnalyticQ_root_structure() -> List[str]:
@@ -22,7 +27,7 @@ def get_AnalyticQ_root_structure() -> List[str]:
     ]
 
 
-async def create_AnalayticQ_root_structure():
+async def create_AnalyticQ_root_structure():
     required_folders_path: List[str] = get_AnalyticQ_root_structure()
     try:
         for folder_path in required_folders_path:
@@ -33,14 +38,21 @@ async def create_AnalayticQ_root_structure():
 
 
 @asynccontextmanager
-async def app_lifespan(app: FastAPI):
-    logging_init()
-    logger.info("Iniziatling AnalyticQ backend log service...")
+async def backend_context(app: FastAPI):
+    global celery
     container = AnalyticQContainer()
-    await create_AnalayticQ_root_structure()
+    celery_conf = CeleryConf()
+    celery = celery_conf.get_celery_app()
+
+    app.state.celery = celery_conf.celery
     logger.info("Init AnalyticQ backend resources...")
+
     try:
-        container.wire(modules=["analyticq"])
+        logging_init()
+        await create_AnalyticQ_root_structure()
+        all_modules = ImportUtil.discover_modules(analyticq)
+        container.wire(modules=all_modules)
+        app.state.celery.conf.update(celery_conf.settings.model_dump())
         yield
     finally:
         # Cleanup resources (dependencies, connection, ecc)
@@ -49,13 +61,13 @@ async def app_lifespan(app: FastAPI):
         logger.info("Shutdown AnalyticQ backend...")
 
 
-def create_app(config_file: str = AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE,
-               env_profile: str = AnalyticQConst.DEFAULT_ANALYTICQ_PROFILE) -> FastAPI:
+def create_app(config_file: str = AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE,
+               env_profile: str = AnalyticQConst.ANALYTICQ_DEFAULT_PROFILE) -> FastAPI:
     AnalyticQBaseConfig.from_file(config_file, env_profile)
     app = FastAPI(
         title=AnalyticQBaseConfig.get("app_name"),
         debug=AnalyticQBaseConfig.get("debug"),
-        lifespan=app_lifespan
+        lifespan=backend_context
     )
     app.include_router(test_router, prefix="/api/v1")
     return app

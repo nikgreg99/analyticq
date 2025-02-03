@@ -6,15 +6,15 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Tuple
 
-import aiofiles
-from analyticq.util import BatchParameters, BatchUtil, TimeTrackerUtils
+from analyticq.preprocessing.filter.dir_filter import DirFilter
+from analyticq.preprocessing.filter.file_filter import FileFilter
+from analyticq.preprocessing.metric.metric_collector import \
+    CodebaseMetricsCollector
+from analyticq.util import (BatchParameters, BatchUtil, FileUtil,
+                            TimeTrackerUtils)
 from dependency_injector.wiring import Provide, inject
 from pygments.lexers import get_lexer_for_filename, guess_lexer
 from pygments.util import ClassNotFound
-
-from ..filter.dir_filter import DirFilter
-from ..filter.file_filter import FileFilter
-from ..metric.metric_collector import CodebaseMetricsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +33,15 @@ class CodebaseLangScanner:
     @inject
     def __init__(self,
                  metrics_collector: Provide[CodebaseMetricsCollector],
-                 time_tracker: Provide[TimeTrackerUtils]) -> None:
+                 time_tracker: Provide[TimeTrackerUtils],
+                 batch_util: Provide[BatchUtil]) -> None:
         if not hasattr(self, "initialized"):
             self.metrics_collector = metrics_collector
             self.time_tracker = time_tracker
-            self.batch_util = BatchUtil()
+            self.batch_util = batch_util
             self.initialized = True
 
-    async def detect_language_and_loc(self, file_path: Path) -> Tuple[str, str]:
+    async def detect_language_and_loc(self, file_path: Path) -> Tuple[str, int]:
         """
         Detects the programming language and lines of code (LOC) of a given file.
 
@@ -56,7 +57,7 @@ class CodebaseLangScanner:
         """
         try:
             language = await self._detect_language(file_path)
-            loc = await self._count_lines(file_path) if language != "Unknown" else 0
+            loc = await FileUtil.count_lines(file_path) if language != "Unknown" else 0
             return language, loc
         except Exception as e:
             logger.error(f"Failed to analyze file {file_path}: {e}")
@@ -69,33 +70,42 @@ class CodebaseLangScanner:
             lexer = get_lexer_for_filename(file_path.name)
             return lexer.name
         except ClassNotFound:
-            # Second attempt: detect by content
-            try:
-                content = await self._read_file_content(file_path)
-                if not content.strip():
-                    return "Unknown"
-                lexer = guess_lexer(content)
-                return lexer.name
-            except Exception as e:
-                logger.warning(f"Failed to detect language by content for {file_path}: {e}")
-                return "Unknown"
+            pass
 
-    async def _read_file_content(self, file_path: Path) -> str:
-        """Reads the content of a file asynchronously."""
-        async with aiofiles.open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
-            return await f.read()
-
-    async def _count_lines(self, file_path: Path) -> int:
-        """Counts the number of lines in a file."""
+        # Second attempt: detect by content
         try:
-            content = await self._read_file_content(file_path)
-            return len(content.splitlines())
+            content = await FileUtil.read_file_content(file_path)
+            if not content.strip():
+                return "Unknown", 0
+            lexer = guess_lexer(content)
+            return lexer.name
         except Exception as e:
-            logger.warning(f"Failed to count lines in {file_path}: {e}")
-            return 0
+            logger.warning(f"Failed to detect language by content for {file_path}: {e}")
+            return "Unknown", 0
 
     async def process_file(self, file_path: Path, file_group: defaultdict):
+        """
+        Process a single file in the codebase to detect its programming language and collect metrics.
+
+        This method analyzes the given file, determines its programming language, counts lines of code,
+        and collects various metrics like file size. The results are stored in the metrics collector
+        and the file is grouped by its detected language.
+
+        Args:
+            file_path (Path): Path object pointing to the file to be processed
+            file_group (defaultdict): Dictionary to group files by their detected programming language
+
+        Returns:
+            None
+
+        Raises:
+            FileNotFoundError: If the target file does not exist or was deleted during processing
+            PermissionError: If there are insufficient permissions to access the file
+            OSError: If an operating system level error occurs while processing the file
+
+        """
         try:
+            # File not relevant are discarded
             if not FileFilter.is_relevant_file(file_path):
                 size = file_path.stat().st_size
                 self.metrics_collector.add_excluded_file(file_path, size)
@@ -127,7 +137,7 @@ class CodebaseLangScanner:
             return_exceptions=True
         )
 
-    async def process_dir(self, dir_path: Path, file_group: defaultdict):
+    async def process_dir(self, dir_path: Path, file_groups: defaultdict):
 
         if not DirFilter.is_relevant_dir(dir_path):
             self.metrics_collector.add_excluded_dir(dir_path)
@@ -138,21 +148,18 @@ class CodebaseLangScanner:
                 Path(entry.path)
                 for entry in os.scandir(dir_path)
                 if not DirFilter.is_symlink(entry)]
-
             files = [entry for entry in entries if entry.is_file()]
             directories = [entry for entry in entries if entry.is_dir()]
-
             if files:
                 params = await self.batch_util.adjust_parameters()
                 batch_ranges = self.batch_util.get_batch_ranges(len(files))
-
                 for start, end in batch_ranges:
                     batch = files[start:end]
-                    await self.process_files_batch(batch, file_group, params)
+                    await self.process_files_batch(batch, file_groups, params)
                     params = await self.batch_util.adjust_parameters()
 
                 for directory in directories:
-                    await self.process_dir(directory, file_group)
+                    await self.process_dir(directory, file_groups)
 
         except PermissionError:
             logger.warning(f"Permission denied when accessing directory: {dir_path}")
@@ -161,10 +168,24 @@ class CodebaseLangScanner:
         finally:
             self.time_tracker.update()
 
-    async def scan_codebase_languages(self, root_codebase_path: Path):
+    async def scan_codebase_languages(self, root_codebase_path: Path) -> None:
+        """
+        Scans the codebase to identify and categorize files based on their programming languages.
+
+        This method recursively traverses the codebase directory, processes each file, and groups
+        them according to their detected programming language. It tracks the processing time and
+        progress using a time tracker.
+
+        Args:
+            root_codebase_path (Path): The root directory path of the codebase to be scanned.
+
+
+        Note:
+            The method uses an internal time tracker to monitor progress and performance.
+            Results are stored internally in the file groups data structure.
+        """
         total_files = sum(len(files) for _, _, files in os.walk(root_codebase_path))
         self.time_tracker.start(total_files)
-
         file_groups = defaultdict(list)
 
         await self.process_dir(root_codebase_path, file_groups)
@@ -172,4 +193,13 @@ class CodebaseLangScanner:
         self.time_tracker.stop()
 
     def generate_languge_report(self) -> Dict[str, Any]:
+        """
+        Generates a report of the programming language metrics collected during scanning.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the collected language metrics data with:
+                - File counts by extension
+                - Line counts by language
+                - Other language-specific statistics
+        """
         return self.metrics_collector.get_collected_data()

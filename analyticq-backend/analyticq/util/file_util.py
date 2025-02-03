@@ -1,6 +1,10 @@
 import json
 import logging
+import os
+from pathlib import Path
+from typing import Any, List
 
+import aiofiles
 import yaml
 
 from .const import AnalyticQConst
@@ -9,6 +13,40 @@ logger = logging.getLogger(__name__)
 
 
 class FileUtil:
+
+    def parse_list_env(key: str, default: List[Any] = None) -> List[Any]:
+        """Parse a list from an environment variable.
+        This function attempts to parse a list from an environment variable in two ways:
+        1. As a JSON array
+        2. As a comma-separated string
+        Args:
+            key (str): The environment variable key to parse
+            default (List[Any], optional): Default value to return if key doesn't exist or parsing fails.
+                Defaults to None.
+        Returns:
+            List[Any]: The parsed list from the environment variable, or the default value if parsing fails.
+                If default is None, returns an empty list.
+        Examples:
+            # JSON array in env var
+            os.environ['MY_LIST'] = '[1, 2, 3]'
+            _parse_list_env('MY_LIST')  # Returns [1, 2, 3]
+            # Comma-separated string in env var
+            os.environ['MY_LIST'] = 'a, b, c'
+            _parse_list_env('MY_LIST')  # Returns ['a', 'b', 'c']
+        """
+
+        value = os.environ.get(key)
+        if not value:
+            return default or []
+
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            return [item.strip() for item in value.split(',') if item.strip()]
+
+        return default or []
 
     @staticmethod
     def save_to_json(conf_file_path: str, config_data: dict):
@@ -33,7 +71,7 @@ class FileUtil:
             return None
 
     @staticmethod
-    def save_to_ymal(conf_file_path: str, config_data: str):
+    def save_to_yaml(conf_file_path: str, config_data: str):
         """
             Save the configuration data to a YAML file.
 
@@ -70,7 +108,46 @@ class FileUtil:
             str: The default configuration filename with the appropriate extension.
         """
         extensions = {
-            AnalyticQConst.JSON_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.JSON_EXTENSION}",
-            AnalyticQConst.YAML_EXTENSION: f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YAML_EXTENSION}",
+            AnalyticQConst.JSON_EXTENSION: f"{AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE}.{AnalyticQConst.JSON_EXTENSION}",
+            AnalyticQConst.YAML_EXTENSION: f"{AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE}.{AnalyticQConst.YAML_EXTENSION}",
         }
-        return extensions.get(config_file_format, f"{AnalyticQConst.DEFAULT_ANALYTICQ_CONFIG_FILE}.{AnalyticQConst.YML_EXTENSION}")
+        return extensions.get(config_file_format, f"{AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE}.{AnalyticQConst.YML_EXTENSION}")
+
+    @staticmethod
+    async def read_file_content(file_path: Path) -> str:
+        """
+        Reads the content of a file asynchronously.
+
+        Args:
+            file_path (Path): The path to the file to be read.
+
+        Returns:
+            str: The content of the file as a string.
+
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
+            PermissionError: If the program lacks permission to read the file.
+        """
+        async with aiofiles.open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
+            return await f.read()
+
+    @staticmethod
+    async def count_lines(file_path: Path) -> int:
+        """
+        Counts the number of lines in a file.
+
+        Args:
+            file_path (Path): The path to the file to count lines from.
+
+        Returns:
+            int: The number of lines in the file. Returns 0 if the file cannot be read.
+
+        Raises:
+            Exception: Any exception that occurs during file reading is caught and logged.
+        """
+        try:
+            content = await FileUtil.read_file_content(file_path)
+            return len(content.splitlines())
+        except Exception as e:
+            logger.warning(f"Failed to count lines in {file_path}: {e}")
+            return 0

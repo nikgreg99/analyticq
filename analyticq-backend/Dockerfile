@@ -1,27 +1,29 @@
-FROM python:3.11-slim AS build
+ARG PYTHON_VERSION = 3.13
+
+FROM python:${PYTHON_VERSION}-slim AS build
 
 ENV PYTHONDONWRITEBYTECODE=1
 ENV PYTHONBUFFERED=1
 
-ENV HOST="0.0.0.0"
-ENV PORT=8000
-ENV PROFILE="dev"
+ENV ANALYTICQ_BACKEND_HOST="0.0.0.0"
+ENV ANALYTICQ_BACKEND_PORT=8000
+ENV ANALYTICQ_BACKEND_PROFILE="dev"
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.11-slim AS runtime
+FROM python:${PYTHON_VERSION}-slim AS runtime
 
 ENV PYTHONDONWRITEBYTECODE=1
 ENV PYTHONBUFFERED=1
 
-COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=build /usr/local/lib/python${PYTHON_VERSION}/site-packages /usr/local/lib/python${PYTHON_VERSION}/site-packages
 COPY --from=build /usr/local/bin /usr/local/bin
 
 COPY analyticq/ .
 
-EXPOSE $ANALYTIC_BACKEND_PORT
+EXPOSE $ANALYTICQ_BACKEND_PORT
 
-CMD [ "sh" "-c" "uvicorn analyticq.app:create_app --host ${ANALYTIC_BACKEND_HOST} --port ${ANALYTIC_BACKEND_PORT} --factory" ]
+CMD [ "python", "start.py" ]
