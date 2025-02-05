@@ -97,7 +97,7 @@ dev:
         - ".d"
         - ".cache"
         - ".nvm"
-      max_depth: 5
+      max_depth: 100
 
 prod:
   app_name: "AnalyticQ-Backend"
@@ -198,7 +198,7 @@ prod:
         - ".d"
         - ".cache"
         - ".nvm"
-      max_depth: 5
+      max_depth: 100
 
 test:
   app_name: "AnalyticQ-Backend"
@@ -299,4 +299,4 @@ test:
         - ".d"
         - ".cache"
         - ".nvm"
-      max_depth: 5
+      max_depth: 100

@@ -81,7 +81,6 @@ def test_update_with_progress(time_tracker, mock_tqdm):
     assert time_tracker.progress == 50.0, "Progress should reach 50%"
 
     postfix_calls = mock_progress.set_postfix.call_args[1]
-    print(postfix_calls)
     assert abs(float(postfix_calls["Speed"].split()[0]) - 5.0) < 0.1, "Estimated time remaining should be 5s"
     assert abs(float(postfix_calls["ETA"].split("s")[0]) - 10.0) < 0.1, "Processing speed should be 10 files/s"
 
@@ -96,7 +95,7 @@ def test_error_handling_during_update(time_tracker, mock_tqdm, mock_logger):
         mock_logger.warning.assert_not_called()
 
 
-def test_stop_and(time_tracker, mock_tqdm, mock_logger):
+def test_stop_time_tracker(time_tracker, mock_tqdm, mock_logger):
     """Test stop method"""
     with patch('time.time', side_effect=[1000, 1030]):
         time_tracker.start(100)

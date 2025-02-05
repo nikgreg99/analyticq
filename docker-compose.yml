@@ -30,13 +30,15 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       CELERY_TASK_SERIALIZER: ${CELERY_TASK_SERIALIZER}
       CELERY_ACCEPT_CONTENT: ${CELERY_ACCEPT_CONTENT}
+      CELERY_BROKER_CONNECTION_RETRY_ON_SETUP: ${CELERY_BROKER_CONNECTION_RETRY_ON_SETUP}
       CELERY_TIMEZONE: ${CELERY_TIMEZONE}
       CELERY_ENABLE_UTC: ${CELERY_ENABLE_UTC}
     depends_on:
-        - rabbitmq
+        - rabbitmq-broker
+        - postgres
     networks:
       - analyticq-network
-    command: celery -A analticq.app worker --loglevel=info
+    command: celery -A analyticq.app worker --loglevel=info
 
   celery-beat:
     build:
@@ -50,14 +52,42 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       CELERY_TASK_SERIALIZER: ${CELERY_TASK_SERIALIZER}
       CELERY_ACCEPT_CONTENT: ${CELERY_ACCEPT_CONTENT}
+      CELERY_BROKER_CONNECTION_RETRY_ON_SETUP: ${CELERY_BROKER_CONNECTION_RETRY_ON_SETUP}
       CELERY_TIMEZONE: ${CELERY_TIMEZONE}
       CELERY_ENABLE_UTC: ${CELERY_ENABLE_UTC}
     depends_on:
-        - rabbitmq
-        - celery_worker
+        - rabbitmq-broker
+        - celery-worker
+        - postgres
     networks:
       - analyticq-network
-    command: celery -A analticq.app beat --loglevel=info
+    command: celery -A analyticq.app beat --loglevel=info
+
+  postgres:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: analyticq-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_ROOT_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"  # Mapping PostgreSQL port to local machine
+    networks:
+      - analyticq-network
+    entrypoint: >
+      bash -c "
+        docker-entrypoint.sh postgres &
+        sleep 10 &&
+        until pg_isready -h localhost -U ${POSTGRES_ROOT_USER}; do
+          sleep 2;
+        done;
+        psql -U ${POSTGRES_ROOT_USER} -d ${POSTGRES_DB} -c \"CREATE USER ${POSTGRES_NON_ROOT_USER} WITH PASSWORD '${POSTGRES_NON_ROOT_PASSWORD}';\"
+        psql -U ${POSTGRES_ROOT_USER} -d ${POSTGRES_DB} -c \"GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_NON_ROOT_USER};\"
+        wait
+      "
 
 
   analyticq-backend:
@@ -67,12 +97,15 @@ services:
     container_name: analyticq-backend
     depends_on:
     - rabbitmq-broker
+    - postgres
     networks:
       - analyticq-network
 
 volumes:
   rabbitmq_data:
     name: rabbitmq_data
+  postgres_data:
+    name: postgres_data
 
 networks:
   analyticq-network:

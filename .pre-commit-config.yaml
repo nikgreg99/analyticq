@@ -23,7 +23,7 @@ repos:
   - repo: local
     hooks:
       - id: update-backend-requirements
-        name: Check if AnalyticQ backend dependencies are updated
+        name: Upgrading analyticq-backend dependencies
         entry: python scripts/update_backend_requirements.py
         language: python
         always_run: true

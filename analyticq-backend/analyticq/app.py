@@ -1,8 +1,9 @@
 import logging
+import time
 from contextlib import asynccontextmanager
 from typing import List
 
-from analyticq.config import CeleryConf
+from analyticq.config import CeleryConf, DatabaseConf
 from analyticq.config.di import AnalyticQContainer
 from analyticq.routes.test_route import router as test_router
 from analyticq.util import AnalyticQConst, ImportUtil, PathUtil
@@ -18,7 +19,11 @@ logger = logging.getLogger(__name__)
 celery = None
 
 
-def get_AnalyticQ_root_structure() -> List[str]:
+def get_container() -> AnalyticQContainer:
+    return AnalyticQContainer()
+
+
+def get_analyticq_root_structure() -> List[str]:
     return [
         PathUtil.get_home_AnalyticQ_path(),
         PathUtil.get_config_AnalyticQ_path(),
@@ -28,7 +33,7 @@ def get_AnalyticQ_root_structure() -> List[str]:
 
 
 async def create_AnalyticQ_root_structure():
-    required_folders_path: List[str] = get_AnalyticQ_root_structure()
+    required_folders_path: List[str] = get_analyticq_root_structure()
     try:
         for folder_path in required_folders_path:
             await PathUtil.create_folder_if_not_exists_async(folder_path)
@@ -40,22 +45,38 @@ async def create_AnalyticQ_root_structure():
 @asynccontextmanager
 async def backend_context(app: FastAPI):
     global celery
+    start_time = time.time()
+
     container = AnalyticQContainer()
     celery_conf = CeleryConf()
-    celery = celery_conf.get_celery_app()
-
-    app.state.celery = celery_conf.celery
-    logger.info("Init AnalyticQ backend resources...")
 
     try:
+        db = DatabaseConf()
+        await db.init_db()
+        await db.run_db_migrations()
+        app.state.db = db
+
+        celery = celery_conf.get_celery_app()
+        app.state.celery = celery_conf.celery
+
+        logger.info("Init AnalyticQ backend resources...")
         logging_init()
         await create_AnalyticQ_root_structure()
+
         all_modules = ImportUtil.discover_modules(analyticq)
         container.wire(modules=all_modules)
+
         app.state.celery.conf.update(celery_conf.settings.model_dump())
+        logger.info(f"Analyticq backend started in {time.time() - start_time:2f} seconds")
+
         yield
+
+    except Exception as e:
+        logger.critical(f"Error starting AnalyticQ backend: {str(e)}", exc_info=True)
+        raise RuntimeError("Critical error from initizalizing Analyticq backend") from e
     finally:
         # Cleanup resources (dependencies, connection, ecc)
+        await app.state.db.close()
         logging.shutdown()
         container.unwire()
         logger.info("Shutdown AnalyticQ backend...")

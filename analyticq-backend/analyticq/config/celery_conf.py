@@ -45,6 +45,10 @@ class CelerySettings(BaseSettings):
         default_factory=lambda: os.environ.get('CELERY_ENABLE_UTC', 'true').lower() == 'true'
     )
 
+    broker_connection_retry_on_setup: bool = Field(
+        default_factory=lambda: os.environ.get('CELERY_BROKER_CONNECTION_RETRY_ON_SETUP', 'true').lower() == 'true'
+    )
+
     autodiscover_tasks: Union[List[str], str] = Field(default_factory=lambda: FileUtil.parse_list_env('CELERY_AUTODISCOVER_TASKS', []))
 
     beat_schedule: Dict[str, Dict[str, Any]] = Field(
@@ -61,17 +65,64 @@ class CelerySettings(BaseSettings):
 
     @field_validator('broker_url')
     def validate_broker_url(cls, v: str) -> str:
+        """
+        Validates the Celery broker URL.
+
+        Args:
+            v (str): The broker URL to validate.
+
+        Returns:
+            str: The validated broker URL.
+
+        Raises:
+            ValueError: If the broker URL is empty or None.
+
+        Example:
+            >>> validate_broker_url("amqp://guest:guest@localhost:5672//")
+            'amqp://guest:guest@localhost:5672//'
+        """
         if not v:
             raise ValueError("CELERY_BROKER_URL must be set")
         return v
 
     @field_validator('result_backend')
     def validate_result_backend(cls, v: str) -> str:
+        """
+        Validates the Celery result backend configuration.
+
+        This method ensures that a result backend URL is provided for Celery configuration.
+        The result backend is required for storing and retrieving task results.
+
+        Args:
+            cls: The class instance
+            v (str): The result backend URL string to validate
+
+        Returns:
+            str: The validated result backend URL
+
+        Raises:
+            ValueError: If the result backend URL is empty or None
+        """
         if not v:
             raise ValueError("CELERY_RESULT_BACKEND must be set")
         return v
 
     def get_autodiscover_tasks(self) -> List[str]:
+        """
+        Retrieve the list of tasks to be autodiscovered by Celery.
+
+        This method processes the autodiscover_tasks attribute and returns a list of task names.
+        It handles three different input formats:
+        - A Python list
+        - A JSON string that can be parsed into a list
+        - A comma-separated string
+
+        Returns:
+            List[str]: A list of task names to be autodiscovered.
+                - If input is already a list, returns it as is
+                - If input is valid JSON that converts to a list, returns the parsed list
+                - If input is a string, splits by comma and returns non-empty stripped items
+        """
         if isinstance(self.autodiscover_tasks, list):
             return self.autodiscover_tasks
         try:
@@ -83,6 +134,16 @@ class CelerySettings(BaseSettings):
         return [item.strip() for item in self.autodiscover_tasks.split(",") if item.strip()]
 
     def get_beat_schedule(self) -> Dict[str, Dict[str, Any]]:
+        """Returns the Celery beat schedule configuration.
+
+        The beat schedule defines periodic tasks that should be executed by Celery workers
+        at specified intervals.
+
+        Returns:
+            Dict[str, Dict[str, Any]]: A dictionary containing the beat schedule configuration,
+            where each key is a task name and the value is a dictionary with task settings
+            like schedule interval, task function, and arguments.
+        """
         return self.beat_schedule
 
 
@@ -98,7 +159,7 @@ class CeleryConf:
         return cls._instance
 
     def __init__(self, settings: Optional[CelerySettings] = None):
-        if not hasattr("initialized"):
+        if not hasattr(self, "initialized"):
             self.settings = settings or CelerySettings()
             # Create the Celery application
             self.celery = Celery(
@@ -110,6 +171,15 @@ class CeleryConf:
             self.intizialized = True
 
     def configure_app(self) -> None:
+        """
+        Configure the Celery application with settings and tasks.
+        This method performs the following configurations:
+        1. Updates Celery configuration from settings (excluding autodiscover_tasks and beat_schedule)
+        2. Autodiscovers tasks from specified packages if autodiscover_tasks is configured
+        3. Updates the beat schedule with CELERY_BEAT configuration
+        Returns:
+            None
+        """
         celery_conf_dict = self.settings.model_dump(exclude=["autodiscover_tasks", "beat_schedule"])
         self.celery.conf.update(celery_conf_dict)
 

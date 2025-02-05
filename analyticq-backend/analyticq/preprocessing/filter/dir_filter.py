@@ -130,11 +130,11 @@ class DirFilter:
         return dir_path.is_symlink()
 
     @staticmethod
-    def is_relevant_dir(dir_path: Path) -> bool:
+    def is_irrelevant_dir(dir_path: Path) -> bool:
         """Determine if a directory path should be excluded from processing.
 
         This function checks various conditions to decide if a directory should be considered
-        relevant for further processing or should be filtered out based on multiple criteria.
+        irrelevant for further processing or should be filtered out based on multiple criteria.
 
         Args:
             dir_path (Path): Path object representing the directory to check.

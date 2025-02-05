@@ -103,8 +103,8 @@ async def test_load_ssh_key(mock_ssh_key_path):
         )
 
 
-@pytest.mark.skip("to be fix")
-def test_configure_git_ssh(mock_ssh_key_path):
+@pytest.mark.asyncio
+async def test_configure_git_ssh(mock_ssh_key_path):
     service = GitAuthService()
 
     # Mock key loading methods
@@ -116,8 +116,8 @@ def test_configure_git_ssh(mock_ssh_key_path):
         mock_run.return_value = MagicMock(returncode=0)
 
         # Ensure key is loaded before configuration
-        service.load_ssh_key(mock_ssh_key_path)
-        service.configure_git_ssh(mock_ssh_key_path)
+        await service.load_ssh_key(Path(mock_ssh_key_path))
+        await service.configure_git_ssh(Path(mock_ssh_key_path))
 
         assert os.environ["GIT_SSH_COMMAND"] == \
             f"ssh -i {mock_ssh_key_path} -o IdentitiesOnly=yes"

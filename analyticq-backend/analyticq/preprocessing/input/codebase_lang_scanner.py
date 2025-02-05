@@ -6,10 +6,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Tuple
 
-from analyticq.preprocessing.filter.dir_filter import DirFilter
-from analyticq.preprocessing.filter.file_filter import FileFilter
-from analyticq.preprocessing.metric.metric_collector import \
-    CodebaseMetricsCollector
+from analyticq.preprocessing.filter import DirFilter, FileFilter
+from analyticq.preprocessing.metric import CodebaseMetricsReporter
 from analyticq.util import (BatchParameters, BatchUtil, FileUtil,
                             TimeTrackerUtils)
 from dependency_injector.wiring import Provide, inject
@@ -32,11 +30,12 @@ class CodebaseLangScanner:
 
     @inject
     def __init__(self,
-                 metrics_collector: Provide[CodebaseMetricsCollector],
+                 metrics_reporter: Provide[CodebaseMetricsReporter],
                  time_tracker: Provide[TimeTrackerUtils],
                  batch_util: Provide[BatchUtil]) -> None:
+
         if not hasattr(self, "initialized"):
-            self.metrics_collector = metrics_collector
+            self.metrics_reporter = metrics_reporter
             self.time_tracker = time_tracker
             self.batch_util = batch_util
             self.initialized = True
@@ -64,7 +63,27 @@ class CodebaseLangScanner:
             return "Unknown", 0
 
     async def _detect_language(self, file_path: Path) -> str:
-        """Attempts to detect the programming language of the file."""
+        """
+        Attempts to detect the programming language of a file using multiple methods.
+        This method follows a two-step approach:
+        1. Attempts to detect language based on file extension/name
+        2. If that fails, attempts to detect based on file content
+
+        Args:
+            file_path (Path): Path object pointing to the file to analyze
+
+        Returns:
+            str: Detected programming language name, or "Unknown" if detection fails
+            int: Returns 0 along with "Unknown" in case of failure
+
+        Raises:
+            ClassNotFound: If lexer class is not found for the file
+            Exception: For any other errors during language detection
+
+        Note:
+            The detection is performed using Pygments lexers. The accuracy depends on
+            both the file extension and content patterns.
+        """
         try:
             # First attempt: detect by filename
             lexer = get_lexer_for_filename(file_path.name)
@@ -108,12 +127,12 @@ class CodebaseLangScanner:
             # File not relevant are discarded
             if not FileFilter.is_relevant_file(file_path):
                 size = file_path.stat().st_size
-                self.metrics_collector.add_excluded_file(file_path, size)
+                self.metrics_reporter.add_excluded_file(file_path, size)
                 return
 
             detected_language, loc = await self.detect_language_and_loc(file_path)
             size = file_path.stat().st_size
-            self.metrics_collector.add_file_statistics(file_path, detected_language, size, loc)
+            self.metrics_reporter.add_file_statistics(file_path, detected_language, size, loc)
 
             file_group[detected_language].append(file_path)
 
@@ -125,7 +144,22 @@ class CodebaseLangScanner:
             logger.error(f"OS error while processing file {file_path}: {e}")
 
     async def process_files_batch(self, files: List[Path], file_group: defaultdict, params: BatchParameters) -> None:
-        """Process a batch of files concurrently with controlled concurrency."""
+        """
+        Process a batch of files concurrently with controlled concurrency.
+        This method handles concurrent processing of multiple files using asyncio, with a semaphore
+        to control the maximum number of concurrent operations.
+        Args:
+            files (List[Path]): List of file paths to process
+            file_group (defaultdict): Dictionary to store file processing results
+            params (BatchParameters): Parameters for batch processing containing max_concurrency
+        Returns:
+            None
+        Note:
+            - Uses asyncio.Semaphore to limit concurrent operations
+            - Handles file processing concurrently via asyncio.gather
+            - Allows exceptions to be returned rather than raised (return_exceptions=True)
+        """
+
         sem = asyncio.Semaphore(params.max_concurrency)
 
         async def process_with_semaphore(file_path: Path) -> None:
@@ -138,9 +172,33 @@ class CodebaseLangScanner:
         )
 
     async def process_dir(self, dir_path: Path, file_groups: defaultdict):
+        """
+        Recursively processes a directory to analyze files and subdirectories.
 
-        if not DirFilter.is_relevant_dir(dir_path):
-            self.metrics_collector.add_excluded_dir(dir_path)
+        This method scans the given directory path, processes files in batches, and recursively handles subdirectories.
+        It skips irrelevant directories and handles symlinks according to configuration.
+
+        Args:
+            dir_path (Path): Path object representing the directory to process
+            file_groups (defaultdict): Dictionary to store processed files grouped by some criteria
+
+        Returns:
+            None
+
+        Raises:
+            PermissionError: If access to directory is denied
+            FileNotFoundError: If directory no longer exists during processing
+
+        Notes:
+            - Uses batch processing for files to optimize performance
+            - Skips symlinks and irrelevant directories
+            - Updates metrics for excluded directories
+            - Tracks processing time
+        """
+
+        if DirFilter.is_irrelevant_dir(dir_path):
+            print("ok")
+            self.metrics_reporter.add_excluded_dir(dir_path)
             return
 
         try:
@@ -168,7 +226,7 @@ class CodebaseLangScanner:
         finally:
             self.time_tracker.update()
 
-    async def scan_codebase_languages(self, root_codebase_path: Path) -> None:
+    async def scan_codebase(self, root_codebase_path: Path) -> None:
         """
         Scans the codebase to identify and categorize files based on their programming languages.
 
@@ -179,7 +237,6 @@ class CodebaseLangScanner:
         Args:
             root_codebase_path (Path): The root directory path of the codebase to be scanned.
 
-
         Note:
             The method uses an internal time tracker to monitor progress and performance.
             Results are stored internally in the file groups data structure.
@@ -189,17 +246,18 @@ class CodebaseLangScanner:
         file_groups = defaultdict(list)
 
         await self.process_dir(root_codebase_path, file_groups)
-
         self.time_tracker.stop()
 
-    def generate_languge_report(self) -> Dict[str, Any]:
+    def generate_codebase_report(self) -> Dict[str, Any]:
         """
-        Generates a report of the programming language metrics collected during scanning.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the collected language metrics data with:
-                - File counts by extension
-                - Line counts by language
-                - Other language-specific statistics
-        """
-        return self.metrics_collector.get_collected_data()
+        Generates a comprehensive report containing metrics about the codebase.
+        Returns
+        -------
+        Dict[str, Any]
+        A dictionary containing various metrics about the codebase, including:
+            - Language distribution
+            - File counts
+            - Code statistics
+            - And other relevant codebase metrics collected by the metrics reporter
+    """
+        return self.metrics_reporter.get_codebase_metric_report()

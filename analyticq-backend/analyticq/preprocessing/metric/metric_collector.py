@@ -135,7 +135,8 @@ class CodebaseMetricsCollector:
         lang_stats["code_lines"] += loc if loc else 0
         lang_stats["files"].append({
             "file_path": file_metrics.path,
-            "loc": loc
+            "loc": loc,
+            "size": actual_size
         })
 
         self.total_files += 1

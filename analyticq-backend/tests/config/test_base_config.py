@@ -50,31 +50,6 @@ def test_load_yaml_config(monkeypatch):
     assert config["dev"]["host"] == "127.0.0.1"
 
 
-@pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
-def test_from_file_default_config(monkeypatch):
-    monkeypatch.setattr(
-        "analyticq.util.PathUtil.get_backend_default_config_AnalyticQ_path",
-        lambda: TEST_FILES_DIR
-    )
-    monkeypatch.setattr(
-        "analyticq.util.FileUtil.get_default_AnalyticQ_config_filename",
-        lambda: "test_config.json"
-    )
-    config = AnalyticQBaseConfig.from_file(profile="dev")
-    assert config.host == "127.0.0.1"
-
-
-@pytest.mark.skip(reason="Skipping this test for not running in CI/CD")
-def test_from_file_with_env_override(setup_environment, monkeypatch):
-    monkeypatch.setattr(
-        "analyticq.util.PathUtil.get_backend_default_config_AnalyticQ_path",
-        lambda: TEST_FILES_DIR
-    )
-    config = AnalyticQBaseConfig.from_file(profile="test")
-    assert config.secret_key == "test_env_secret_key"
-    assert config.app_name == "AnalyticQ-Backend"
-
-
 def test_config_file_not_found():
     with pytest.raises(FileNotFoundError):
         AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.txt")

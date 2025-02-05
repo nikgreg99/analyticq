@@ -31,7 +31,7 @@
           "node_modules", "vendor", "target", "build", "dist", "tmp", "*.vs",
           ".tox", ".eggs", ".env", ".cache", ".pytest_cache", "*.bundle",
           ".d", ".cache", ".nvm"],
-        "max_depth": 5
+        "max_depth": 100
       }
     }
   },
@@ -67,7 +67,7 @@
           "node_modules", "vendor", "target", "build", "dist", "tmp", "*.vs",
           ".tox", ".eggs", ".env", ".cache", ".pytest_cache", "*.bundle",
           ".d", ".cache", ".nvm"],
-        "max_depth": 5
+        "max_depth": 100
       }
     }
   },
@@ -103,7 +103,7 @@
           "node_modules", "vendor", "target", "build", "dist", "tmp", "*.vs",
           ".tox", ".eggs", ".env", ".cache", ".pytest_cache", "*.bundle",
           ".d", ".cache", ".nvm"],
-        "max_depth": 5
+        "max_depth": 100
       }
     }
   }
