@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION  3.13
+ARG PYTHON_VERSION=3.13
 
 FROM python:${PYTHON_VERSION}-slim AS build
 
@@ -14,6 +14,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+ARG PYTHON_VERSION=3.13  # Ridefinizione necessaria
+
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
 ENV PYTHONDONWRITEBYTECODE=1
@@ -24,6 +26,6 @@ COPY --from=build /usr/local/bin /usr/local/bin
 
 COPY analyticq/ .
 
-EXPOSE $ANALYTICQ_BACKEND_PORT
+EXPOSE 8000
 
-CMD [ "python", "start.py" ]
+CMD ["python", "start.py"]
