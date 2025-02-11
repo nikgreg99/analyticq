@@ -17,7 +17,7 @@ RUN rm -rf /root/.cache /home/bandit/.cache
 RUN rm -rf /root/.cache /home/bandit/.cache
 
 VOLUME ["/code"]
-VOLUME [ "/output" ]
+VOLUME [ "/output"]
 
 # Run Bandit with the entry point script
 ENTRYPOINT ["python", "run_bandit.py", "/code"]
