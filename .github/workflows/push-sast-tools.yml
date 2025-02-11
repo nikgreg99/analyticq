@@ -10,5 +10,5 @@ jobs:
     uses: ./.github/workflows/docker-build.yml
     with:
       image_name: bandit
-      dockerfile: ./sast-tools/python/bandit/Dockerfile
-      context: ./sast-tools/python/bandit/
+      dockerfile: .sast-tools/python/bandit/Dockerfile
+      context: sast-tools/python/bandit/
