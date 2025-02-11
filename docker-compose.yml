@@ -38,7 +38,7 @@ services:
         - postgres
     networks:
       - analyticq-network
-    command: celery -A analyticq.app worker --loglevel=info
+    command: celery -A analyticq.celery_app worker --loglevel=info
 
   celery-beat:
     build:
@@ -61,7 +61,7 @@ services:
         - postgres
     networks:
       - analyticq-network
-    command: celery -A analyticq.app beat --loglevel=info
+    command: celery -A analyticq.celery_app beat --loglevel=info
 
   postgres:
     image: postgres:${POSTGRES_VERSION}

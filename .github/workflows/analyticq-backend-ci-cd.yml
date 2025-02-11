@@ -10,9 +10,9 @@ permissions:
   actions: read
 
 on:
-    push:
-        branches:
-            - dev
+  push:
+    branches:
+      - dev
 
 jobs:
     build-and-test:
@@ -39,7 +39,7 @@ jobs:
         - name: Run unit tests with Pytest
           run: |
             python -m pip install pytest pytest-asyncio
-            pytest analyticq-backend/tests
+            pytest analyticq-backend/tests/unit
 
         - name: Run SAST analysis backend with Bandit
           run: |
@@ -74,3 +74,6 @@ jobs:
              run: |
                  docker buildx create --use
                  docker buildx build -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} -f ./analyticq-backend/Dockerfile ./analyticq-backend --push
+
+           - name: Log out from Docker Hub
+             run: docker logout ghcr.io

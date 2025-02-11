@@ -1,28 +1,16 @@
 import json
 import logging
 import os
-from threading import Lock
 from typing import Any, Dict, List, Optional, Union
 
 from analyticq.util import FileUtil
-from celery import Celery
-from celery.schedules import crontab
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
 
-CELERY_BEAT = {
-    "cleanup_old_codebase":
-    {
-        "task": "analyticq.tasks.cleanup.cleanup_old_codebase",
-        "schedule": crontab(minute="*/10")
-    }
-}
-
-
-class CelerySettings(BaseSettings):
+class AnalyticQCeleryConfig(BaseSettings):
 
     hostname: str = Field(default_factory=lambda: os.environ.get("CELERY_HOSTNAME", "localhost"))
     broker_url: str = Field(default_factory=lambda: os.environ.get('CELERY_BROKER_URL', ''))
@@ -130,7 +118,8 @@ class CelerySettings(BaseSettings):
             if isinstance(tasks_list, list):
                 return tasks_list
         except json.JSONDecodeError:
-            pass
+            logger.error("Error parsing Celery Config")
+            raise
         return [item.strip() for item in self.autodiscover_tasks.split(",") if item.strip()]
 
     def get_beat_schedule(self) -> Dict[str, Dict[str, Any]]:
@@ -147,56 +136,55 @@ class CelerySettings(BaseSettings):
         return self.beat_schedule
 
 
-class CeleryConf:
+class AnalyticQContainerNetworkConfig(BaseModel):
+    """Container network configuration settings for docker containers.
 
-    _instance = None
-    _lock = Lock()
+    This model defines the network configuration options for docker containers, including
+    network mode, internet access, DNS settings and port mappings.
 
-    def __new__(cls, *args, **kwargs):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-        return cls._instance
+    Attributes:
+        mode (str): Network mode for the container. Valid values are:
+            - "none": No networking
+            - "bridge": Default bridge network
+            - "host": Host networking
+            - "overlay": Overlay networking for swarm services
+            - "macvlan": MAC VLAN networking
+            Defaults to "none".
 
-    def __init__(self, settings: Optional[CelerySettings] = None):
-        if not hasattr(self, "initialized"):
-            self.settings = settings or CelerySettings()
-            # Create the Celery application
-            self.celery = Celery(
-                "analyticq",
-                broker=self.settings.broker_url,
-                backend=self.settings.result_backend,
-            )
-            self.configure_app()
-            self.intizialized = True
+        allow_outbound (bool): Whether to allow outbound internet access from the container.
+            Defaults to False.
 
-    def configure_app(self) -> None:
-        """
-        Configure the Celery application with settings and tasks.
-        This method performs the following configurations:
-        1. Updates Celery configuration from settings (excluding autodiscover_tasks and beat_schedule)
-        2. Autodiscovers tasks from specified packages if autodiscover_tasks is configured
-        3. Updates the beat schedule with CELERY_BEAT configuration
-        Returns:
-            None
-        """
-        celery_conf_dict = self.settings.model_dump(exclude=["autodiscover_tasks", "beat_schedule"])
-        self.celery.conf.update(celery_conf_dict)
+        dns_servers (List[str], optional): List of DNS server IP addresses to use.
+            Defaults to None.
 
-        # Handling autodiscover tasks
-        autodiscover_tasks = self.settings.get_autodiscover_tasks()
-        if autodiscover_tasks:
-            self.celery.autodiscover_tasks(autodiscover_tasks, force=True)
+        ports (Dict[str, str], optional): Port mapping configuration as host:container pairs.
+            For example: {"8080": "80"} maps host port 8080 to container port 80.
+            Defaults to None.
+    """
+    mode: str = "none"  # none, bridge, host, overlay, macvlan
+    allow_outbound: bool = False  # Allow outbound internet access
+    dns_servers: Optional[List[str]] = None
+    ports: Optional[Dict[str, str]] = None  # Port mappings (host:container)
 
-        self.celery.conf.update(beat_schedule=CELERY_BEAT)
 
-    def get_celery_app(self) -> Celery:
-        return self.celery
+class AnalyticQContainerRuntimeConfig(BaseModel):
+    """Configuration settings for container runtime environment.
+    This class defines the runtime configuration parameters for containerized execution.
+    Attributes:
+        name (str): Container runtime name (default: "docker")
+        timeout (int): Maximum execution time in seconds (default: 600)
+        memory (str): Memory limit for the container (default: "1g")
+        network (ContainerNetworkConfig): Network configuration settings
+        user (str): User and group to run container as (default: "nobody:nogroup")
+        read_only (bool): Whether to mount container filesystem as read-only (default: True)
+        security_opts (List[str]): Security options for container (default: ["no-new-privileges:true"])
+    """
 
-    @classmethod
-    def reset(cls):
-        """
-        Reset the singleton instance, useful for testing or dynamic reconfiguration.
-        """
-        with cls._lock:
-            cls._instance = None
+    name: str = "docker"
+    timeout: int = 600
+    memory: str = "1g"
+    cpu_shares: int = 512
+    network: AnalyticQContainerNetworkConfig = AnalyticQContainerNetworkConfig()
+    user: str = "nobody:nogroup"
+    read_only: bool = True
+    security_opts: List[str] = ["no-new-privileges:true"]

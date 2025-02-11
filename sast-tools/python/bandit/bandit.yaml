@@ -1,0 +1,19 @@
+exclude_dirs:
+  - chromadb/test
+  - bin
+  - build
+  - .git
+  - .venv
+  - venv
+  - env
+  - .github
+  - examples
+  - clients/js
+  - .vscode
+  - ..git
+  - tests
+  - .tox
+  - __pycache__
+  - .pytest_cache
+tests: []
+skips: []

@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 from analyticq.util import FileUtil, PathUtil
@@ -33,11 +34,11 @@ class AnalyticQBaseConfig(BaseModel):
         Raises:
             FileNotFoundError: If the configuration file does not exist.
         """
-        conf_path = str(conf_file_path / conf_filename)
+        conf_path = Path(conf_file_path).joinpath(conf_filename)
         if not os.path.exists(conf_path):
             raise FileNotFoundError(f"Config file not found: {conf_path}")
         with open(conf_path, "r") as f:
-            return AnalyticQConfigParser.parse(f, conf_path)
+            return AnalyticQConfigParser.parse(f, str(conf_path))
 
     @classmethod
     def from_file(cls, conf_filename: str, profile: str = "dev") -> "AnalyticQBaseConfig":

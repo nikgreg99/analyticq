@@ -1,5 +1,7 @@
 
 class AnalyticQConst:
+    """Constants class for AnalyticQ application.
+    """
 
     # Extension Alias
     JSON_EXTENSION: str = "json"

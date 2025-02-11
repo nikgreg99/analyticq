@@ -1,26 +1,8 @@
 import hashlib
-from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
-from typing import Optional
 
-
-@dataclass
-class AnalyticQScanContext:
-    """
-    A context class for storing repository scan-related information.
-
-    This class holds essential information needed for scanning a repository,
-    including the repository name, branch, and last commit hash.
-
-    Attributes:
-        repo_name (str): The name of the repository being scanned.
-        branch (Optional[str]): The branch being scanned. Defaults to None.
-        last_commit_hash (str): The hash of the last commit in the scan. Defaults to None.
-    """
-    repo_name: str
-    branch: Optional[str] = None
-    last_commit_hash: str = None
+from analyticq.engine import AnalyticQScanContext
 
 
 class AnalyticQIDGeneratorService:

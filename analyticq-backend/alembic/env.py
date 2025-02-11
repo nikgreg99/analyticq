@@ -3,7 +3,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from analyticq.config.db_conf import Base
+from analyticq.manager.db_manager import Base
 from analyticq.model import *  # noqa
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine

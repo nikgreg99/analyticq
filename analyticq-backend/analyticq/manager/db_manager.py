@@ -3,8 +3,6 @@ import os
 from threading import Lock
 from typing import AsyncGenerator
 
-from alembic import command
-from alembic.config import Config
 from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
                                     create_async_engine)
 from sqlalchemy.orm import declarative_base
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
-class DatabaseConf:
+class AnalyticQDatabaseManager:
 
     _instance = None
     _lock = Lock()
@@ -25,16 +23,17 @@ class DatabaseConf:
         return cls._instance
 
     def __init__(self):
-
-        self._engine = create_async_engine(
-            os.environ.get("ANALYTICQ_DB_URL"),
-            echo=True
-        )
-        self._session_factory = async_sessionmaker(
-            self._engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
+        if not hasattr(self, "initialized"):
+            self._engine = create_async_engine(
+                os.environ.get("ANALYTICQ_DB_URL"),
+                echo=True
+            )
+            self._session_factory = async_sessionmaker(
+                self._engine,
+                class_=AsyncSession,
+                expire_on_commit=False
+            )
+            self.initialized = True
 
     async def init_db(self):
         """
@@ -76,26 +75,10 @@ class DatabaseConf:
             await session.commit()
         except Exception as e:
             await session.rollback()
-            logger.error(f"Session error: {e}")
+            logger.error(f"AnalyticQ Session error: {e}")
             raise
         finally:
             await session.close()
-
-    async def run_db_migrations(self):
-        """
-        Run database migrations using Alembic.
-
-        This method executes pending database migrations by running Alembic upgrade
-        commands to bring the database schema to the latest version ('head').
-
-        Returns:
-            None
-
-        Raises:
-            alembic.util.CommandError: If there is an error during migration execution
-        """
-        alembic_cfg = Config("alembic.ini")
-        await command.upgrade(alembic_cfg, "head")
 
     async def close(self):
         """

@@ -1,0 +1,14 @@
+name: CI/CD for pushing SAST tools Docker image
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  push-bandit:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: bandit
+      dockerfile: ./sast-tool/python/bandit/Dockerfile
+      context: ./sast-tool/python/bandit/

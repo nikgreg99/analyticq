@@ -1,44 +1,49 @@
-ARG PYTHON_VERSION=3.12  # Usa una versione stabile
+ARG PYTHON_VERSION=3.12
 
 FROM python:${PYTHON_VERSION}-slim AS build
 
-# Mantieni le variabili d'ambiente
-ENV PYTHONDONWRITEBYTECODE=1
-ENV PYTHONBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-ENV ANALYTICQ_BACKEND_HOST="0.0.0.0"
-ENV ANALYTICQ_BACKEND_PORT=8000
-ENV ANALYTICQ_BACKEND_PROFILE="dev"
+ENV ANALYTICQ_BACKEND_HOST="0.0.0.0" \
+    ANALYTICQ_BACKEND_PORT=8000 \
+    ANALYTICQ_BACKEND_PROFILE="dev"
 
 WORKDIR /app
 
-# Creazione del virtual environment
-RUN python -m venv /venv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libc-dev libffi-dev libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Imposta il PATH per usare il venv
+RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
+
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Secondo stage
+# STAGE 2: Runtime
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
-# Mantieni le variabili d'ambiente
-ENV PYTHONDONWRITEBYTECODE=1
-ENV PYTHONBUFFERED=1
 
-ENV ANALYTICQ_BACKEND_HOST="0.0.0.0"
-ENV ANALYTICQ_BACKEND_PORT=8000
-ENV ANALYTICQ_BACKEND_PROFILE="dev"
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Copia il virtual environment dal build stage
+ENV ANALYTICQ_BACKEND_HOST="0.0.0.0" \
+    ANALYTICQ_BACKEND_PORT=8000 \
+    ANALYTICQ_BACKEND_PROFILE="dev" \
+    ANALYTICQ_USER=analyticq
+
+
+RUN useradd --create-home  ${ANALYTICQ_USER}
+WORKDIR /app
+USER ${ANALYTICQ_USER}
+
 COPY --from=build /venv /venv
-
-# Imposta il PATH per usare il venv
 ENV PATH="/venv/bin:$PATH"
 
-COPY analyticq/ .
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} analyticq-backend/ .
 
 EXPOSE 8000
 
