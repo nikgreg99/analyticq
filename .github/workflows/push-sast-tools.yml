@@ -1,5 +1,11 @@
 name: CI/CD for pushing SAST tools Docker image
 
+permissions:
+  contents: read
+  packages: write
+  actions: read
+
+
 on:
   push:
     branches:
