@@ -1,4 +1,4 @@
-name: Docker Build and Push baseline
+name: Docker Build and Push workflow
 
 on:
   workflow_call:

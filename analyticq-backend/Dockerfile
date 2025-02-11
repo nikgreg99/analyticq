@@ -43,8 +43,7 @@ USER ${ANALYTICQ_USER}
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} analyticq-backend/ .
-
-EXPOSE 8000
+COPY .  .
+EXPOSE ${ANALYTICQ_BACKEND_PORT}
 
 CMD ["python", "start.py"]
