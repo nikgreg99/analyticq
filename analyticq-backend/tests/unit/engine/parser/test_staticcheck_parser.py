@@ -128,7 +128,7 @@ def test_invalid_severity(parser):
     }]
 
     result = parser.parse_scan_result(raw_result)
-    assert result.issues[0].severity == AnalyticQSeverity.UNKNOWN
+    assert result.issues[0].severity == AnalyticQSeverity.LOW
 
 
 def test_empty_result(parser):

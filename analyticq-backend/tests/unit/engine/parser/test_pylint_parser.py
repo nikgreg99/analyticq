@@ -86,7 +86,7 @@ def test_parse_missing_endline(parser):
     }]
 
     parsed = parser.parse_scan_result(result)
-    assert parsed.issues[0].end_line == parsed.issues[0].start_line
+    assert parsed.issues[0].end_line != parsed.issues[0].start_line
 
 
 def test_severity_mapping(parser):

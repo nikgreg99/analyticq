@@ -36,7 +36,7 @@ class PylintParser(AnalyticQResultParser):
                     message=result["message"],
                     path=result["path"],
                     start_line=result["line"],
-                    end_line=result.get("endline") if result.get("endline") is not None else 0,  # Use line if endLine is missing
+                    end_line=result.get("endLine") if result.get("endLine") is not None else 0,  # Use line if endLine is missing
                     confidence=AnalyticQConfidence.UNKNOWN,  # Pylint doesn't provide confidence, default to HIGH
                 )
 
