@@ -44,7 +44,7 @@ services:
     build:
       context: ./analyticq-backend
       dockerfile: Dockerfile
-    container_name: celery_worker
+    container_name: celery_beat
     env_file: .env
     environment:
       CELERY_HOSTNAME: ${CELERY_HOSTNAME}
@@ -95,6 +95,7 @@ services:
       context: ./analyticq-backend
       dockerfile: Dockerfile
     container_name: analyticq-backend
+    env_file: .env
     depends_on:
     - rabbitmq-broker
     - postgres

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from pathlib import Path
@@ -31,8 +30,21 @@ class AnalyticQContainerManager:
         This method should be called explicitly to initialize the class.
         """
         if not self.initialized:
-            self.docker = aiodocker.Docker()
-            self.initialized = True
+            if self.docker is None:
+                self.docker = aiodocker.Docker()
+                self.initialized = True
+
+    async def cleanup(self):
+        """
+        Cleanup the Docker client connection and reset initialization state.
+
+        Returns:
+            None
+        """
+        if self.docker is not None:
+            await self.docker.close()
+            self.docker = None
+            self.initialized = False
 
     async def __aenter__(self):
         """
@@ -45,8 +57,7 @@ class AnalyticQContainerManager:
             self:
              Returns the instance of the class to be used within the context manager.
         """
-        if not self.initialized:
-            await self.initialize()
+        await self.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -61,8 +72,20 @@ class AnalyticQContainerManager:
         Returns:
             None
         """
-        if self.docker:
-            await self.docker.close()
+        await self.cleanup()
+
+    async def _collect_container_logs(self, container, container_id: str):
+        """Collect container logs using the correct stream handling."""
+        try:
+            # Get container logs
+            logs = await container.log(stdout=True, stderr=True, follow=True)
+            async for log_line in logs:
+                # Log line is already a string in the new version
+                log_line = log_line.strip()
+                if log_line:
+                    logger.info(f"Container {container_id} output: {log_line}")
+        except Exception as e:
+            logger.error(f"Error collecting logs from container {container_id}: {str(e)}")
 
     async def _image_exists(self, image_name: str, image_tag: str = "latest") -> bool:
         """
@@ -76,7 +99,6 @@ class AnalyticQContainerManager:
             bool: True if the image exists locally, False otherwise.
         """
         try:
-            print(self.docker)
             await self.docker.images.get(f"{image_name}:{image_tag}")
             return True
         except aiodocker.exceptions.DockerError:
@@ -120,8 +142,6 @@ class AnalyticQContainerManager:
             env_vars (Dict[str, str], optional): Environment variables
             timeout (int, optional): Command timeout in seconds
 
-        Yields:
-            str: Log lines from the container
 
         Raises:
             ScanConfigurationException: If configuration is invalid
@@ -168,15 +188,24 @@ class AnalyticQContainerManager:
 
         try:
             container = await self.docker.containers.create(config=config)
+
             await container.start()
+            logger.info(f"Container {container_id} started")
 
-            timeout_task = None
-            if timeout or self.runtime_config.timeout:
-                timeout_value = timeout or self.runtime_config.timeout
-                timeout_task = asyncio.create_task(asyncio.sleep(timeout_value))
+            logs = container.log(stdout=True, stderr=True, follow=True)
 
-            if timeout_task:
-                timeout_task.cancel()
+            # Wait for container completion
+            # Process logs while waiting for container
+            while True:
+                try:
+                    log_line = await anext(logs)
+                    if log_line:
+                        logger.info(f"Container {container_id} output: {log_line.strip()}")
+                except StopAsyncIteration:
+                    break
+                except Exception as e:
+                    logger.error(f"Error reading log line: {str(e)}")
+                    break
 
             result = await container.wait()
             if result["StatusCode"] != 0:
@@ -186,11 +215,13 @@ class AnalyticQContainerManager:
                 output_path = list(volumes.keys())[-1]
                 file_content = (output_path / file_path).read_text()
                 return file_content
+
             return None
         except aiodocker.exceptions.DockerError as e:
             raise ScanConfigurationException(f"Docker API error: {str(e)}") from e
         finally:
-            try:
-                await container.delete(force=True)
-            except Exception:
-                logger.warning(f"Failed to delete container {container_id}", exc_info=True)
+            if container:
+                try:
+                    await container.delete(force=True)
+                except Exception:
+                    logger.warning(f"Failed to delete container {container_id}", exc_info=True)

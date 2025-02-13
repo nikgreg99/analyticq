@@ -1,30 +1,32 @@
 import json
+import logging
 from pathlib import Path
 
 from analyticq.config.models import AnalyticQContainerRuntimeConfig
-from analyticq.engine.analyzer import BanditAnalyzer
+from analyticq.engine.analyzer import PylintAnalyzer
 from analyticq.engine.core import ProgressReporter
 from analyticq.engine.core.models import AnalyticQSASTScanResult
 from analyticq.engine.core.sast_tool import AnalyticQSASTTool
-from analyticq.engine.parser import BanditParser
+from analyticq.engine.parser import PylintParser
 from analyticq.exception import ScanConfigurationException
 from analyticq.manager import AnalyticQContainerManager
 
+logger = logging.getLogger(__name__)
 
-class BanditTool(AnalyticQSASTTool):
+
+class PylintTool(AnalyticQSASTTool):
 
     def __init__(self):
         container_manager = AnalyticQContainerManager(
             runtime_config=AnalyticQContainerRuntimeConfig(
                 memory="1g",
-                security_opts=[]
+                security_opts=["no-new-privileges:true", "seccomp:unconfined"]
             )
         )
-
-        image_name = "bandit"
+        image_name = "pylint"
         image_tag = "latest"
-        self.analyzer = BanditAnalyzer(container_manager, image_name, image_tag)
-        self.parser = BanditParser()
+        self.analyzer = PylintAnalyzer(container_manager, image_name, image_tag)
+        self.parser = PylintParser()
         self.progess_reporter = ProgressReporter()
         super().__init__(container_manager, image_name, image_tag)
 
@@ -37,20 +39,20 @@ class BanditTool(AnalyticQSASTTool):
         try:
             code_path = Path(codebase_path)
             if not code_path.exists():
-                raise ScanConfigurationException(f"Code path does not exist for Bandit: {code_path}")
+                raise ScanConfigurationException(f"Code path does not exist for Pylint: {code_path}")
 
             # Validate config
             if config_path:
                 config_path = Path(config_path)
                 if not config_path.exists():
-                    raise ScanConfigurationException(f"Config file not found for Bandit: {config_path}")
+                    raise ScanConfigurationException(f"Config file not found for Pylint: {config_path}")
 
             results = await self.analyzer.run_analysis(
                 codebase_path=code_path,
                 config_path=config_path,
                 timeout=timeout
             )
-
+            logger.info(results)
             results = json.loads(results)
             return self.parser.parse_scan_result(results)
 

@@ -14,7 +14,6 @@ RUN mkdir -p /output
 # Clean up unnecessary files
 RUN rm -rf /root/.cache /home/bandit/.cache
 
-
 VOLUME ["/code"]
 VOLUME [ "/output"]
 

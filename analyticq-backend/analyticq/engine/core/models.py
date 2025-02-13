@@ -17,6 +17,7 @@ class AnalyticQConfidence(Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
+    CRITICAL = "CRIICAL"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
@@ -40,6 +41,7 @@ class AnalyticQSeverity(Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
+    CRITICAL = "CRITICAL"
     UNKNOWN = "UNKNOWN"
 
     @classmethod

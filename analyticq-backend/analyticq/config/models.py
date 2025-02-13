@@ -186,5 +186,5 @@ class AnalyticQContainerRuntimeConfig(BaseModel):
     cpu_shares: int = 512
     network: AnalyticQContainerNetworkConfig = AnalyticQContainerNetworkConfig()
     user: str = "nobody:nogroup"
-    read_only: bool = True
+    read_only: bool = False
     security_opts: List[str] = ["no-new-privileges:true"]

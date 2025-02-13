@@ -9,7 +9,7 @@ from analyticq.engine.core.models import (AnalyticQConfidence,
 from analyticq.exception import ScanParserException
 
 
-class BanditResultParser(AnalyticQResultParser):
+class BanditParser(AnalyticQResultParser):
 
     def __init__(self):
         self.tool_name = "Bandit"

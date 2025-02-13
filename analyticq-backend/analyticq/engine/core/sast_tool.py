@@ -44,8 +44,8 @@ class AnalyticQSASTTool(ABC):
     ) -> AnalyticQSASTScanResult:
         """Run a security analysis scan on the specified codebase.
 
-        This asynchronous method performs a Static Application Security Testing (SAST) scan
-        on the codebase located at the given path.
+        This asynchronous method orchestrates  a Static Application Security Testing (SAST) scan
+        between the Analayzer and the Parser
 
         Args:
             codebase_path (str): The file system path to the codebase to be analyzed.

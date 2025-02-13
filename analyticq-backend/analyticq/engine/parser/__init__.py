@@ -1,1 +1,2 @@
-from .python import *
+from .go import *  # noqa
+from .python import *  # noqa

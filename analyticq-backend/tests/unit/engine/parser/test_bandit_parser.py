@@ -1,7 +1,7 @@
 import pytest
 from analyticq.engine.core import (AnalyticQConfidence, AnalyticQSASTIssue,
                                    AnalyticQSASTScanResult, AnalyticQSeverity)
-from analyticq.engine.parser import BanditResultParser
+from analyticq.engine.parser import BanditParser
 from analyticq.exception import ScanParserException
 
 
@@ -20,7 +20,7 @@ def test_parse_empty_results(bandit_parser):
 
 @pytest.fixture
 def bandit_parser():
-    return BanditResultParser()
+    return BanditParser()
 
 
 def test_parse_valid_results(bandit_parser):

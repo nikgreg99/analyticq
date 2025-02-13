@@ -1,3 +1,4 @@
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -96,7 +97,6 @@ celerybeat-schedule
 .env.test
 .env.dev
 .env.prod
-analyticq-backend/analytiq/config.env.test
 .venv
 env/
 venv/

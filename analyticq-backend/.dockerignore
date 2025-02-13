@@ -1,3 +1,6 @@
+DockerFile
+.dockeringore
+
 # Ignore virtual environment directories
 venv/
 .env/

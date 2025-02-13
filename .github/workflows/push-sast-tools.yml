@@ -5,7 +5,6 @@ permissions:
   packages: write
   actions: read
 
-
 on:
   push:
     branches:
@@ -18,3 +17,17 @@ jobs:
       image_name: bandit
       dockerfile: ./sast-tools/python/bandit/Dockerfile
       context: ./sast-tools/python/bandit
+
+  push-pylint:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: pylint
+      dockerfile: ./sast-tools/python/pylint/Dockerfile
+      context: ./sast-tools/python/pylint
+
+  push-staticheck:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: staticcheck
+      dockerfile: ./sast-tools/go/staticcheck/Dockerfile
+      context: ./sast-tools/go/staticcheck
