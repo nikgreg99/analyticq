@@ -1,21 +1,32 @@
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
+from pathlib import Path
 from typing import Optional
 
 import aiodocker.exceptions
 from analyticq.exception import ScanConfigurationException
 from analyticq.manager import AnalyticQContainerManager
 
+from .analyzer import AnalyticQAnalyzer
 from .models import AnalyticQSASTScanResult
+from .result_parser import AnalyticQResultParser
+from .tool_strategy_output import StringToolFormatter
 
 
 class AnalyticQSASTTool(ABC):
 
-    def __init__(self, container_manager: AnalyticQContainerManager, image_name: str, image_tag: str):
+    def __init__(self,
+                 analyzer: AnalyticQAnalyzer,
+                 parser: AnalyticQResultParser,
+                 container_manager: AnalyticQContainerManager,
+                 image_name: str,
+                 image_tag: str):
+        self.analyzer = analyzer
+        self.parser = parser
+        self.logger = logging.getLogger(__name__)
         self.container_manager = container_manager
         self.image_name = image_name
         self.image_tag = image_tag
-        self.logger = logging.getLogger(__name__)
 
     async def install(self) -> None:
         """Install the required container image for the corrispondent SAST tool.
@@ -35,30 +46,36 @@ class AnalyticQSASTTool(ABC):
                 f"Failed to install container image: {str(e)}"
             ) from e
 
-    @abstractmethod
     async def run_scan(
         self,
         codebase_path: str,
         config_path: Optional[str] = None,
         timeout: Optional[int] = None
     ) -> AnalyticQSASTScanResult:
-        """Run a security analysis scan on the specified codebase.
+        try:
+            code_path = Path(codebase_path)
+            if not code_path.exists():
+                raise ScanConfigurationException(
+                    f"Code path does not exist for {self.image_name}: {code_path}"
+                )
 
-        This asynchronous method orchestrates  a Static Application Security Testing (SAST) scan
-        between the Analayzer and the Parser
+            if config_path:
+                config_file_path = Path(config_path)
+                if not config_file_path.exists():
+                    raise ScanConfigurationException(
+                        f"Config file not found for {self.image_name}:  {config_file_path}"
+                    )
 
-        Args:
-            codebase_path (str): The file system path to the codebase to be analyzed.
-            config_path (Optional[str], optional): Path to a custom configuration file for the scan. Defaults to None.
-            timeout (Optional[int], optional): Maximum time in seconds to wait for scan completion. Defaults to None.
+            raw_result = await self.analyzer.run_analysis(
+                codebase_path=code_path,
+                config_path=config_path,
+                timeout=timeout
+            )
 
-        Returns:
-            AnalyticqSASTScanResult: The results of the security analysis scan containing found vulnerabilities
-            and other relevant scan information.
+            dict_output = StringToolFormatter.from_str_to_dict(raw_result)
+            return self.parser.parse_scan_result(dict_output)
 
-        Raises:
-            ScanTimeoutError: If the scan exceeds the specified timeout duration.
-            ScanConfigurationError: If there are issues with the scan configuration.
-            CodebaseNotFoundError: If the specified codebase path does not exist.
-        """
-        pass
+        except ValueError as e:
+            raise ScanConfigurationException(
+                f"Invalid configuration: {str(e)}"
+            ) from e

@@ -42,7 +42,6 @@ def pylint_tool():
     """Initialize and configure PylintTool with test settings."""
     tool = PylintTool()
     # Reduce timeout for test environment
-    tool.container_manager.runtime_config.timeout = 120
     return tool
 
 
@@ -100,9 +99,9 @@ async def test_full_pylint_analysis(sample_code, pylint_tool):
         assert results.summary["by_severity"]["LOW"] >= 2
         assert results.summary["by_severity"]["MEDIUM"] >= 1
 
-        assert "tool" in results.metadata
+        assert "tool_name" in results.metadata
         assert "metrics" in results.metadata
-        assert results.metadata["tool"] == "Pylint"
+        assert results.metadata["tool_name"] == "Pylint"
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

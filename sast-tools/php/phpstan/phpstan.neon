@@ -1,0 +1,27 @@
+parameters:
+	level: 10
+
+    checkGenericClassInNonGenericObjectType: tru
+    excludePaths:
+	    - tests/Fixtures/*
+		- src/Legacy/*
+
+    customRulesetUsed: true
+
+	explicitMixed: true
+	checkMissingIterableValueType: true
+
+	checkUnionTypes: true
+	checkExplicitMixedMissingReturn: true
+
+    extensions:
+	    - vendor/phpstan/extension-installer/src/ExtensionInstaller.php
+	    - vendor/phpstan/phpstan-strict-rules/rules.neon
+	    - vendor/phpstan/phpstan-doctrine/extension.neon
+
+    features:
+		- phpstan/discover-types
+
+    debug:
+		debugMode: false
+		skipCheckGenericClasses: false

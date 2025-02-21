@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -54,9 +53,21 @@ func main() {
 
 	log.Printf("Files to scan: %v", filesToScan)
 
+	goModPath := filepath.Join(codePath, "go.mod")
+	_, err = os.Stat(goModPath)
+
+	var args []string
+	if os.IsNotExist(err) {
+		log.Println("No go.mod file found, scanning individual files.")
+		args = append([]string{"-f", "json"}, filesToScan...)
+	} else {
+		log.Println("go.mod file found, scanning as Go module.")
+		args = []string{"-f", "json", "./..."}
+	}
+
 	// Run staticcheck
 	log.Println("Running staticcheck...")
-	cmd = exec.Command("staticcheck", "-f", "json", codePath+"/...")
+	cmd = exec.Command("staticcheck", args...)
 	cmd.Dir = codePath // Set working directory to the code path
 
 	output, err = cmd.CombinedOutput()
@@ -71,19 +82,30 @@ func main() {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	// Validate JSON output
-	var jsonOutput interface{}
-	if err := json.Unmarshal(output, &jsonOutput); err != nil {
-		// If output is not JSON, create a JSON array with the raw output
-		output = []byte(fmt.Sprintf("[{\"error\": %q}]", string(output)))
+
+	// Handle streaming JSON objects and convert to an array
+	var jsonObjects []interface{}
+	decoder := json.NewDecoder(strings.NewReader(string(output)))
+	for decoder.More() {
+		var obj interface{}
+		if err := decoder.Decode(&obj); err != nil {
+			log.Printf("Failed to decode JSON object: %v", err)
+			continue
+		}
+		jsonObjects = append(jsonObjects, obj)
 	}
 
-	// Save output to file
-	err = os.WriteFile(outputPath, output, 0644)
+	finalOutput, err := json.MarshalIndent(jsonObjects, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal final JSON output: %v", err)
+	}
+
+	err = os.WriteFile(outputPath, finalOutput, 0644)
 	if err != nil {
 		log.Fatalf("Failed to write output file: %v", err)
 	}
 	log.Printf("Staticcheck output saved to %s", outputPath)
+	log.Printf("Print final %s", finalOutput)
 
 	// Always exit with 0 regardless of staticcheck findings
 	os.Exit(0)

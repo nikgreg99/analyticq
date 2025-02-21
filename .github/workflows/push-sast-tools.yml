@@ -31,3 +31,31 @@ jobs:
       image_name: staticcheck
       dockerfile: ./sast-tools/go/staticcheck/Dockerfile
       context: ./sast-tools/go/staticcheck
+
+  push-flawfinder:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: flawfinder
+      dockerfile: ./sast-tools/c/flawfinder/Dockerfile
+      context: ./sast-tools/c/flawfinder
+
+  push-spotbugs:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: spotbugs
+      dockerfile: ./sast-tools/java/spotbugs/Dockerfile
+      context: ./sast-tools/java/spotbugs
+
+  push-phphstan:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: phpstan
+      dockerfile: ./sast-tools/php/phpstan/Dockerfile
+      context:  ./sast-tools/php/phpstan
+
+  push-sqlfluff:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: sqlfluff
+      dockerfile: ./sast-tools/sql/sqlfluff/Dockerfile
+      context: ./sast-tools/sql/sqlfluff

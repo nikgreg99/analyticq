@@ -1,0 +1,1 @@
+from .flawfinder_analyzer import FlawFinderAnalyzer

@@ -1,25 +1,36 @@
-from abc import ABC, abstractmethod
+import tempfile
+from abc import abstractmethod
 from typing import Optional
 
+from .container_runner import AnalyticQContainerRunner
 
-class AnalyticQAnalyzer(ABC):
+
+class AnalyticQAnalyzer(AnalyticQContainerRunner):
 
     @abstractmethod
+    def get_output_filename(self) -> str:
+        pass
+
     async def run_analysis(
         self,
-        code_path: str,
+        codebase_path: str,
         config_path: Optional[str] = None,
-        timeout: Optional[int] = None,
-    ):
-        """
-        Asynchronously runs code analysis on a given source code file.
-        This method performs static code analysis based on configured rules and yields
-        analysis results as they become available.
-        Args:
-            code_path (str): Path to the source code file to analyze
-            config_path (Optional[str]): Path to custom configuration file. If None, default config is used.
-            timeout (Optional[int]): Maximum time in seconds for analysis to complete. If None, no timeout is applied.
-        Raises:
-            FileNotFoundError: If code_path or config_path (if specified) does not exist
-        """
-        pass
+        timeout: Optional[int] = None
+    ) -> str:
+
+        """Run the analysis in a container."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            volumes = self.get_base_volumes(str(codebase_path), tmp_dir)
+
+            if config_path:
+                volumes.update(self.get_config_volume(str(config_path)))
+
+            return await self.container_manager.run_container_command(
+                image_name=self.image_name,
+                image_tag=self.image_tag,
+                command_args=[],
+                volumes=volumes,
+                env_vars=[],
+                timeout=timeout,
+                file_path=self.get_output_filename()
+            )

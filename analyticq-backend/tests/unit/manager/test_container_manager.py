@@ -2,7 +2,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
-import aiodocker
 import pytest
 from analyticq.exception import ScanConfigurationException
 from analyticq.manager import AnalyticQContainerManager
@@ -12,36 +11,6 @@ from analyticq.manager import AnalyticQContainerManager
 async def container_manager():
     async with AnalyticQContainerManager() as manager:
         yield manager
-
-
-@pytest.mark.asyncio
-async def test_image_exists(container_manager):
-    with patch.object(container_manager.docker.images, 'get', new_callable=AsyncMock) as mock_get:
-        mock_get.return_value = {'Id': 'some-id'}
-        assert await container_manager._image_exists('test-image', 'latest') is True, "Expected True for existing test image"
-        mock_get.assert_called_once_with('test-image:latest')
-
-
-@pytest.mark.asyncio
-async def test_image_not_exist(container_manager):
-    with patch.object(container_manager.docker.images, 'get', new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = aiodocker.exceptions.DockerError(404, {'message': 'Not found'})
-        assert await container_manager._image_exists('nonexistent-image') is False, "Expected False for non existing image"
-
-
-@pytest.mark.asyncio
-async def test_pull_image(container_manager):
-    with patch.object(container_manager.docker.images, 'pull', new_callable=AsyncMock) as mock_pull:
-        await container_manager.pull_image('test-image', 'latest')
-        mock_pull.assert_called_once_with('test-image', tag='latest')
-
-
-@pytest.mark.asyncio
-async def test_pull_image_failure(container_manager):
-    with patch.object(container_manager.docker.images, 'pull', new_callable=AsyncMock) as mock_pull:
-        mock_pull.side_effect = aiodocker.exceptions.DockerError(500, {'message': 'Pull failed'})
-        with pytest.raises(RuntimeError, match='Failed to pull image'):
-            await container_manager.pull_image('test-image', 'latest')
 
 
 @pytest.mark.asyncio

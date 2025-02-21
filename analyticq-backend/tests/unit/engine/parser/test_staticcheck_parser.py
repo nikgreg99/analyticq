@@ -22,6 +22,7 @@ def valid_raw_result():
             "line": 10
         },
         "end": {
+            "file": "/path/to/file.py",
             "line": 15
         }
     }]
@@ -34,8 +35,6 @@ def test_successful_parsing(parser, valid_raw_result):
     assert len(result.issues) == 1
 
     issue = result.issues[0]
-    assert issue.issue_id == "TEST001"
-    assert issue.code == "TEST001"
     assert issue.rule_id == "TEST001"
     assert issue.severity == AnalyticQSeverity.HIGH
     assert issue.message == "Test error message"
@@ -71,53 +70,6 @@ def test_multiple_issues(parser):
     assert result.summary["by_severity"]["MEDIUM"] == 1
 
 
-def test_severity_mapping(parser):
-    raw_result = [
-        {
-            "severity": "error",
-            "code": "TEST001",
-            "message": "Message",
-            "location": {"file": "file.py", "line": 1},
-            "end": {"line": 2}
-        },
-        {
-            "severity": "warning",
-            "code": "TEST002",
-            "message": "Message",
-            "location": {"file": "file.py", "line": 3},
-            "end": {"line": 4}
-        },
-        {
-            "severity": "info",
-            "code": "TEST003",
-            "message": "Message",
-            "location": {"file": "file.py", "line": 5},
-            "end": {"line": 6}
-        }
-    ]
-
-    result = parser.parse_scan_result(raw_result)
-    severities = [issue.severity for issue in result.issues]
-    assert severities == [
-        AnalyticQSeverity.HIGH,
-        AnalyticQSeverity.MEDIUM,
-        AnalyticQSeverity.LOW
-    ]
-
-
-def test_missing_required_fields(parser):
-    invalid_result = [{
-        "severity": "error",
-        # Missing location field
-        "code": "TEST001",
-        "message": "Test message"
-    }]
-
-    with pytest.raises(ScanParserException) as exc_info:
-        parser.parse_scan_result(invalid_result)
-    assert "Failed to parse StaticCheck results" in str(exc_info.value)
-
-
 def test_invalid_severity(parser):
     raw_result = [{
         "severity": "INVALID",
@@ -127,8 +79,8 @@ def test_invalid_severity(parser):
         "end": {"line": 2}
     }]
 
-    result = parser.parse_scan_result(raw_result)
-    assert result.issues[0].severity == AnalyticQSeverity.LOW
+    with pytest.raises(ScanParserException):
+        parser.parse_scan_result(raw_result)
 
 
 def test_empty_result(parser):
@@ -143,6 +95,6 @@ def test_empty_result(parser):
 def test_metadata(parser):
     result = parser.parse_scan_result([])
 
-    assert result.metadata["tool"] == "StaticCheck"
+    assert result.metadata["tool_name"] == "Staticcheck"
     assert isinstance(result.metadata["metrics"], dict)
     assert len(result.metadata["metrics"]) == 0

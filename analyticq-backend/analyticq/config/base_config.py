@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class AnalyticQBaseConfig(BaseModel):
     """
-    Base configuration clas for AnalyticQ backend that load and parses conf file,
+    Base configuration class for AnalyticQ backend that load and parses conf file,
     env variables, and allowring access to settings
     """
     settings: Dict[str, Any]

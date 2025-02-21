@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AnalyticQConfidence(Enum):
@@ -67,29 +67,15 @@ class AnalyticQScanContext(BaseModel):
 
 
 class AnalyticQSASTIssue(BaseModel):
-    """
-    Represents a security issue found during Static Application Security Testing (SAST).
-
-    Attributes:
-        issue_id (str): Unique identifier for the issue
-        rule_id (str): Security rule identifier from SAST tool
-        severity (Optional[AnalyticQSeverity]): Severity level of the issue
-        code (str): Code snippet containing the issue
-        message (str): Description of the security issue
-        path (str): File path where issue was found
-        start_line (int): Starting line number of the issue
-        end_line (int): Ending line number of the issue
-        confidence (Optional[AnalyticQConfidence]): Confidence level of detection
-    """
-    issue_id: str
     rule_id: str
-    severity: Optional[AnalyticQSeverity] = None
-    code: str
-    message: str
-    path: str
-    start_line: int
-    end_line: int
-    confidence: Optional[AnalyticQConfidence] = None
+    severity: AnalyticQSeverity
+    confidence: AnalyticQConfidence
+    code: str = Field(default="Not present")
+    message: str = Field(default="No message")
+    path: str = Field(default="unknown")
+    start_line: int = Field(default=0, ge=0)
+    end_line: int = Field(default=0, ge=0)
+    metadata: Dict[str, Any] = Field(default=None)
 
 
 class AnalyticQSASTScanResult(BaseModel):

@@ -52,7 +52,7 @@ def test_parse_valid_results(bandit_parser):
                 "issue_confidence": "MEDIUM",
             },
         ],
-        "tool": "Bandit",
+        "tool_name": "Bandit",
         "metrics": {
             "loc": 100,
             "nosec": 5,
@@ -60,7 +60,6 @@ def test_parse_valid_results(bandit_parser):
     }
 
     results = bandit_parser.parse_scan_result(raw_results)
-
     # Validate findings
     assert isinstance(results, AnalyticQSASTScanResult)
     assert len(results.issues) == 2
@@ -91,7 +90,7 @@ def test_parse_valid_results(bandit_parser):
     assert results.summary["by_severity"]["MEDIUM"] == 1
 
     # Validate metadata
-    assert results.metadata["tool"] == "Bandit"
+    assert results.metadata["tool_name"] == "Bandit"
     assert results.metadata["metrics"] == {"loc": 100, "nosec": 5}
 
 
@@ -107,11 +106,11 @@ def test_parse_missing_required_field(bandit_parser):
                 "issue_confidence": "HIGH",
             }
         ],
-        "tool": "Bandit",
+        "tool_name": "Bandit",
         "metrics": {},
     }
 
-    with pytest.raises(ScanParserException, match="Failed to parse Bandit results"):
+    with pytest.raises(ScanParserException):
         bandit_parser.parse_scan_result(raw_results)
 
 

@@ -1,4 +1,3 @@
-# tests/test_bandit_integration.py
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTIssue,
@@ -32,8 +31,6 @@ def insecure_function():
 def bandit_tool():
     """Initialize and configure BanditTool with test settings."""
     tool = BanditTool()
-    # Reduce timeout for test environment
-    tool.container_manager.runtime_config.timeout = 120
     return tool
 
 
@@ -80,7 +77,7 @@ async def test_full_bandit_analysis(sample_code, bandit_tool):
         assert results.summary["by_severity"]["LOW"] >= 1
 
         # 6. Validate metadata
-        assert "tool" in results.metadata
+        assert "tool_name" in results.metadata
         assert "metrics" in results.metadata
 
     except ScanConfigurationException as e:
@@ -89,12 +86,3 @@ async def test_full_bandit_analysis(sample_code, bandit_tool):
         pytest.fail(f"Analysis timed out: {str(e)}")
     except Exception as e:
         pytest.fail(f"Unexpected error: {str(e)}")
-
-
-# Add Docker availability check
-def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--run-integration"):
-        skip_integration = pytest.mark.skip(reason="need --run-integration option to run")
-        for item in items:
-            if "integration" in item.keywords:
-                item.add_marker(skip_integration)

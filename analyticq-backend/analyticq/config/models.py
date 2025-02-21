@@ -142,14 +142,6 @@ class AnalyticQContainerNetworkConfig(BaseModel):
     This model defines the network configuration options for docker containers, including
     network mode, internet access, DNS settings and port mappings.
 
-    Attributes:
-        mode (str): Network mode for the container. Valid values are:
-            - "none": No networking
-            - "bridge": Default bridge network
-            - "host": Host networking
-            - "overlay": Overlay networking for swarm services
-            - "macvlan": MAC VLAN networking
-            Defaults to "none".
 
         allow_outbound (bool): Whether to allow outbound internet access from the container.
             Defaults to False.

@@ -1,20 +1,38 @@
+import asyncio
 import logging
 import os
 from pathlib import Path
-from threading import Lock
-from typing import Dict, List, Optional
+from typing import AsyncIterator, Dict, List, Optional
 
 import aiodocker
 from analyticq.config.models import AnalyticQContainerRuntimeConfig
-from analyticq.exception import ScanConfigurationException
+from analyticq.exception import (ScanConfigurationException,
+                                 ScanTimeoutException)
+
+from .image_manager import DockerImageManager
 
 logger = logging.getLogger(__name__)
 
 
-class AnalyticQContainerManager:
+class AnalyticQContainerLogger:
+    @staticmethod
+    async def stream_logs(container: aiodocker.containers.DockerContainer, container_id: str) -> AsyncIterator[str]:
+        logs = container.log(stdout=True, stderr=True, follow=True)
+        while True:
+            try:
+                log_line = await anext(logs)
+                if log_line:
+                    log_line = log_line.strip()
+                    logger.info(f"Container {container_id} output: {log_line}")
+                    yield log_line
+            except StopAsyncIteration:
+                break
+            except Exception as e:
+                logger.error(f"Error reading log line: {str(e)}")
+                break
 
-    _instance = None
-    _lock = Lock()
+
+class AnalyticQContainerManager:
 
     def __init__(
         self,
@@ -23,6 +41,7 @@ class AnalyticQContainerManager:
         self.docker = None
         self.runtime_config = runtime_config
         self.initialized = False
+        self._cleanup_lock = asyncio.Lock()
 
     async def initialize(self):
         """
@@ -30,9 +49,14 @@ class AnalyticQContainerManager:
         This method should be called explicitly to initialize the class.
         """
         if not self.initialized:
-            if self.docker is None:
+            try:
                 self.docker = aiodocker.Docker()
                 self.initialized = True
+                self.image_manager = DockerImageManager(self.docker)
+            except Exception as e:
+                logger.error(f"Failed to initialize Docker client: {e}")
+                await self.cleanup()
+                raise
 
     async def cleanup(self):
         """
@@ -41,10 +65,16 @@ class AnalyticQContainerManager:
         Returns:
             None
         """
-        if self.docker is not None:
-            await self.docker.close()
-            self.docker = None
-            self.initialized = False
+        async with self._cleanup_lock:
+            if self.docker is not None:
+                try:
+                    await self.docker.close()
+                except Exception as e:
+                    logger.error(f"Error during Docker client cleanup: {e}")
+                finally:
+                    self.docker = None
+                    self.image_manager = None
+                    self.initialized = False
 
     async def __aenter__(self):
         """
@@ -74,84 +104,49 @@ class AnalyticQContainerManager:
         """
         await self.cleanup()
 
-    async def _collect_container_logs(self, container, container_id: str):
-        """Collect container logs using the correct stream handling."""
-        try:
-            # Get container logs
-            logs = await container.log(stdout=True, stderr=True, follow=True)
-            async for log_line in logs:
-                # Log line is already a string in the new version
-                log_line = log_line.strip()
-                if log_line:
-                    logger.info(f"Container {container_id} output: {log_line}")
-        except Exception as e:
-            logger.error(f"Error collecting logs from container {container_id}: {str(e)}")
-
     async def _image_exists(self, image_name: str, image_tag: str = "latest") -> bool:
         """
-        Check if a Docker image exists locally.
+        Check if a Docker image exists in the local registry.
 
         Args:
             image_name (str): Name of the Docker image to check.
             image_tag (str, optional): Tag of the Docker image. Defaults to "latest".
 
         Returns:
-            bool: True if the image exists locally, False otherwise.
+            bool: True if the image exists, False otherwise.
         """
-        try:
-            await self.docker.images.get(f"{image_name}:{image_tag}")
-            return True
-        except aiodocker.exceptions.DockerError:
-            return False
+        is_existing_image = await self.image_manager.exists(image_name, image_tag)
+        return is_existing_image
 
     async def pull_image(self, image_name: str, image_tag: str) -> None:
         """
-        Pull a Docker image from a registry.
+        Pull a Docker image asynchronously from a registry.
+
+        This method delegates the image pulling operation to the image manager.
 
         Args:
-            image_name (str): The name of the Docker image to pull
-            image_tag (str): The tag of the Docker image version to pull
+            image_name (str): Name of the Docker image to pull
+            image_tag (str): Tag of the Docker image version to pull
+
+        Returns:
+            None: This method doesn't return anything but triggers image pull
 
         Raises:
-            RuntimeError: If the image pull operation fails
+            DockerException: If there is an error while pulling the image
         """
-        try:
-            await self.docker.images.pull(image_name, tag=image_tag)
-            logger.info(f"Successfully pulled {image_name}:{image_tag}")
-        except aiodocker.exceptions.DockerError as e:
-            raise RuntimeError(f"Failed to pull image {image_name}:{image_tag}: {str(e)}")
+        return self.image_manager.pull(image_name, image_tag)
 
-    async def run_container_command(
+    async def _prepare_container_config(
         self,
-        image_name: str,
-        image_tag: str = "latest",
-        command_args: List[str] = None,
-        volumes: Dict[Path, Dict[str, str]] = None,
-        env_vars: Optional[Dict[str, str]] = None,
-        timeout: Optional[int] = None,
-        file_path: str = ""
-    ):
+        full_image: str,
+        container_id: str,
+        command_args: List[str],
+        volumes: Dict[Path, Dict[str, str]],
+        env_vars: Optional[Dict[str, str]]
+    ) -> Dict:
         """
-        Run a container command asynchronously.
-
-        Args:
-            image_name (str): The name of the Docker image
-            image_tag (str): The tag of the Docker image
-            command_args (List[str]): Command arguments to run in the container
-            volumes (Dict[Path, Dict[str, str]]): Volume mappings
-            env_vars (Dict[str, str], optional): Environment variables
-            timeout (int, optional): Command timeout in seconds
-
-
-        Raises:
-            ScanConfigurationException: If configuration is invalid
-            RuntimeError: If container execution fails
+        Prepare container configuration with proper volume validation.
         """
-        full_image = f"{image_name}:{image_tag}"
-        container_id = os.urandom(8).hex()
-        command_args = command_args or []
-        volumes = volumes or {}
-
         # Validate volume paths
         for host_path in volumes:
             if not host_path.exists():
@@ -185,43 +180,76 @@ class AnalyticQContainerManager:
         }
 
         logger.debug(f"Container configuration: {config}")
+        return config
+
+    async def run_container_command(
+        self,
+        image_name: str,
+        image_tag: str = "latest",
+        command_args: List[str] = None,
+        volumes: Dict[Path, Dict[str, str]] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        timeout: Optional[int] = None,
+        file_path: str = ""
+    ):
+        """
+        Run a container command asynchronously.
+
+        Args:
+            image_name (str): The name of the Docker image
+            image_tag (str): The tag of the Docker image
+            command_args (List[str]): Command arguments to run in the container
+            volumes (Dict[Path, Dict[str, str]]): Volume mappings
+            env_vars (Dict[str, str], optional): Environment variables
+            timeout (int, optional): Command timeout in seconds
+
+
+        Raises:
+            ScanConfigurationException: If configuration is invalid
+            RuntimeError: If container execution fails
+        """
+        if not self.initialized:
+            raise RuntimeError("Container manager not initialized")
+
+        full_image = f"{image_name}:{image_tag}"
+        container_id = os.urandom(8).hex()
+        container = None
 
         try:
+            # Container configuration
+            config = await self._prepare_container_config(
+                full_image, container_id, command_args or [],
+                volumes or {}, env_vars
+            )
+
+            # Create and run container
             container = await self.docker.containers.create(config=config)
 
             await container.start()
             logger.info(f"Container {container_id} started")
 
-            logs = container.log(stdout=True, stderr=True, follow=True)
-
-            # Wait for container completion
-            # Process logs while waiting for container
-            while True:
-                try:
-                    log_line = await anext(logs)
-                    if log_line:
-                        logger.info(f"Container {container_id} output: {log_line.strip()}")
-                except StopAsyncIteration:
-                    break
-                except Exception as e:
-                    logger.error(f"Error reading log line: {str(e)}")
-                    break
+            async for _ in AnalyticQContainerLogger.stream_logs(container, container_id):
+                pass
 
             result = await container.wait()
+
             if result["StatusCode"] != 0:
                 raise RuntimeError(f"Container exited with code {result['StatusCode']}")
 
-            if file_path != "":
+            if file_path:
                 output_path = list(volumes.keys())[-1]
-                file_content = (output_path / file_path).read_text()
-                return file_content
+                if output_path.exists():
+                    return (output_path / file_path).read_text()
+                return None
 
-            return None
-        except aiodocker.exceptions.DockerError as e:
+        except asyncio.TimeoutError as e:
+            raise ScanTimeoutException(f"{str(e)}") from e
+        except Exception as e:
             raise ScanConfigurationException(f"Docker API error: {str(e)}") from e
+            raise
         finally:
             if container:
                 try:
                     await container.delete(force=True)
-                except Exception:
-                    logger.warning(f"Failed to delete container {container_id}", exc_info=True)
+                except Exception as e:
+                    logger.warning(f"Failed to delete container {container_id}: {e}")

@@ -1,64 +1,49 @@
-import json
-from typing import Any, Dict
-
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
                                           AnalyticQSASTScanResult,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
 
 class BanditParser(AnalyticQResultParser):
-
     def __init__(self):
-        self.tool_name = "Bandit"
+        # Define field mapping from Bandit-specific fields to standard fields
+        field_mapping = {
+            "rule_id": "test_id",
+            "severity": "issue_severity",
+            "confidence": "issue_confidence",
+            "message": "issue_text",
+            "path": "filename",
+            "start_line": "line_number",
+            "end_line": "line_range",
+            "code": "code",
+            "metadata": "issue_cwe"
+        }
+        super().__init__(tool_name="Bandit", field_mapping=field_mapping)
 
-    def parse_scan_result(self, raw_results: Dict[str, Any]) -> AnalyticQSASTScanResult:
+    def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         try:
-            issues = [
-                AnalyticQSASTIssue(
-                    issue_id="1",
-                    rule_id=issue["test_id"],
-                    severity=AnalyticQSeverity.parse(issue["issue_severity"].upper()),
-                    confidence=AnalyticQConfidence.parse(issue["issue_confidence"].upper()),
-                    code=issue["code"],
-                    message=issue["issue_text"],
-                    path=issue["filename"],
-                    start_line=issue["line_number"],
-                    end_line=issue["line_range"][-1]
-                )
-                for issue in raw_results.get("results", [])
-            ]
+            return AnalyticQSeverity.parse(severity_level.upper())
+        except ValueError as e:
+            raise ValueError(f"Invalid severity level: {severity_level}") from e
 
-            summary = {
-                "total": len(issues),
-                "by_severity": {
-                    severity.value: sum(1 for issue in issues if issue.severity == severity)
-                    for severity in AnalyticQSeverity
-                },
-                "by_confidence": {
-                    confidence.value: sum(1 for issue in issues if issue.confidence == confidence)
-                    for confidence in AnalyticQConfidence
-                }
-            }
+    def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        try:
+            return AnalyticQConfidence.parse(confidence_level.upper())
+        except ValueError as e:
+            raise ValueError(f"Invalid confidence level: {confidence_level}") from e
 
-            metadata = {
-                "tool": self.tool_name,
-                "metrics": raw_results.get("metrics", {})
-            }
-
-            return AnalyticQSASTScanResult(
-                scan_id="1",
-                issues=issues,
-                summary=summary,
-                metadata=metadata
-            )
-        except (KeyError, json.decoder.JSONDecodeError) as e:
-            raise ScanParserException(
-                f"Failed to parse Bandit results: {str(e)}"
-            ) from e
-        except Exception as e:
-            raise ScanParserException(
-                f"Unexpected error parsing results: {str(e)}"
-            ) from e
+    def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
+        print(raw_result)
+        try:
+            bandit_issues = raw_result.get("results", [])
+            scan = super().parse_scan_result(bandit_issues)
+            scan.metadata.update({
+                "metrics": raw_result.get("metrics", {}),
+                "generated_at": raw_result.get("generated_at"),
+            })
+            return scan
+        except ScanParserException as e:
+            raise e
+        except AttributeError as e:
+            raise ScanParserException("Result is not in a dict format") from e
