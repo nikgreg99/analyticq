@@ -55,8 +55,8 @@ class FlawFinderParser(AnalyticQResultParser):
                 "Level": row.get('Level', '1'),
                 "Context": row.get('Context', '').strip(),
                 "Metadata": {
-                    "Category": row.get('Category'),
-                    "Cwes": cwes,
+                    "category": row.get('Category'),
+                    "cwes": cwes,
                     "help_uri": row.get('HelpUri'),
                 }
             }
