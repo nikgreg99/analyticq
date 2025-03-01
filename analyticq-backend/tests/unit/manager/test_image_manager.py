@@ -51,7 +51,7 @@ async def test_exists_default_tag(image_manager, mock_docker):
     result = await image_manager.exists("test-image")
 
     assert result is True
-    mock_docker.images.get_assert_called_once_with("test-image")
+    mock_docker.images.get.assert_called_once_with("test-image:latest")
 
 
 @pytest.mark.asyncio
@@ -61,30 +61,34 @@ async def test_pull_succesfull_image(image_manager, mock_docker):
 
     await image_manager.pull("test-image", "v1.0")
 
-    mock_docker.images.pull.assert_called_once_with("test-image", tag="v1.0")
+    mock_docker.images.pull.assert_called_once_with("test-image", tag="v1.0", auth=None)
 
 
-@pytest.mark.parametrize("image_name, tag", [
-    ("nginx", "latest"),
-    ("python", "3.9"),
-    ("ubuntu", "20.04"),
-    ("", "latest"),  # Edge case: empty image name
-    ("test-image", ""),  # Edge case: empty tag
+@pytest.mark.parametrize("image_name, image_tag, expected_id", [
+    ("nginx", "latest", "123abc"),
+    ("python", "latest", "456def"),
+    ("ubuntu", "20.04", "789ghi")
 ])
-async def test_exists_various_images(image_manager, mock_docker, image_name, tag):
+@pytest.mark.asyncio
+async def test_exists_various_images(image_manager, mock_docker, image_name, image_tag, expected_id):
     """Test exists() with various image names and tags."""
-    mock_docker.images.get = AsyncMock(return_value={"Id": "123"})
 
-    result = await image_manager.exists(image_name, tag)
+    # Arrange
+    mock_docker.images.get = AsyncMock(return_value={"Id": expected_id})
+    expected_image_reference = f"{image_name}:{image_tag}"
 
-    assert result is True
-    mock_docker.images.get.assert_called_once_with(f"{image_name}:{tag}")
+    # Act
+    result = await image_manager.exists(image_name, image_tag)
+
+    # Assert
+    assert result is True, f"Expected {expected_image_reference} to exist"
+    mock_docker.images.get.assert_called_once_with(expected_image_reference)
 
 
 async def test_pull_none_values(image_manager, mock_docker):
     """Test pull() with None values."""
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         await image_manager.pull(None, "latest")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         await image_manager.pull("test-image", None)

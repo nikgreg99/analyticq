@@ -8,7 +8,7 @@ from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def parser():
+def pylint_parser():
     return PylintParser()
 
 
@@ -41,8 +41,8 @@ def sample_pylint_result():
     ]
 
 
-def test_successful_parse(parser, sample_pylint_result):
-    result = parser.parse_scan_result(sample_pylint_result)
+def test_successful_parse(pylint_parser, sample_pylint_result):
+    result = pylint_parser.parse_scan_result(sample_pylint_result)
 
     assert isinstance(result, AnalyticQSASTScanResult)
     assert isinstance(result.issues, list)
@@ -70,7 +70,7 @@ def test_successful_parse(parser, sample_pylint_result):
     assert result.metadata["metrics"] == {}
 
 
-def test_parse_missing_endline(parser):
+def test_parse_missing_endline(pylint_parser):
     result = [{
         "type": "warning",
         "module": "example",
@@ -83,18 +83,28 @@ def test_parse_missing_endline(parser):
         "message-id": "W0612"
     }]
 
-    parsed = parser.parse_scan_result(result)
+    parsed = pylint_parser.parse_scan_result(result)
     assert parsed.issues[0].end_line != parsed.issues[0].start_line
 
 
-def test_parse_empty_result(parser):
-    result = parser.parse_scan_result([])
+def test_severity_mapping(pylint_parser):
+    assert pylint_parser._map_severity("error") == AnalyticQSeverity.HIGH
+    assert pylint_parser._map_severity("warning") == AnalyticQSeverity.MEDIUM
+    assert pylint_parser._map_severity("refactor") == AnalyticQSeverity.LOW
+
+
+def test_confidence_mapping(pylint_parser):
+    assert pylint_parser._map_confidence("any") == AnalyticQConfidence.UNKNOWN
+
+
+def test_parse_empty_result(pylint_parser):
+    result = pylint_parser.parse_scan_result([])
     assert isinstance(result, AnalyticQSASTScanResult)
     assert len(result.issues) == 0
     assert result.summary["total"] == 0
     assert all(result.summary["by_severity"][sev.value] == 0 for sev in AnalyticQSeverity)
 
 
-def test_invalid_input_type(parser):
+def test_invalid_input_type(pylint_parser):
     with pytest.raises(ScanParserException):
-        parser.parse_scan_result("not a dict")
+        pylint_parser.parse_scan_result("not a dict")

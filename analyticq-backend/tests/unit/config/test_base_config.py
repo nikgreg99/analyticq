@@ -47,7 +47,7 @@ def test_load_yaml_config(monkeypatch):
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.load_config_file(Path(TEST_FILES_DIR), "test_config.yml")
-    assert config["dev"]["host"] == "127.0.0.1"
+    assert config["dev"]["host"] == "127.0.0.1", "Expected localhost"
 
 
 def test_config_file_not_found():
@@ -61,7 +61,7 @@ def test_missing_profile(monkeypatch):
         lambda: TEST_FILES_DIR
     )
     config = AnalyticQBaseConfig.from_file(conf_filename="test_config.json", profile="missing_profile")
-    assert config is None
+    assert config is None, "Expected config is None"
 
 
 def test_get_with_initialized_settings():

@@ -25,6 +25,9 @@ jobs:
       dockerfile: ./sast-tools/python/pylint/Dockerfile
       context: ./sast-tools/python/pylint
 
+  push-flake8:
+     uses: ./.github/workflows/docker-build.yml
+
   push-staticheck:
     uses: ./.github/workflows/docker-build.yml
     with:
@@ -53,9 +56,23 @@ jobs:
       dockerfile: ./sast-tools/php/phpstan/Dockerfile
       context:  ./sast-tools/php/phpstan
 
-  push-sqlfluff:
+  push-cppcheck:
     uses: ./.github/workflows/docker-build.yml
     with:
-      image_name: sqlfluff
-      dockerfile: ./sast-tools/sql/sqlfluff/Dockerfile
-      context: ./sast-tools/sql/sqlfluff
+      image_name: cppcheck
+      dockerfile: ./sast-tools/c/cppcheck/Dockerfile
+      context: ./sast-tools/c/cppcheck
+
+  push-rubocop:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: rubocop
+      dockerfile: ./sast-tools/ruby/rubocop/Dockerfile
+      context: ./sast-tools/ruby/rubocop
+
+  push-eslint:
+    uses: ./github/workflows/docker-build.yml
+    with:
+      image_name: eslint
+      dockerfile: ./sast-tools/js/eslint/Dockerfile
+      context: ./sast-tools/js/eslint

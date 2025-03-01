@@ -1,4 +1,3 @@
-import logging
 from abc import ABC
 from pathlib import Path
 from typing import Optional
@@ -23,7 +22,6 @@ class AnalyticQSASTTool(ABC):
                  image_tag: str):
         self.analyzer = analyzer
         self.parser = parser
-        self.logger = logging.getLogger(__name__)
         self.container_manager = container_manager
         self.image_name = image_name
         self.image_tag = image_tag
@@ -71,8 +69,8 @@ class AnalyticQSASTTool(ABC):
                 config_path=config_path,
                 timeout=timeout
             )
-
             dict_output = StringToolFormatter.from_str_to_dict(raw_result)
+            print(dict_output)
             return self.parser.parse_scan_result(dict_output)
 
         except ValueError as e:

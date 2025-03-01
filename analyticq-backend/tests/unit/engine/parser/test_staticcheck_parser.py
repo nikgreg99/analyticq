@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTScanResult,
@@ -28,7 +30,9 @@ def valid_raw_result():
     }]
 
 
-def test_successful_parsing(parser, valid_raw_result):
+def test_successful_parsing(parser, valid_raw_result, monkeypatch):
+    mock_date_now = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+    monkeypatch.setattr("datetime.datetime", mock_date_now)
     result = parser.parse_scan_result(valid_raw_result)
 
     assert isinstance(result, AnalyticQSASTScanResult)
@@ -45,6 +49,7 @@ def test_successful_parsing(parser, valid_raw_result):
 
 
 def test_multiple_issues(parser):
+
     raw_result = [
         {
             "severity": "error",
@@ -68,6 +73,17 @@ def test_multiple_issues(parser):
     assert result.summary["total"] == 2
     assert result.summary["by_severity"]["HIGH"] == 1
     assert result.summary["by_severity"]["MEDIUM"] == 1
+
+
+def test_severity_mapping(parser):
+    assert parser._map_severity("error") == AnalyticQSeverity.HIGH
+    assert parser._map_severity("warning") == AnalyticQSeverity.MEDIUM
+    assert parser._map_severity("info") == AnalyticQSeverity.LOW
+    assert parser._map_severity("unknown") == AnalyticQSeverity.UNKNOWN
+
+
+def test_confidence_mapping(parser):
+    assert parser._map_confidence("any") == AnalyticQConfidence.UNKNOWN
 
 
 def test_invalid_severity(parser):

@@ -13,7 +13,8 @@ from analyticq.config import AnalyticQBaseConfig
 from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
-                                 CodebaseNotFoundException)
+                                 CodebaseNotFoundException,
+                                 CodebaseUnknownTypeException)
 from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
 from dependency_injector.wiring import Provide, inject
@@ -228,7 +229,7 @@ class CodebaseCloner:
             Path: The path to the cloned codebase.
 
         Raises:
-            ValueError: If the codebase type is unknown.
+            CodebaseUnknownTypeException: If the codebase type is unknown.
         """
         codebase_url_type = self._get_codebase_type(codebase_url)
         path = None
@@ -249,5 +250,5 @@ class CodebaseCloner:
             case CodebaseClonerPathType.SCRIPT:
                 path = await self.clone_local_script(codebase_url)
             case _:
-                logger.error(f"Unknown codebase type: {codebase_url_type}")
+                raise CodebaseUnknownTypeException(f"Unknown codebase type: {codebase_url_type}")
         return path

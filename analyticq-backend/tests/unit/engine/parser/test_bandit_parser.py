@@ -5,27 +5,14 @@ from analyticq.engine.parser import BanditParser
 from analyticq.exception import ScanParserException
 
 
-def test_parse_empty_results(bandit_parser):
-    raw_results = {
-        "results": [],
-        "metrics": {},
-    }
-
-    result = bandit_parser.parse_scan_result(raw_results)
-
-    assert isinstance(result, AnalyticQSASTScanResult)
-    assert len(result.issues) == 0
-    assert result.summary["total"] == 0
-
-
 @pytest.fixture
 def bandit_parser():
     return BanditParser()
 
 
-def test_parse_valid_results(bandit_parser):
-    """Test parsing valid Bandit results."""
-    raw_results = {
+@pytest.fixture
+def sample_bandit_result():
+    return {
         "results": [
             {
                 "code": "",
@@ -59,7 +46,46 @@ def test_parse_valid_results(bandit_parser):
         },
     }
 
-    results = bandit_parser.parse_scan_result(raw_results)
+
+def test_parse_empty_results(bandit_parser):
+    raw_results = {
+        "results": [],
+        "metrics": {},
+    }
+
+    result = bandit_parser.parse_scan_result(raw_results)
+
+    assert isinstance(result, AnalyticQSASTScanResult)
+    assert len(result.issues) == 0
+    assert result.summary["total"] == 0
+
+
+def test_severity_mapping(bandit_parser):
+    assert bandit_parser._map_severity("HIGH") == AnalyticQSeverity.HIGH
+    assert bandit_parser._map_severity("high") == AnalyticQSeverity.HIGH
+
+    assert bandit_parser._map_severity("MEDIUM") == AnalyticQSeverity.MEDIUM
+    assert bandit_parser._map_severity("medium") == AnalyticQSeverity.MEDIUM
+
+    assert bandit_parser._map_severity("LOW") == AnalyticQSeverity.LOW
+    assert bandit_parser._map_severity("low") == AnalyticQSeverity.LOW
+
+
+def test_confidence_mapping(bandit_parser):
+    assert bandit_parser._map_confidence("HIGH") == AnalyticQConfidence.HIGH
+    assert bandit_parser._map_confidence("high") == AnalyticQConfidence.HIGH
+
+    assert bandit_parser._map_confidence("MEDIUM") == AnalyticQConfidence.MEDIUM
+    assert bandit_parser._map_confidence("medium") == AnalyticQConfidence.MEDIUM
+
+    assert bandit_parser._map_confidence("LOW") == AnalyticQConfidence.LOW
+    assert bandit_parser._map_confidence("low") == AnalyticQConfidence.LOW
+
+
+def test_parse_valid_results(bandit_parser, sample_bandit_result):
+    """Test parsing valid Bandit results."""
+
+    results = bandit_parser.parse_scan_result(sample_bandit_result)
     # Validate findings
     assert isinstance(results, AnalyticQSASTScanResult)
     assert len(results.issues) == 2

@@ -34,11 +34,11 @@ class CodebaseLangScanner:
                  time_tracker: Provide[TimeTrackerUtils],
                  batch_util: Provide[BatchUtil]) -> None:
 
-        if not hasattr(self, "initialized"):
+        if not hasattr(self, "_initialized"):
             self.metrics_reporter = metrics_reporter
             self.time_tracker = time_tracker
             self.batch_util = batch_util
-            self.initialized = True
+            self._initialized = True
 
     async def detect_language_and_loc(self, file_path: Path) -> Tuple[str, int]:
         """
@@ -89,7 +89,9 @@ class CodebaseLangScanner:
             lexer = get_lexer_for_filename(file_path.name)
             return lexer.name
         except ClassNotFound:
-            pass
+            logger.warning(f"No lexer got the given filename  was not found {file_path.name}. Try detecting file type by content")
+        except Exception:
+            logger.warning(f"Unknown error occuer for guessing fie content for {file_path.name}. Try detecting file type by content")
 
         # Second attempt: detect by content
         try:
@@ -139,7 +141,7 @@ class CodebaseLangScanner:
         except FileNotFoundError:
             logger.warning(f"File not found (possibly deleted during scan): {file_path}")
         except PermissionError:
-            logger.warning(f"Permission denied when accessing file: {file_path}")
+            logger.warning(f"Permission denied while accessing file: {file_path}")
         except OSError as e:
             logger.error(f"OS error while processing file {file_path}: {e}")
 
@@ -197,7 +199,6 @@ class CodebaseLangScanner:
         """
 
         if DirFilter.is_irrelevant_dir(dir_path):
-            print("ok")
             self.metrics_reporter.add_excluded_dir(dir_path)
             return
 
@@ -220,7 +221,7 @@ class CodebaseLangScanner:
                     await self.process_dir(directory, file_groups)
 
         except PermissionError:
-            logger.warning(f"Permission denied when accessing directory: {dir_path}")
+            logger.warning(f"Permission denied while accessing directory: {dir_path}")
         except FileNotFoundError:
             logger.warning(f"Directory not found (possibly deleted during scan): {dir_path}")
         finally:

@@ -35,6 +35,7 @@ def csv_data(sample_csv_file) -> str:
 
 
 def test_successful_parse(parser, csv_data):
+
     """Test successful parsing of FlawFinder results."""
     result = parser.parse_scan_result(csv_data)
 
@@ -72,6 +73,19 @@ bad,data,format,extra,columns
 '''
     with pytest.raises(ScanParserException):
         parser.parse_scan_result(malformed_input)
+
+
+def test_severity_mapping(parser):
+    assert parser._map_severity("1") == AnalyticQSeverity.LOW
+    assert parser._map_severity("2") == AnalyticQSeverity.LOW
+    assert parser._map_severity("3") == AnalyticQSeverity.MEDIUM
+    assert parser._map_severity("4") == AnalyticQSeverity.HIGH
+    assert parser._map_severity("5") == AnalyticQSeverity.CRITICAL
+    assert parser._map_severity("6") == AnalyticQSeverity.UNKNOWN
+
+
+def test_confidence_mapping(parser):
+    assert parser._map_confidence("any") == AnalyticQConfidence.UNKNOWN
 
 
 def test_missing_required_field(parser):

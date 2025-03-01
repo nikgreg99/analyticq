@@ -38,6 +38,7 @@ class AnalyticQSeverity(Enum):
         LOW (str): Minor severity level
         UNKNOWN (str): Undefined severity level
     """
+    INFO = "INFO"  # Not all SAST tool support this severity level
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"

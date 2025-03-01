@@ -102,7 +102,6 @@ def test_compute_language_metrics():
         },
     }
     result = CodebaseMetricsCalculator.compute_language_metrics(language_stats_sample, total_files)
-    print(result)
     assert result == expected_output, f"Expected {expected_output}, got {result}"
 
 

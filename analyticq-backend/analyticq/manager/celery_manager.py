@@ -30,7 +30,7 @@ class AnalyticQCeleryManager:
         return cls._instance
 
     def __init__(self, settings: Optional[AnalyticQCeleryConfig] = None):
-        if not hasattr(self, "initialized"):
+        if not hasattr(self, "_initialized"):
             self.settings = settings or AnalyticQCeleryConfig()
             # Create the Celery application
             self.celery = Celery(
@@ -39,7 +39,7 @@ class AnalyticQCeleryManager:
                 backend=self.settings.result_backend,
             )
             self.configure_app()
-            self.intizialized = True
+            self._intizialized = True
 
     def configure_app(self) -> None:
         """

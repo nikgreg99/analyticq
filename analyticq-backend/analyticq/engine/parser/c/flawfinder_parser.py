@@ -30,7 +30,7 @@ class FlawFinderParser(AnalyticQResultParser):
             "4": AnalyticQSeverity.HIGH,
             "5": AnalyticQSeverity.CRITICAL
         }
-        return severity_map.get(severity_level, AnalyticQSeverity.LOW)
+        return severity_map.get(severity_level, AnalyticQSeverity.UNKNOWN)
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         """FlawFinder doesn't provide confidence levels."""
@@ -68,7 +68,6 @@ class FlawFinderParser(AnalyticQResultParser):
         """
         Parse FlawFinder CSV results using the base class parser.
         """
-        print(raw_result)
         try:
             # Transform CSV into dictionary format
             transformed_results = self._parse_csv_to_dict(raw_result)

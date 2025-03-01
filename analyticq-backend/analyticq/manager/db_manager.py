@@ -23,7 +23,7 @@ class AnalyticQDatabaseManager:
         return cls._instance
 
     def __init__(self):
-        if not hasattr(self, "initialized"):
+        if not hasattr(self, "_initialized"):
             self._engine = create_async_engine(
                 os.environ.get("ANALYTICQ_DB_URL"),
                 echo=True
@@ -33,7 +33,7 @@ class AnalyticQDatabaseManager:
                 class_=AsyncSession,
                 expire_on_commit=False
             )
-            self.initialized = True
+            self._initialized = True
 
     async def init_db(self):
         """

@@ -16,7 +16,7 @@ yaml_data = "key1: value1\nkey2: value2"
 def test_config_parser(file_data, ext, expected):
     with patch("builtins.open", mock_open(read_data=file_data)):
         parsed_data = AnalyticQConfigParser.parse(mock_open(read_data=file_data)(), f"config.{ext}")
-        assert parsed_data == expected, f"Exptecetd {parsed_data}, got {expected}"
+        assert parsed_data == expected, f"Expected {parsed_data}, got {expected}"
 
 
 def test_invalid_extension():

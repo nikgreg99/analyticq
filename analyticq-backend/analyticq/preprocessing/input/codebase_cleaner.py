@@ -25,11 +25,11 @@ class CodebaseCleaner:
         return _instance
 
     def __init__(self):
-        if not hasattr(self, "initialized"):
+        if not hasattr(self, "_initialized"):
             self.base_dir = PathUtil.get_home_AnalyticQ_path()
             codebase_config = AnalyticQBaseConfig.get("codebase")
             self.retention_days = codebase_config["retention"]
-            self.initialized = True
+            self._initialized = True
 
     @lru_cache(maxsize=1000)
     def _get_item_creation_or_last_edit_date(self, item: Path) -> datetime:

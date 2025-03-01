@@ -1,6 +1,9 @@
 name: Docker Build and Push Workflow
 
 on:
+  push:
+    paths:
+      - '**/Dockerfile'
   workflow_call:
     inputs:
       image_name:
@@ -9,9 +12,11 @@ on:
       dockerfile:
         required: true
         type: string
+        default: 'docker/Dockerfile' # Path to Dockerfile
       context:
         required: true
         type: string
+        default: 'docker' # Default path to context (same as Dockerfile folder )
 
 jobs:
   build-and-push:
@@ -35,6 +40,7 @@ jobs:
           docker buildx create --use
           docker buildx build \
             -t ghcr.io/${{ github.repository }}/${{ inputs.image_name }}:${{ github.sha }} \
+            -t t ghcr.io/${{ github.repository }}/${{inputs.image_name}}:latest \
             -f ${{ inputs.dockerfile }} ${{ inputs.context }} \
             --push
 

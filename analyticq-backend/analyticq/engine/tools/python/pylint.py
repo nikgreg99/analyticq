@@ -1,13 +1,8 @@
-
-import logging
-
 from analyticq.config.models import AnalyticQContainerRuntimeConfig
 from analyticq.engine.analyzer import PylintAnalyzer
 from analyticq.engine.core.sast_tool import AnalyticQSASTTool
 from analyticq.engine.parser import PylintParser
 from analyticq.manager import AnalyticQContainerManager
-
-logger = logging.getLogger(__name__)
 
 
 class PylintTool(AnalyticQSASTTool):

@@ -25,16 +25,15 @@ class BanditParser(AnalyticQResultParser):
         try:
             return AnalyticQSeverity.parse(severity_level.upper())
         except ValueError as e:
-            raise ValueError(f"Invalid severity level: {severity_level}") from e
+            raise e
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         try:
             return AnalyticQConfidence.parse(confidence_level.upper())
         except ValueError as e:
-            raise ValueError(f"Invalid confidence level: {confidence_level}") from e
+            raise e
 
     def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
-        print(raw_result)
         try:
             bandit_issues = raw_result.get("results", [])
             scan = super().parse_scan_result(bandit_issues)

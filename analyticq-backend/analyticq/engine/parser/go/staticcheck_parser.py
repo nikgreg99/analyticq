@@ -23,7 +23,7 @@ class StaticCheckParser(AnalyticQResultParser):
         }
         super().__init__(tool_name="Staticcheck", field_mapping=field_mapping)
 
-    def _map_confidence(self, confidence_level):
+    def _map_confidence(self, confidence_level) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level) -> AnalyticQSeverity:

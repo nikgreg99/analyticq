@@ -1,13 +1,13 @@
-version: "3.9"
 
 services:
 
   rabbitmq-broker:
       image: rabbitmq:${RABBITMQ_VERSION}-management
       container_name: rabbitmq-broker
+      restart: always
       ports:
-        - "${RABBITMQ_AMQP_PORT}:5672"
-        - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+        - "${RABBITMQ_AMQP_PORT}:${RABBMITMQ_AMPQ_PORT}"
+        - "${RABBITMQ_MANAGEMENT_PORT}:${RABIBITMQ_MANAGEMENT_PORT}"
       env_file:
         .env
       environment:
@@ -23,6 +23,7 @@ services:
       context: ./analyticq-backend
       dockerfile: Dockerfile
     container_name: celery_worker
+    restart: always
     env_file: .env
     environment:
       CELERY_HOSTNAME: ${CELERY_HOSTNAME}
@@ -45,6 +46,7 @@ services:
       context: ./analyticq-backend
       dockerfile: Dockerfile
     container_name: celery_beat
+    restart: always
     env_file: .env
     environment:
       CELERY_HOSTNAME: ${CELERY_HOSTNAME}
@@ -63,9 +65,11 @@ services:
       - analyticq-network
     command: celery -A analyticq.celery_app beat --loglevel=info
 
+
   postgres:
     image: postgres:${POSTGRES_VERSION}
-    container_name: analyticq-db
+    container_name: analyticq-db-postgres
+    restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_ROOT_USER}
       POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
@@ -74,7 +78,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT}:5432"  # Mapping PostgreSQL port to local machine
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"  # Mapping PostgreSQL port to local machine
     networks:
       - analyticq-network
     entrypoint: >
@@ -88,6 +92,23 @@ services:
         psql -U ${POSTGRES_ROOT_USER} -d ${POSTGRES_DB} -c \"GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_NON_ROOT_USER};\"
         wait
       "
+  mongo:
+    image: mongodb/mongodb-community-server:${MONGO_VERSION}
+    container_name: analyticq-db-mongo
+    restart: always
+    env_file: .env
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    networks:
+      - analyticq-network
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_USERNAME: ${MONGO_INITDB_USERNAME}
+      MONGO_INITDB_PASSWORD: ${MONGO_INITDB_PASSWORD}
 
 
   analyticq-backend:
@@ -107,6 +128,8 @@ volumes:
     name: rabbitmq_data
   postgres_data:
     name: postgres_data
+  mongo_data:
+    name: mongo_fata
 
 networks:
   analyticq-network:

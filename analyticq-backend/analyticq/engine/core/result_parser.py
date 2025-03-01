@@ -12,7 +12,6 @@ class AnalyticQResultParser(ABC):
 
     def __init__(self, tool_name: str, field_mapping: Dict[str, str]):
         """
-
         Args:
             tool_name (str): The name of the tool being used for parsing.
             field_mapping (Dict[str, str]): A dictionary mapping the field names from the tool's output
@@ -79,7 +78,7 @@ class AnalyticQResultParser(ABC):
         including the tool name and empty metrics dictionary that can be populated later.
         """
         return {
-            "tool_name": f"{self.tool_name}",  # Replace with actual version if available,
+            "tool_name": f"{self.tool_name}",
             "timestamp": datetime.now(UTC),
             "metrics": {},  # Default metrics (can be overridden)
         }
@@ -107,7 +106,6 @@ class AnalyticQResultParser(ABC):
                 # Map fields using the tool-specific mapping
                 severity = self._get_field(raw_issue, "severity", "unknown")
                 confidence = self._get_field(raw_issue, "confidence", "unknown")
-                print(self._get_field(raw_issue, "rule_id"))
                 issue = AnalyticQSASTIssue(
                     rule_id=self._get_field(raw_issue, "rule_id"),
                     severity=self._map_severity(severity),

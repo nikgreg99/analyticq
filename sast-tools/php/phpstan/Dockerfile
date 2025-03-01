@@ -6,25 +6,30 @@ ENV COMPOSER_HOME="/composer"
 ENV PATH="$COMPOSER_HOME/vendor/bin:$PATH"
 ENV PHPSTAN_VERSION=2.1.5
 
-# Installa le dipendenze e PHPStan
+# Install dependencies, including dos2unix
 RUN apk add --no-cache wget git unzip curl dos2unix \
     && docker-php-ext-install opcache \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer global require phpstan/phpstan:^${PHPSTAN_VERSION} \
     && composer clear-cache
 
-# Imposta la directory di lavoro
+# Set the working directory
 WORKDIR /phpstan
 RUN mkdir -p /output
 
-# Copia file e correggi i permessi
-COPY run_phpstan.sh  .
+# Copy files and adjust permissions
+COPY run_phpstan.sh .
 COPY phpstan.neon .
-RUN chmod +x /phpstan/run_phpstan.sh && dos2unix /phpstan/run_phpstan.sh
 
+# Convert line endings and set execute permissions
+RUN dos2unix /phpstan/run_phpstan.sh \
+    && chmod +x /phpstan/run_phpstan.sh
 
-# Monta i volumi per il codice
-VOLUME [ "/code", "/output" ]
+# (Optional) Remove dos2unix to reduce image size
+RUN apk del dos2unix
 
-# Esegue lo script
-ENTRYPOINT  [ "/phpstan/run_phpstan.sh" ]
+# Define volumes for code and output
+VOLUME ["/code", "/output"]
+
+# Set the entry point to the script
+ENTRYPOINT ["/phpstan/run_phpstan.sh"]

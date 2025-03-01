@@ -1,3 +1,17 @@
+class CodebaseUnknownTypeException(Exception):
+    """
+    Exception raised when an unknown codebase type is encountered during preprocessing.
+
+    This exception is raised when the system encounters a codebase type that it cannot
+    recognize or process during the preprocessing phase.
+
+    Example:
+        >>> if codebase_type not in supported_types:
+        ...     raise CodebaseUnknownTypeException()
+    """
+    pass
+
+
 class CodebaseNotFoundException(Exception):
     """
     Exception raised when the specified codebase directory is not found.

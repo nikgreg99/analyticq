@@ -16,15 +16,27 @@ on:
 
 jobs:
     build-and-test:
-        runs-on: ubuntu-22.04
+        runs-on: ${{matrix.os}}
+        strategy:
+          matrix:
+            os: [ubuntu-22.04, windows-latest]
+            python-version: ["3.11", "3.12", "3.13"]
         steps:
         - name: Checkout code
           uses: actions/checkout@v2
 
-        - name: Set up Python 3.11
+        - name: Set up Python $${{matrix.python-version}}
           uses: actions/setup-python@v2
           with:
-            python-version: 3.11
+            python-version: ${{matrix.python-version}}
+
+        - name: Cache Python dependencies
+          uses: actions/cache@v3
+          with:
+            path: ~/.cache/pip
+            key: pip-${{ runner.os }}-${{ hashFiles('analyticq-backend/requirements.txt') }}
+            restore-keys: |
+              pip-${{ runner.os }}-
 
         - name: Install backend dependencies
           run: |
@@ -36,10 +48,21 @@ jobs:
             echo "SECRET_KEY=test_env_secret_key" > analyticq-backend/config/.env.test
             echo '{"host": "localhost", "port": 8000}' > analyticq-backend/config/analyticq_backend_config.json
 
-        - name: Run unit tests with Pytest
+        - name: Run Flake 8 linter
           run: |
-            python -m pip install pytest pytest-asyncio
-            pytest analyticq-backend/tests/unit
+              pip install flake8
+              flake8 analyticq-backend
+
+        - name: Run unit tests and code coverage generation report
+          run: |
+            python -m pip install pytest pytest-asyncio pytest-cov
+            pytest analyticq-backend/tests/unit --cov=analyticq-backend --cov-report=xml:coverage.xml
+
+        - name: Upload coverage report as artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: coverage-report${{ github.run_number }}-$${{ github.sha }}
+            path: coverage.xml
 
         - name: Run SAST analysis backend with Bandit
           run: |
@@ -73,7 +96,12 @@ jobs:
            - name: Build and push backend Docker image
              run: |
                  docker buildx create --use
-                 docker buildx build -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} -f ./analyticq-backend/Dockerfile ./analyticq-backend --push
+                 docker buildx build  \
+                  --platform linux/amd64,linux/arm64 \
+                  -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }}
+                  -t ghcr.io/${{ github.repository }}/analyticq-backend:latest \
+                  -f ./analyticq-backend/Dockerfile ./analyticq-backend
+                  --push
 
            - name: Log out from Docker Hub
              run: docker logout ghcr.io

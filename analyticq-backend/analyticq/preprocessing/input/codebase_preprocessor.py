@@ -39,8 +39,10 @@ class CodebasePreprocessor:
     def __init__(self,
                  cloner: Provide[CodebaseCloner] = None,
                  language_scanner: Provide[CodebaseLangScanner] = None):
-        self.cloner = cloner or CodebaseCloner()
-        self.language_scanner = language_scanner or CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
+        if not hasattr(self, "_initialized"):
+            self.cloner = cloner or CodebaseCloner()
+            self.language_scanner = language_scanner or CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
+            self._initialized = True
 
     async def preprocess_codebase(self, codebase_url: str, branch: str = None, tag: str = None, ssh_key_path: str = None) -> Dict:
         """

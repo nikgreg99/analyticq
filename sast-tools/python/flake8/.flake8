@@ -1,0 +1,95 @@
+[flake8]
+# Maximum line length (set relatively strict)
+max-line-length = 88
+
+# Enable all flake8 errors and warnings
+select = E,W,F,C,N,D,R,B,I,T,P,M
+
+# Enable detailed error codes
+show-source = True
+statistics = True
+
+# Specify plugins to use (requires these plugins to be installed)
+# flake8-docstrings: validates docstrings (D)
+# flake8-bugbear: finds likely bugs (B)
+# flake8-import-order: checks import order (I)
+# flake8-quotes: checks quote consistency (Q)
+# flake8-comprehensions: checks list/dict comprehensions (C4)
+# mccabe: complexity checks (C9)
+# pep8-naming: naming conventions (N)
+# flake8-builtins: builtin shadowing (A)
+# flake8-colors: colored output
+# flake8-annotations: type annotations (ANN)
+# flake8-return: return statements (R)
+# flake8-print: print statements (T)
+# flake8-multiline-containers: multiline container formatting (JS)
+# flake8-pytest-style: pytest best practices (PT)
+# flake8-variables-names: variable naming (VNE)
+plugins =
+    flake8-docstrings
+    flake8-bugbear
+    flake8-import-order
+    flake8-quotes
+    flake8-comprehensions
+    mccabe
+    pep8-naming
+    flake8-builtins
+    flake8-colors
+    flake8-annotations
+    flake8-return
+    flake8-print
+    flake8-multiline-containers
+    flake8-pytest-style
+    flake8-variables-names
+
+# Docstring configuration
+docstring-convention = google
+
+# Import order configuration
+import-order-style = pep8
+
+# Set complexity threshold
+max-complexity = 10
+
+# Require explicit return annotation
+require-return-annotation = True
+
+# Enforce specific quotes (can be single or double)
+inline-quotes = double
+
+# Ignore specific rules (remove or modify as needed)
+# ignore =
+#    E203  # whitespace before ':' (conflicts with black)
+#    W503  # line break before binary operator
+
+# Show the most common errors
+count = True
+max-report = 10
+
+# Per-file-ignores (useful for tests or specific files)
+# per-file-ignores =
+#    tests/*:S101,D103
+#    __init__.py:F401
+
+# Exclude patterns (standard directories to skip)
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.pyc,
+    *.pyo,
+    .venv,
+    venv,
+    env,
+    .env,
+    docs,
+    */migrations/*,
+    .tox,
+    .eggs,
+    *.egg,
+    .coverage,
+    htmlcov
+
+# Make output more verbose
+verbose = 1

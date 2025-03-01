@@ -8,7 +8,6 @@ class FlawFinderAnalyzer(AnalyticQAnalyzer):
         self.container_manager = container_manager
         self.image_name = image_name
         self.image_tag = image_tag
-        self.flawfinder_output_file = "flawfinder-report.csv"
 
     def get_output_filename(self):
         return "flawfinder-report.csv"

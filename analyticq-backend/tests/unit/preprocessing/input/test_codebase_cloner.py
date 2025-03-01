@@ -7,7 +7,8 @@ import pytest
 from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
-                                 CodebaseNotFoundException)
+                                 CodebaseNotFoundException,
+                                 CodebaseUnknownTypeException)
 from analyticq.preprocessing import (CodebaseCloner, CodebaseClonerPathType,
                                      CodebaseClonerProtocolType)
 from analyticq.service import GitAuthService
@@ -42,7 +43,7 @@ async def test_clone_remote_codebase_succcess(codebase_cloner):
         mock_repo.return_value = mock_repo_instance
 
         result_path = await codebase_cloner.clone_remote_codebase(codebase_url, codebase_branch)
-        assert expected_repo_path == result_path
+        assert expected_repo_path == result_path, f"Expected {expected_repo_path}, got {result_path}"
         mock_repo.assert_called_once_with(codebase_url, expected_repo_path, branch=codebase_branch)
 
 
@@ -62,7 +63,7 @@ async def test_clone_remote_codebase_with_default_branch(codebase_cloner):
         mock_repo.return_value = mock_repo_instance
 
         result_path = await codebase_cloner.clone_remote_codebase(codebase_url)
-        assert expected_repo_path == result_path
+        assert expected_repo_path == result_path, f"Expected {expected_repo_path}, got {result_path}"
         mock_repo.assert_called_once_with(codebase_url, expected_repo_path, branch="main")
 
 
@@ -82,7 +83,7 @@ async def test_clone_remote_codebase_with_tag(codebase_cloner):
         mock_repo.return_value = mock_repo_instance
 
         result_path = await codebase_cloner.clone_remote_codebase(codebase_url, branch=tag_name)
-        assert expected_repo_path == result_path
+        assert expected_repo_path == result_path, f"Expected {expected_repo_path}, got {result_path}"
         mock_repo.assert_called_once_with(codebase_url, expected_repo_path, branch=tag_name)
 
 
@@ -98,7 +99,7 @@ async def test_clone_remote_codebase_already_existing(codebase_cloner):
         mock_repo_instance = MagicMock()
         mock_repo.return_value = mock_repo_instance
         result_path = await codebase_cloner.clone_remote_codebase(codebase_url)
-        assert result_path is not None
+        assert result_path is not None, f"Expected {result_path} not to be none"
         mock_repo.assert_not_called()
 
 
@@ -136,7 +137,7 @@ async def test_clone_remote_codebase_with_credentials(codebase_cloner):
             branch=branch,
         )
 
-        assert repo_path is not None
+        assert repo_path is not None, f"Expected {expected_repo_path} not to be None"
 
 
 @pytest.mark.asyncio
@@ -316,6 +317,5 @@ async def test_clone_unknown_type(codebase_cloner):
          patch("pathlib.Path.exists", return_value=False), \
          patch.object(CodebaseCloner, '_get_codebase_type', return_value=CodebaseClonerPathType.UNKNOWN):
 
-        result_path = await codebase_cloner.clone(codebase_url)
-        assert result_path is None
-        logger.error("Unknown codebase type: {CodebaseClonerPathType.UNKNOWN}")
+        with pytest.raises(CodebaseUnknownTypeException):
+            await codebase_cloner.clone(codebase_url)
