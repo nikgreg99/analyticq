@@ -40,7 +40,7 @@ jobs:
           docker buildx create --use
           docker buildx build \
             -t ghcr.io/${{ github.repository }}/${{ inputs.image_name }}:${{ github.sha }} \
-            -t t ghcr.io/${{ github.repository }}/${{inputs.image_name}}:latest \
+            -t ghcr.io/${{ github.repository }}/${{inputs.image_name}}:latest \
             -f ${{ inputs.dockerfile }} ${{ inputs.context }} \
             --push
 
