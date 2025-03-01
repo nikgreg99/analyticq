@@ -98,7 +98,7 @@ jobs:
                  docker buildx create --use
                  docker buildx build  \
                   --platform linux/amd64,linux/arm64 \
-                  -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }}
+                  -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} \
                   -t ghcr.io/${{ github.repository }}/analyticq-backend:latest \
                   -f ./analyticq-backend/Dockerfile ./analyticq-backend
                   --push
