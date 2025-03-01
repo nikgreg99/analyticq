@@ -27,6 +27,10 @@ jobs:
 
   push-flake8:
      uses: ./.github/workflows/docker-build.yml
+     with:
+      image_name: flake8
+      dockerfile: ./sast.tools/python/flake/Dockerfile
+      context: ./sast.tools/python/flake/Dockerfile
 
   push-staticheck:
     uses: ./.github/workflows/docker-build.yml
@@ -71,7 +75,7 @@ jobs:
       context: ./sast-tools/ruby/rubocop
 
   push-eslint:
-    uses: ./github/workflows/docker-build.yml
+    uses: ./.github/workflows/docker-build.yml
     with:
       image_name: eslint
       dockerfile: ./sast-tools/js/eslint/Dockerfile
