@@ -29,8 +29,8 @@ jobs:
      uses: ./.github/workflows/docker-build.yml
      with:
       image_name: flake8
-      dockerfile: ./sast.tools/python/flake8/Dockerfile
-      context: ./sast.tools/python/flake8
+      dockerfile: ./sast-tools/python/flake8/Dockerfile
+      context: ./sast-tools/python/flake8
 
   push-staticheck:
     uses: ./.github/workflows/docker-build.yml

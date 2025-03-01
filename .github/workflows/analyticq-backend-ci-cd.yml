@@ -99,7 +99,7 @@ jobs:
                   --platform linux/amd64,linux/arm64 \
                   -t ghcr.io/${{ github.repository }}/analyticq-backend:${{ github.sha }} \
                   -t ghcr.io/${{ github.repository }}/analyticq-backend:latest \
-                  -f ./analyticq-backend/Dockerfile ./analyticq-backend
+                  -f ./analyticq-backend/Dockerfile ./analyticq-backend \
                   --push
 
            - name: Log out from Docker Hub
