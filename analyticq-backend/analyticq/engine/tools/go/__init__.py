@@ -1,1 +1,1 @@
-from .staticcheck import StaticCheckTool
+from .staticcheck import StaticCheckTool  # noqa

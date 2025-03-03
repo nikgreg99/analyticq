@@ -137,14 +137,9 @@ def test_parse_scan_result(eslint_parser, sample_eslint_output, monkeypatch):
     assert third_issue.severity == AnalyticQSeverity.MEDIUM
     assert third_issue.message == "Missing semicolon."
 
-    # Check summary
-    assert result.summary["total"] == 3
-    assert result.summary["error_count"] == 2
-    assert result.summary["warning_count"] == 1
-    assert result.summary["files_analyzed"] == 1
-
     # Check metadata
     assert result.metadata["tool_name"] == "eslint"
+    assert result.metadata["files_analyzed"] == 1
     assert result.metadata["total_errors"] == 2
     assert result.metadata["total_warnings"] == 1
     assert result.metadata["total_fixable_errors"] == 1
@@ -213,6 +208,5 @@ def test_parse_output_with_no_messages(eslint_parser):
 
     result = eslint_parser.parse_scan_result(eslint_output_no_messages)
     assert len(result.issues) == 0
-    assert result.summary["total"] == 0
     assert result.metadata["total_errors"] == 0
-    assert result.summary["files_analyzed"] == 1
+    assert result.metadata["files_analyzed"] == 1

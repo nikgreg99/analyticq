@@ -1,4 +1,3 @@
-
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import AnalyticQConfidence, AnalyticQSeverity
 
@@ -23,10 +22,10 @@ class StaticCheckParser(AnalyticQResultParser):
         }
         super().__init__(tool_name="Staticcheck", field_mapping=field_mapping)
 
-    def _map_confidence(self, confidence_level) -> AnalyticQConfidence:
+    def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
-    def _map_severity(self, severity_level) -> AnalyticQSeverity:
+    def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         try:
             return AnalyticQSeverity.parse(self.severity_mapping[severity_level])
         except ValueError as e:

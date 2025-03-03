@@ -32,6 +32,13 @@ jobs:
       dockerfile: ./sast-tools/python/flake8/Dockerfile
       context: ./sast-tools/python/flake8
 
+  push-pyright:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: pyright
+      dockerfile: ./sast-tools/python/pyright/Dockerfile
+      context: ./sast-tools/python/pyright
+
   push-staticheck:
     uses: ./.github/workflows/docker-build.yml
     with:

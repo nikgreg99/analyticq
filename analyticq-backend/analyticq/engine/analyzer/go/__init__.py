@@ -1,1 +1,1 @@
-from .staticheck_analyzer import StaticCheckAnalyzer
+from .staticheck_analyzer import StaticCheckAnalyzer  # npqa

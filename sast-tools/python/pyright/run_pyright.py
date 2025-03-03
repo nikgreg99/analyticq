@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 # Check flake8 version
-result = subprocess.run(["flake8", "--version"], capture_output=True, text=True)
+result = subprocess.run(["pyright", "--version"], capture_output=True, text=True)
 logger.info(f"Return code: {result.returncode}")
-logger.info(f"flake8 version: {result.stdout}")
+logger.info(f"pyright version: {result.stdout}")
 if result.stderr:
     logger.info(f"stderr: {result.stderr}")
 
 # Define paths
 code_path = Path("/code")
-output_path = Path("/output/flake8-report.json")
+output_path = Path("/output/pyright-report.json")
 
 # Check if /code directory exists and is not empty
 if not code_path.exists() or not any(code_path.iterdir()):
@@ -37,24 +37,24 @@ if not is_python_module:
 
 logger.info(f"Files to scan: {files_to_scan}")
 
-# Form flake8 command - using --format=json for JSON output
-flake8_command = ["flake8", "--format=json"] + files_to_scan
+# Form pyright command - using --outputjson for JSON output
+pyright_command = ["pyright", "--outputjson", "--level", "warning"] + files_to_scan
 
-logger.info(f"Running command: {' '.join(flake8_command)}")
+logger.info(f"Running command: {' '.join(pyright_command)}")
 
 try:
-    # Run flake8
-    logger.info("Running flake8...")
+    # Run pyright
+    logger.info("Running pyright...")
     result = subprocess.run(
-        flake8_command,
+        pyright_command,
         capture_output=True,
         text=True,
     )
 
-    # Log flake8 output
-    logger.info(f"flake8 stdout: {result.stdout}")
+    # Log pyright output
+    logger.info(f"pyright stdout: {result.stdout}")
     if result.stderr:
-        logger.error(f"flake8 stderr: {result.stderr}")
+        logger.error(f"pyright stderr: {result.stderr}")
 
     # Save output to file
     output_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
@@ -65,9 +65,9 @@ try:
         try:
             json.loads(result.stdout)
             output_path.write_text(result.stdout)
-            logger.info(f"flake8 output saved to {output_path}")
+            logger.info(f"pyright output saved to {output_path}")
         except json.JSONDecodeError:
-            logger.error("flake8 output is not valid JSON. Saving raw output.")
+            logger.error("pyright output is not valid JSON. Saving raw output.")
             output_path.write_text(result.stdout)
     else:
         # Write empty JSON array if no issues found
@@ -75,7 +75,7 @@ try:
         logger.info(f"No issues found. Empty JSON array saved to {output_path}")
 
     # Log flake8 return code
-    logger.info(f"flake8 return code: {result.returncode}")
+    logger.info(f"pyrigth return code: {result.returncode}")
 
     # Exit with 0 (success) regardless of flake8 findings
     sys.exit(0)

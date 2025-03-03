@@ -157,7 +157,7 @@ class BrokenImplementation implements PaymentProcessor {
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_full_php_analysis(sample_code, phpstan_tool):
+async def test_full_phpstan_analysis(sample_code, phpstan_tool):
     """Test full PHPStan analysis workflow from code scan to report generation."""
     try:
         # 1. Install the container image

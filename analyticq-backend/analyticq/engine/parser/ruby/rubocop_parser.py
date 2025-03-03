@@ -24,7 +24,7 @@ class RubocopParser(AnalyticQResultParser):
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
-    def _map_severity(self, severity_level):
+    def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         # According to https://docs.rubocop.org/rubocop/configuration.html#severity
         severity_map = {
             "refactor": AnalyticQSeverity.LOW,
@@ -59,8 +59,6 @@ class RubocopParser(AnalyticQResultParser):
     def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
         try:
             transformed_results = self.transform_output(raw_result)
-            # Use base class's parse_scan_result
-            print(transformed_results)
             scan_result = super().parse_scan_result(transformed_results)
             # Add Rubocop-specific metadata
             if "metadata" in raw_result:
@@ -73,7 +71,7 @@ class RubocopParser(AnalyticQResultParser):
                 })
 
             if "summary" in raw_result:
-                scan_result.summary.update({
+                scan_result.metadata.update({
                     "offense_count": raw_result["summary"].get("offense_count", 0),
                     "target_file_count": raw_result["summary"].get("target_file_count", 0),
                     "inspected_file_count": raw_result["summary"].get("inspected_file_count", 0)

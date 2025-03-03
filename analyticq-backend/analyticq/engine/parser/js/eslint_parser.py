@@ -92,14 +92,9 @@ class ESLintParser(AnalyticQResultParser):
             scan_result.metadata.update({
                 "total_errors": total_errors,
                 "total_warnings": total_warnings,
+                "files_analyzed": len(raw_result),
                 "total_fixable_errors": sum(file_data.get("fixableErrorCount", 0) for file_data in raw_result),
                 "total_fixable_warnings": sum(file_data.get("fixableWarningCount", 0) for file_data in raw_result)
-            })
-
-            scan_result.summary.update({
-                "error_count": total_errors,
-                "warning_count": total_warnings,
-                "files_analyzed": len(raw_result)
             })
 
             return scan_result

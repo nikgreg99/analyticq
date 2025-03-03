@@ -13,7 +13,7 @@ from fastapi import FastAPI
 
 import analyticq
 
-from .config.base_conf import AnalyticQBaseConfig
+from .config.base_config import AnalyticQBaseConfig
 from .config.logger_conf import logging_init
 
 logger = logging.getLogger(__name__)

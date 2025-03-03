@@ -23,16 +23,11 @@ class FlakeParser(AnalyticQResultParser):
         if not severity_level or not isinstance(severity_level, str):
             return AnalyticQSeverity.UNKNOWN
 
-        code_prefix = severity_level[0] if severity_level else 'E'
-
-        if code_prefix == "E":  # Error
-            return AnalyticQSeverity.HIGH
-        elif code_prefix == "F":  # Fatal
-            return AnalyticQSeverity.CRITICAL
-        elif code_prefix == "W":  # Warning
-            return AnalyticQSeverity.MEDIUM
-        else:  # C (complexity), N (naming), etc.
-            return AnalyticQSeverity.LOW
+        return {
+            'E': AnalyticQSeverity.HIGH,      # Error
+            'F': AnalyticQSeverity.CRITICAL,  # Fatal
+            'W': AnalyticQSeverity.MEDIUM,    # Warning
+        }.get(severity_level[0], AnalyticQSeverity.LOW)  # Default for C, N, etc.
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN

@@ -36,7 +36,6 @@ class PHPStanParser(AnalyticQResultParser):
             for file_path, file_data in files_data.items():
                 messages = file_data.get("messages", [])
                 for message in messages:
-                    print(message)
                     issue = {
                         "title": message["identifier"],
                         "description": message["message"],

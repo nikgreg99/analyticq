@@ -1,0 +1,31 @@
+{
+  "venvPath": "/usr/local",
+  "venv": "bin",
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "strict",
+  "extraPaths": [
+    "./src",
+    "./code",
+    "./lib"
+  ],
+  "strict": [
+    "all"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/tests",
+    "**/test_*.py",
+    "**/setup.py"
+  ],
+  "include": [
+    "**/*.py"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "/code"
+    }
+  ]
+}

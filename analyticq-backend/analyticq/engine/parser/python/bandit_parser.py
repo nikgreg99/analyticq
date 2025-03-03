@@ -22,6 +22,9 @@ class BanditParser(AnalyticQResultParser):
         super().__init__(tool_name="Bandit", field_mapping=field_mapping)
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
+        if not severity_level or not isinstance(severity_level, str):
+            return AnalyticQSeverity.UNKNOWN
+
         try:
             return AnalyticQSeverity.parse(severity_level.upper())
         except ValueError as e:

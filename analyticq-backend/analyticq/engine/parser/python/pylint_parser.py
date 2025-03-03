@@ -27,7 +27,7 @@ class PylintParser(AnalyticQResultParser):
 
         super().__init__(tool_name="Pylint", field_mapping=field_mapping)
 
-    def _map_confidence(self, confidence_level) -> AnalyticQConfidence:
+    def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level) -> AnalyticQSeverity:
