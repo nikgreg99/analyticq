@@ -1,4 +1,8 @@
 import pytest
+from analyticq.engine.core.models import (AnalyticQConfidence,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
+                                          AnalyticQSeverity)
 from analyticq.engine.tools import SpotBugTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -118,8 +122,19 @@ async def test_full_analysis(spotbugs_tool, sample_java_code):
         results = await spotbugs_tool.run_scan(
             codebase_path=str(sample_java_code),
         )
+        print(results)
 
-        assert len(results.issues) > 0
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
+
+        assert len(results.issues) > 1, "Should find at least one issue"
+
+        for issue in results.issues:
+            assert isinstance(issue, AnalyticQSASTIssueModel), "Invalid issue type"
+            assert issue.rule_id is not None
+            assert issue.path is not None
+            assert issue.message is not None
+            assert issue.severity is not AnalyticQSeverity.UNKNOWN
+            assert issue.confidence is AnalyticQConfidence.UNKNOWN
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

@@ -1,5 +1,5 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResult
+from analyticq.engine.core.models import AnalyticQSASTScanResultModel
 from analyticq.engine.tools import ESLintTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -154,8 +154,8 @@ async def test_full_eslint_analysis(sample_code, eslint_tool):
         )
 
         # 3. Verify the basic structure of the result
-        assert isinstance(result, AnalyticQSASTScanResult)
-        assert result.metadata["tool_name"] == "eslint"
+        assert isinstance(result, AnalyticQSASTScanResultModel)
+        assert result.scan_metadata["tool_name"] == "eslint"
 
         assert len(result.issues) == 0
 

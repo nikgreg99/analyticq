@@ -1,6 +1,8 @@
+from typing import Any, Dict
+
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -17,7 +19,7 @@ class BanditParser(AnalyticQResultParser):
             "start_line": "line_number",
             "end_line": "line_range",
             "code": "code",
-            "metadata": "issue_cwe"
+            "issue_metadata": "issue_cwe"
         }
         super().__init__(tool_name="Bandit", field_mapping=field_mapping)
 
@@ -36,16 +38,18 @@ class BanditParser(AnalyticQResultParser):
         except ValueError as e:
             raise e
 
-    def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             bandit_issues = raw_result.get("results", [])
             scan = super().parse_scan_result(bandit_issues)
-            scan.metadata.update({
+            scan.scan_metadata.update({
                 "metrics": raw_result.get("metrics", {}),
                 "generated_at": raw_result.get("generated_at"),
             })
             return scan
         except ScanParserException as e:
             raise e
-        except AttributeError as e:
-            raise ScanParserException("Result is not in a dict format") from e
+        except (TypeError, AttributeError) as e:
+            raise ScanParserException(f"Invalid Bandit result format: {str(e)}") from e
+        except Exception as e:
+            raise ScanParserException(f"Unexpected error parsing Bandiit results: {str(e)}") from e

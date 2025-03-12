@@ -1,6 +1,6 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResult
-from analyticq.engine.tools.php import PHPStanTool
+from analyticq.engine import PHPStanTool
+from analyticq.engine.core.models import AnalyticQSASTScanResultModel
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -168,26 +168,26 @@ async def test_full_phpstan_analysis(sample_code, phpstan_tool):
             codebase_path=str(sample_code),
         )
 
-        assert isinstance(result, AnalyticQSASTScanResult)
-        assert result.metadata["tool_name"] == "PHPStan"
+        assert isinstance(result, AnalyticQSASTScanResultModel)
+        assert result.scan_metadata["tool_name"] == "PHPStan"
         assert len(result.issues) > 0
 
-        assert "metrics" in result.metadata
-        assert "total_files_analyzed" in result.metadata
-        assert result.metadata["total_files_analyzed"] == 1
-        assert result.metadata["metrics"]["file_errors"] > 0
+        assert "metrics" in result.scan_metadata
+        assert "total_files_analyzed" in result.scan_metadata
+        assert result.scan_metadata["total_files_analyzed"] == 1
+        assert result.scan_metadata["metrics"]["file_errors"] > 0
 
         for issue in result.issues:
             assert issue.path.endswith("test_sample.php")
 
-        error_categories = {issue.metadata.get("identifier", "").split(".")[0]
+        error_categories = {issue.issue_metadata.get("identifier", "").split(".")[0]
                             for issue in result.issues}
         expected_categories = {"property", "missingType", "return", "class", "method"}
 
         assert expected_categories.issubset(error_categories), "Missing expected error categories"
 
-        assert "tool_specific" in result.metadata
-        assert "errors" in result.metadata["tool_specific"]
+        assert "tool_specific" in result.scan_metadata
+        assert "errors" in result.scan_metadata["tool_specific"]
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

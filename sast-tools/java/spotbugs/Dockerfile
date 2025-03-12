@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y wget unzip \
 WORKDIR /spotbugs
 
 COPY run_spotbugs.sh .
-RUN  chmod +x run_spotbugs.sh
+RUN chmod +x run_spotbugs.sh
 
 VOLUME [ "/code", "/output"]
 

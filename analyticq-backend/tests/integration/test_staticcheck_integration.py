@@ -1,8 +1,8 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult)
-from analyticq.engine.tools.go.staticcheck import StaticCheckTool
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
+from analyticq.engine.tools import StaticCheckTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -124,7 +124,7 @@ async def test_staticcheck_full_analysis(sample_code, staticcheck_tool):
             codebase_path=str(sample_code),
         )
 
-        assert isinstance(results, AnalyticQSASTScanResult), "Invalid results type"
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
         assert len(results.issues) >= 3 , "Should find at least 3 issues"
 
         expected_issues = {
@@ -134,7 +134,7 @@ async def test_staticcheck_full_analysis(sample_code, staticcheck_tool):
         }
 
         for issue in results.issues:
-            assert isinstance(issue, AnalyticQSASTIssue)
+            assert isinstance(issue, AnalyticQSASTIssueModel)
             assert issue.path.endswith("test_sample.go")
 
             if issue.rule_id in expected_issues:
@@ -149,9 +149,9 @@ async def test_staticcheck_full_analysis(sample_code, staticcheck_tool):
 
         assert results.summary["total"] >= 3
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
-        assert results.metadata["tool_name"] == "Staticcheck"
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
+        assert results.scan_metadata["tool_name"] == "Staticcheck"
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

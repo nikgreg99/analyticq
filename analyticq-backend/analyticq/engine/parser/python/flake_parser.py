@@ -1,5 +1,9 @@
+from typing import Any, Dict
+
 from analyticq.engine.core import AnalyticQResultParser
-from analyticq.engine.core.models import AnalyticQConfidence, AnalyticQSeverity
+from analyticq.engine.core.models import (AnalyticQConfidence,
+                                          AnalyticQSASTScanResultModel,
+                                          AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
 
@@ -14,7 +18,7 @@ class FlakeParser(AnalyticQResultParser):
             "path": "filename",
             "start_line": "line_number",
             "end_line": None,  # Flake8 doesn't provide end line
-            "metadata": None  # No additional metadata in standard Flake8 output
+            "issue_metadata": None  # No additional metadata in standard Flake8 output
         }
 
         super().__init__(tool_name="flake8", field_mapping=field_mapping)
@@ -32,7 +36,7 @@ class FlakeParser(AnalyticQResultParser):
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
-    def parse_scan_result(self, raw_result) -> AnalyticQResultParser:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             # Normalize the raw_result into a list of issues
             flake8_issues = []
@@ -48,7 +52,7 @@ class FlakeParser(AnalyticQResultParser):
             scan = super().parse_scan_result(flake8_issues)
 
             # Add additional metadata specific to Flake8
-            scan.metadata.update({
+            scan.scan_metadata.update({
                 "metrics": {
                     "files_analyzed": len(raw_result.keys()),
                     "total_issues": len(flake8_issues)

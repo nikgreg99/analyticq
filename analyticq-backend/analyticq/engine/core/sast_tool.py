@@ -7,7 +7,7 @@ from analyticq.exception import ScanConfigurationException
 from analyticq.manager import AnalyticQContainerManager
 
 from .analyzer import AnalyticQAnalyzer
-from .models import AnalyticQSASTScanResult
+from .models import AnalyticQSASTScanResultModel
 from .result_parser import AnalyticQResultParser
 from .tool_strategy_output import StringToolFormatter
 
@@ -49,7 +49,7 @@ class AnalyticQSASTTool(ABC):
         codebase_path: str,
         config_path: Optional[str] = None,
         timeout: Optional[int] = None
-    ) -> AnalyticQSASTScanResult:
+    ) -> AnalyticQSASTScanResultModel:
         try:
             code_path = Path(codebase_path)
             if not code_path.exists():

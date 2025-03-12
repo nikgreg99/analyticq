@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -56,13 +56,13 @@ class RubocopParser(AnalyticQResultParser):
                 transformed_issues.append(transformed_issue)
         return transformed_issues
 
-    def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             transformed_results = self.transform_output(raw_result)
             scan_result = super().parse_scan_result(transformed_results)
             # Add Rubocop-specific metadata
             if "metadata" in raw_result:
-                scan_result.metadata.update({
+                scan_result.scan_metadata.update({
                     "rubocop_version": raw_result.get("metadata", {}).get("rubocop_version", "unknown"),
                     "ruby_engine": raw_result.get("metadata", {}).get("ruby_engine", "unknown"),
                     "ruby_version": raw_result.get("metadata", {}).get("ruby_version", "unknown"),
@@ -71,13 +71,14 @@ class RubocopParser(AnalyticQResultParser):
                 })
 
             if "summary" in raw_result:
-                scan_result.metadata.update({
+                scan_result.scan_metadata.update({
                     "offense_count": raw_result["summary"].get("offense_count", 0),
                     "target_file_count": raw_result["summary"].get("target_file_count", 0),
                     "inspected_file_count": raw_result["summary"].get("inspected_file_count", 0)
                 })
 
             return scan_result
+
         except Exception as e:
             raise ScanParserException(
                 f"Unexpected error parsing Rubocop results: {str(e)}"

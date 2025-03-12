@@ -1,5 +1,5 @@
 from threading import Lock
-from typing import Dict
+from typing import Dict, Optional
 
 from analyticq.preprocessing.metric import (CodebaseMetricsCalculator,
                                             CodebaseMetricsCollector,
@@ -12,8 +12,7 @@ from .codebase_lang_scanner import CodebaseLangScanner
 
 
 class CodebasePreprocessor:
-    """A singleton class responsible for preprocessing codebases by cloning repositories and analyzing their language composition.
-    This class handles the initial processing of source code repositories, including cloning them and scanning
+    """This class handles the initial processing of source code repositories, including cloning them and scanning
     their contents to gather language-specific information. This is the main entrypoint of the preprocessing module.
     Attributes:
         cloner (CodebaseCloner): Component responsible for cloning git repositories.
@@ -29,7 +28,7 @@ class CodebasePreprocessor:
     _instance = None
     _lock = Lock()
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> "CodebasePreprocessor":
         with cls._lock:
             if cls._instance is None:
                 _instance = super().__new__(cls)
@@ -44,7 +43,11 @@ class CodebasePreprocessor:
             self.language_scanner = language_scanner or CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
             self._initialized = True
 
-    async def preprocess_codebase(self, codebase_url: str, branch: str = None, tag: str = None, ssh_key_path: str = None) -> Dict:
+    async def preprocess_codebase(
+            self, codebase_url: str,
+            branch: Optional[str] = None,
+            tag: Optional[str] = None,
+            ssh_key_path: Optional[str] = None) -> Dict:
         """
         Preprocesses a codebase by cloning it and scanning its contents for language information.
 
@@ -65,6 +68,9 @@ class CodebasePreprocessor:
             "tag": tag,
             "ssh_key_path": ssh_key_path
         }
-        repo_path = await self.cloner.clone(codebase_url, **codebase_info)
-        await self.language_scanner.scan_codebase(repo_path)
-        return self.language_scanner.generate_codebase_report()
+        try:
+            repo_path = await self.cloner.clone(codebase_url, **codebase_info)
+            await self.language_scanner.scan_codebase(repo_path)
+            return self.language_scanner.generate_codebase_report()
+        except Exception as e:
+            raise Exception(f"Failed to preprocess codebase: {e}")

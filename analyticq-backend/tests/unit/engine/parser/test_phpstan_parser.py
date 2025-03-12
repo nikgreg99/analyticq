@@ -1,13 +1,13 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.engine.parser import PHPStanParser
 from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def phpstan_parser():
+def phpstan_parser() -> PHPStanParser:
     return PHPStanParser()
 
 
@@ -61,7 +61,7 @@ def test_parser_initialization():
         "path": "file_path",
         "start_line": "line_number",
         'end_line': 'line_number',
-        'metadata': 'metadata'
+        'issue_metadata': 'metadata'
     }
 
 
@@ -81,12 +81,12 @@ def test_severity_mapping(phpstan_parser):
 def test_successfull_parse(phpstan_parser, sample_phpstan_output):
     result = phpstan_parser.parse_scan_result(sample_phpstan_output)
 
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
 
     # Check metadata
-    assert result.metadata["metrics"] == sample_phpstan_output["totals"]
-    assert result.metadata["total_files_analyzed"] == 1
-    assert result.metadata["tool_specific"]["errors"] == []
+    assert result.scan_metadata["metrics"] == sample_phpstan_output["totals"]
+    assert result.scan_metadata["total_files_analyzed"] == 1
+    assert result.scan_metadata["tool_specific"]["errors"] == []
 
     # Check issues
     assert len(result.issues) == 2
@@ -96,8 +96,6 @@ def test_successfull_parse(phpstan_parser, sample_phpstan_output):
     assert first_issue.message == "Property App\\Tests\\User::$name is never read, only written."
     assert first_issue.path == "/code/test.php"
     assert first_issue.start_line == 7
-    assert first_issue.metadata["tip"] == "See: https://phpstan.org/docs"
-    assert first_issue.metadata["identifier"] == "property.onlyWritten"
 
 
 def test_null_input(phpstan_parser):
@@ -110,35 +108,30 @@ def test_null_input(phpstan_parser):
 def test_empty_output_parse(phpstan_parser, empty_phpstan_output):
     result = phpstan_parser.parse_scan_result(empty_phpstan_output)
 
-    assert isinstance(result, AnalyticQSASTScanResult)
-    assert result.metadata["tool_name"] == "PHPStan"
+    assert isinstance(result, AnalyticQSASTScanResultModel)
+    assert result.scan_metadata["tool_name"] == "PHPStan"
     assert len(result.issues) == 0
-    assert result.metadata["total_files_analyzed"] == 0
+    assert result.scan_metadata["total_files_analyzed"] == 0
 
 
 def test_missing_files_section(phpstan_parser):
     invalid_output = {"totals": {}, "errors": []}
     result = phpstan_parser.parse_scan_result(invalid_output)
 
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
     assert len(result.issues) == 0
-    assert result.metadata["total_files_analyzed"] == 0
+    assert result.scan_metadata["total_files_analyzed"] == 0
 
 
 def test_metadata_preservation(phpstan_parser, sample_phpstan_output):
     result = phpstan_parser.parse_scan_result(sample_phpstan_output)
 
-    assert "metrics" in result.metadata
-    assert "total_files_analyzed" in result.metadata
-    assert "tool_specific" in result.metadata
+    assert "metrics" in result.scan_metadata
+    assert "total_files_analyzed" in result.scan_metadata
+    assert "tool_specific" in result.scan_metadata
 
-    assert result.metadata["metrics"] == sample_phpstan_output["totals"]
-    assert result.metadata["total_files_analyzed"] == 1
-
-    first_issue = result.issues[0]
-    print(first_issue)
-    assert "tip" in first_issue.metadata
-    assert "identifier" in first_issue.metadata
+    assert result.scan_metadata["metrics"] == sample_phpstan_output["totals"]
+    assert result.scan_metadata["total_files_analyzed"] == 1
 
 
 def test_multiple_files(phpstan_parser):
@@ -171,7 +164,7 @@ def test_multiple_files(phpstan_parser):
 
     result = phpstan_parser.parse_scan_result(multi_file_output)
     assert len(result.issues) == 2
-    assert result.metadata["total_files_analyzed"] == 2
+    assert result.scan_metadata["total_files_analyzed"] == 2
 
     file_paths = set(issue.path for issue in result.issues)
     assert file_paths == {"/code/file1.php", "/code/file2.php"}

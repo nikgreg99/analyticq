@@ -51,7 +51,7 @@ def sample_pyright_data():
 
 
 @pytest.fixture
-def pyright_parser():
+def pyright_parser() -> PyrightParser:
     return PyrightParser()
 
 
@@ -87,11 +87,11 @@ def test_parse_scan_result(pyright_parser, sample_pyright_data):
     assert first_issue.severity == AnalyticQSeverity.HIGH
 
     # Verify metadata
-    assert scan_result.metadata["version"] == "1.1.291"
-    assert scan_result.metadata["metrics"]["filesAnalyzed"] == 2
-    assert scan_result.metadata["metrics"]["errorCount"] == 1
-    assert scan_result.metadata["metrics"]["warningCount"] == 1
-    assert scan_result.metadata["metrics"]["informationCount"] == 1
+    assert scan_result.scan_metadata["version"] == "1.1.291"
+    assert scan_result.scan_metadata["metrics"]["filesAnalyzed"] == 2
+    assert scan_result.scan_metadata["metrics"]["errorCount"] == 1
+    assert scan_result.scan_metadata["metrics"]["warningCount"] == 1
+    assert scan_result.scan_metadata["metrics"]["informationCount"] == 1
 
 
 def test_invalid_input(pyright_parser):
@@ -120,7 +120,7 @@ def test_empty_diagnostics(pyright_parser):
     }
     result = pyright_parser.parse_scan_result(empty_diagnostics_data)
     assert len(result.issues) == 0
-    assert result.metadata["metrics"]["filesAnalyzed"] == 10
+    assert result.scan_metadata["metrics"]["filesAnalyzed"] == 10
 
 
 def test_partial_summary(pyright_parser, sample_pyright_data):
@@ -133,5 +133,5 @@ def test_partial_summary(pyright_parser, sample_pyright_data):
     }
 
     result = pyright_parser.parse_scan_result(data_with_partial_summary)
-    assert result.metadata["metrics"]["filesAnalyzed"] == 2
-    assert result.metadata["metrics"]["errorCount"] == 0  # Default value
+    assert result.scan_metadata["metrics"]["filesAnalyzed"] == 2
+    assert result.scan_metadata["metrics"]["errorCount"] == 0  # Default value

@@ -1,9 +1,9 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
-from analyticq.engine.tools.python.pylint import PylintTool
+from analyticq.engine.tools import PylintTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -60,7 +60,7 @@ async def test_full_pylint_analysis(sample_code, pylint_tool):
         print(results)
 
         # 3. Validate results structure
-        assert isinstance(results, AnalyticQSASTScanResult), "Invalid results type"
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
         assert len(results.issues) >= 5, "Should find at least 5 issues"
 
         # 4. Verify specific findings
@@ -74,7 +74,7 @@ async def test_full_pylint_analysis(sample_code, pylint_tool):
         }
 
         for issue in results.issues:
-            assert isinstance(issue, AnalyticQSASTIssue)
+            assert isinstance(issue, AnalyticQSASTIssueModel)
             assert issue.path.endswith("test_sample.py")
 
             if issue.rule_id in expected_issues:
@@ -100,9 +100,9 @@ async def test_full_pylint_analysis(sample_code, pylint_tool):
         assert results.summary["by_severity"]["LOW"] >= 2
         assert results.summary["by_severity"]["MEDIUM"] >= 1
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
-        assert results.metadata["tool_name"] == "Pylint"
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
+        assert results.scan_metadata["tool_name"] == "Pylint"
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -21,7 +21,7 @@ class ESLintParser(AnalyticQResultParser):
             "severity": "severity",
             "node_type": "nodeType",
             "code": "source",
-            "metadata": "metadata"
+            "issue_metadata": "metadata"
         }
         super().__init__(tool_name="eslint", field_mapping=field_mapping)
 
@@ -74,7 +74,7 @@ class ESLintParser(AnalyticQResultParser):
 
         return transformed_issues
 
-    def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             transformed_results = self.transform_output(raw_result)
 
@@ -89,7 +89,7 @@ class ESLintParser(AnalyticQResultParser):
                 total_errors += file_data.get("errorCount", 0)
                 total_warnings += file_data.get("warningCount", 0)
 
-            scan_result.metadata.update({
+            scan_result.scan_metadata.update({
                 "total_errors": total_errors,
                 "total_warnings": total_warnings,
                 "files_analyzed": len(raw_result),

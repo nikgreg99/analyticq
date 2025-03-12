@@ -1,6 +1,8 @@
+from typing import Any, Dict
+
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -32,7 +34,7 @@ class PyrightParser(AnalyticQResultParser):
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
-    def parse_scan_result(self, raw_result) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             # Normalize the raw_result into a list of issues
             pyright_issues = raw_result["generalDiagnostics"]
@@ -42,7 +44,7 @@ class PyrightParser(AnalyticQResultParser):
 
             raw_summary = raw_result["summary"]
 
-            scan.metadata.update({
+            scan.scan_metadata.update({
                 "version": raw_result["version"],
                 "metrics": {
                     "filesAnalyzed": raw_summary.get("filesAnalyzed", 0),

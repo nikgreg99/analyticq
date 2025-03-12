@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -20,7 +20,7 @@ class SpotBugsParser(AnalyticQResultParser):
             "end_line": "locations.0.physicalLocation.region.endLine",
             "severity": "level",
             "code": "snippet",
-            "metadata": "metadata"
+            "issue_metadata": "metadata"
         }
 
         # Define severity mapping from SARIF levels to AnalyticQ severity levels
@@ -62,6 +62,7 @@ class SpotBugsParser(AnalyticQResultParser):
         try:
             for key in mapped_field.split("."):
                 # Handle array indexing (e.g., "locations.0.physicalLocation")
+                print(key)
                 if key.isdigit():
                     key = int(key)
                 value = value[key]
@@ -208,13 +209,12 @@ class SpotBugsParser(AnalyticQResultParser):
             location = {
                 "uri": physical_location.get("artifactLocation", {}).get("uri", ""),
                 "startLine": physical_location.get("region", {}).get("startLine", 0),
-                "endLine": physical_location.get("region", {}).get("endLine",
-                                                                   physical_location.get("region", {}).get("startLine", 0))
+                "endLine": physical_location.get("region", {}).get("endLine", physical_location.get("region", {}).get("startLine", 0))
             }
 
         return location
 
-    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         """
         Parse the SpotBugs SARIF results into the standardized AnalyticQSASTScanResult format.
 

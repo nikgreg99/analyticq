@@ -46,26 +46,19 @@ jobs:
       dockerfile: ./sast-tools/go/staticcheck/Dockerfile
       context: ./sast-tools/go/staticcheck
 
+  push-gosec:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: gosecc
+      dockerfile: ./sast-tools/go/gosec/Dockerfile
+      context: ./sast-tools/go/gosec
+
   push-flawfinder:
     uses: ./.github/workflows/docker-build.yml
     with:
       image_name: flawfinder
       dockerfile: ./sast-tools/c/flawfinder/Dockerfile
       context: ./sast-tools/c/flawfinder
-
-  push-spotbugs:
-    uses: ./.github/workflows/docker-build.yml
-    with:
-      image_name: spotbugs
-      dockerfile: ./sast-tools/java/spotbugs/Dockerfile
-      context: ./sast-tools/java/spotbugs
-
-  push-phphstan:
-    uses: ./.github/workflows/docker-build.yml
-    with:
-      image_name: phpstan
-      dockerfile: ./sast-tools/php/phpstan/Dockerfile
-      context:  ./sast-tools/php/phpstan
 
   push-cppcheck:
     uses: ./.github/workflows/docker-build.yml
@@ -74,6 +67,27 @@ jobs:
       dockerfile: ./sast-tools/c/cppcheck/Dockerfile
       context: ./sast-tools/c/cppcheck
 
+  push-spotbugs:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: spotbugs
+      dockerfile: ./sast-tools/java/spotbugs/Dockerfile
+      context: ./sast-tools/java/spotbugs
+
+  push-checkstyle:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: checkstyle
+      dockerfile:  ./sast-tools/java/checkstyle/Dockerfile
+      context: ./sast-tools/java/checkstyle
+
+  push-phphstan:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: phpstan
+      dockerfile: ./sast-tools/php/phpstan/Dockerfile
+      context:  ./sast-tools/php/phpstan
+
   push-rubocop:
     uses: ./.github/workflows/docker-build.yml
     with:
@@ -81,9 +95,30 @@ jobs:
       dockerfile: ./sast-tools/ruby/rubocop/Dockerfile
       context: ./sast-tools/ruby/rubocop
 
+  push-brakeman:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: brakeman
+      dockerfile: ./sast-tools/ruby/brakeman/Dockerfile
+      context: ./sast-tools/ruby/brakeman
+
   push-eslint:
     uses: ./.github/workflows/docker-build.yml
     with:
       image_name: eslint
       dockerfile: ./sast-tools/js/eslint/Dockerfile
       context: ./sast-tools/js/eslint
+
+  push-njsscan:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: njjscan
+      dockerfile: ./sast-tools/js/njsscan/Dockerfile
+      context: ./sast-tools/js/njsscan
+
+  push-bearer:
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: bearer
+      dockerfile: ./sast-tools/multi/bearer/Dockerfile
+      context: ./sast-tools/multi/beaere

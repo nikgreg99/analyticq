@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -17,7 +17,7 @@ class FlawFinderParser(AnalyticQResultParser):
             "end_line": "Line",
             "severity": "Level",
             "code": "Context",
-            "metadata": "Metadata"
+            "issue_metadata": "Metadata"
         }
         super().__init__(tool_name="FlawFinder", field_mapping=field_mapping)
 
@@ -64,7 +64,7 @@ class FlawFinderParser(AnalyticQResultParser):
 
         return transformed_issues
 
-    def parse_scan_result(self, raw_result: str) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: str) -> AnalyticQSASTScanResultModel:
         """
         Parse FlawFinder CSV results using the base class parser.
         """

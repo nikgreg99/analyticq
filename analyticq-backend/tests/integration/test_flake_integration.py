@@ -151,8 +151,8 @@ async def test_full_flake8_analysis(sample_code, flake8_tool):
         assert results.summary["total"] == 1
         assert "by_severity" in results.summary
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

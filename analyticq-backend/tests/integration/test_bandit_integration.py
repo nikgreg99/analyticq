@@ -1,7 +1,7 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.engine.tools import BanditTool
 from analyticq.exception import (ScanConfigurationException,
@@ -49,7 +49,7 @@ async def test_full_bandit_analysis(sample_code, bandit_tool):
         )
 
         # 3. Validate results structure
-        assert isinstance(results, AnalyticQSASTScanResult), "Invalid results type"
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
         assert len(results.issues) >= 2, "Should find at least 2 issues"
 
         # 4. Verify specific findings
@@ -57,7 +57,7 @@ async def test_full_bandit_analysis(sample_code, bandit_tool):
         found_b105 = False
 
         for issue in results.issues:
-            assert isinstance(issue, AnalyticQSASTIssue)
+            assert isinstance(issue, AnalyticQSASTIssueModel)
             assert issue.path.endswith("test_sample.py")
 
             if issue.rule_id == "B101":
@@ -78,8 +78,8 @@ async def test_full_bandit_analysis(sample_code, bandit_tool):
         assert results.summary["by_severity"]["LOW"] >= 1
 
         # 6. Validate metadata
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

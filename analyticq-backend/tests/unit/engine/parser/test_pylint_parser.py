@@ -1,14 +1,14 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.engine.parser import PylintParser
 from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def pylint_parser():
+def pylint_parser() -> PylintParser:
     return PylintParser()
 
 
@@ -41,16 +41,29 @@ def sample_pylint_result():
     ]
 
 
+def test_init_pylint_parser(pylint_parser):
+    assert pylint_parser.tool_name == "Pylint"
+    assert pylint_parser.field_mapping == {
+        "code": "obj",
+        "rule_id": "message-id",
+        "start_line": "line",
+        "message": "message",
+        "path": "path",
+        "end_line": "endLine",
+        "severity": "type"
+    }
+
+
 def test_successful_parse(pylint_parser, sample_pylint_result):
     result = pylint_parser.parse_scan_result(sample_pylint_result)
 
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
     assert isinstance(result.issues, list)
     assert len(result.issues) == 2
 
     # Check first issue
     issue1 = result.issues[0]
-    assert isinstance(issue1, AnalyticQSASTIssue)
+    assert isinstance(issue1, AnalyticQSASTIssueModel)
     assert issue1.code == "example_function"
     assert issue1.rule_id == "W0612"
     assert issue1.severity == AnalyticQSeverity.MEDIUM
@@ -66,8 +79,8 @@ def test_successful_parse(pylint_parser, sample_pylint_result):
     assert result.summary["by_severity"]["HIGH"] == 1
 
     # Check metadata
-    assert result.metadata["tool_name"] == "Pylint"
-    assert result.metadata["metrics"] == {}
+    assert result.scan_metadata["tool_name"] == "Pylint"
+    assert result.scan_metadata["metrics"] == {}
 
 
 def test_parse_missing_endline(pylint_parser):
@@ -99,7 +112,7 @@ def test_confidence_mapping(pylint_parser):
 
 def test_parse_empty_result(pylint_parser):
     result = pylint_parser.parse_scan_result([])
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
     assert len(result.issues) == 0
     assert result.summary["total"] == 0
     assert all(result.summary["by_severity"][sev.value] == 0 for sev in AnalyticQSeverity)

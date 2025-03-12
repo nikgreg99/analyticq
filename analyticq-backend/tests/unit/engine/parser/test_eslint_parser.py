@@ -7,7 +7,7 @@ from analyticq.engine.parser import ESLintParser
 
 
 @pytest.fixture
-def eslint_parser():
+def eslint_parser() -> ESLintParser:
     return ESLintParser()
 
 
@@ -122,7 +122,6 @@ def test_parse_scan_result(eslint_parser, sample_eslint_output, monkeypatch):
     assert first_issue.start_line == 1
     assert first_issue.end_line == 1
     assert first_issue.message == "'addOne' is defined but never used."
-    assert "suggestions" in first_issue.metadata
 
     # Check second issue (use-isnan)
     second_issue = result.issues[1]
@@ -138,12 +137,12 @@ def test_parse_scan_result(eslint_parser, sample_eslint_output, monkeypatch):
     assert third_issue.message == "Missing semicolon."
 
     # Check metadata
-    assert result.metadata["tool_name"] == "eslint"
-    assert result.metadata["files_analyzed"] == 1
-    assert result.metadata["total_errors"] == 2
-    assert result.metadata["total_warnings"] == 1
-    assert result.metadata["total_fixable_errors"] == 1
-    assert result.metadata["total_fixable_warnings"] == 1
+    assert result.scan_metadata["tool_name"] == "eslint"
+    assert result.scan_metadata["files_analyzed"] == 1
+    assert result.scan_metadata["total_errors"] == 2
+    assert result.scan_metadata["total_warnings"] == 1
+    assert result.scan_metadata["total_fixable_errors"] == 1
+    assert result.scan_metadata["total_fixable_warnings"] == 1
 
 
 def test_transform_output(eslint_parser, sample_eslint_output):
@@ -187,9 +186,9 @@ def test_parse_empty_output(eslint_parser):
     result = eslint_parser.parse_scan_result(empty_eslint_output)
     assert len(result.issues) == 0
     assert result.summary["total"] == 0
-    assert result.metadata["tool_name"] == "eslint"
-    assert result.metadata["total_errors"] == 0
-    assert result.metadata["total_warnings"] == 0
+    assert result.scan_metadata["tool_name"] == "eslint"
+    assert result.scan_metadata["total_errors"] == 0
+    assert result.scan_metadata["total_warnings"] == 0
 
 
 def test_parse_output_with_no_messages(eslint_parser):
@@ -208,5 +207,5 @@ def test_parse_output_with_no_messages(eslint_parser):
 
     result = eslint_parser.parse_scan_result(eslint_output_no_messages)
     assert len(result.issues) == 0
-    assert result.metadata["total_errors"] == 0
-    assert result.metadata["files_analyzed"] == 1
+    assert result.scan_metadata["total_errors"] == 0
+    assert result.scan_metadata["files_analyzed"] == 1

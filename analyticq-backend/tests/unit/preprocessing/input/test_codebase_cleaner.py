@@ -34,6 +34,12 @@ def codebase_cleaner():
         return CodebaseCleaner()
 
 
+@pytest.fixture
+def mock_scandir_file_not_found():
+    with patch("os.scandir", side_effect=FileNotFoundError):
+        yield
+
+
 @pytest.mark.skip(reason="Test is not applicable on Linux due to OS-specific behavior")
 def test_get_item_creation_or_last_edit_date(codebase_cleaner):
 
@@ -95,58 +101,75 @@ async def test_delete_item_not_dry_run(codebase_cleaner):
 
 
 @pytest.mark.asyncio
-async def test_cleanup_old_codebase_basic(codebase_cleaner):
-    # Set up the instance variables
-    codebase_cleaner.base_dir = Path("/mock/path")
-    codebase_cleaner.retention_days = 30
-
-    codebase_cleaner._is_item_old = MagicMock(return_value=True)
-    codebase_cleaner._delete_item = AsyncMock()
-    codebase_cleaner._get_item_creation_or_last_edit_date = MagicMock(return_value=datetime.now() - timedelta(days=31))
-
-    mock_item1 = MagicMock(spec=Path)
-    mock_item1.is_dir.return_value = True
-    mock_item1.is_file.return_value = False
-
-    mock_item2 = MagicMock(spec=Path)
-    mock_item2.is_dir.return_value = False
-    mock_item2.is_file.return_value = True
-
-    with patch.object(Path, "exists", return_value=True), \
-         patch.object(Path, "iterdir", return_value=[mock_item1, mock_item2]), \
-         patch("analyticq.util.AnalyticQConst", MockAnalyticQConst):
-
-        await codebase_cleaner.cleanup_old_codebase(dry_run=True)
-
-        assert codebase_cleaner._is_item_old.call_count == 4
-        assert codebase_cleaner._delete_item.call_count == 4
-
-
-@pytest.mark.asyncio
 async def test_cleanup_old_codebase_with_empty_dir(codebase_cleaner):
     # Set up the instance variables
     codebase_cleaner.base_dir = Path("/mock/path")
     codebase_cleaner.retention_days = 30
 
+    # Mock methods
     codebase_cleaner._is_item_old = MagicMock(return_value=True)
     codebase_cleaner._delete_item = AsyncMock()
-    codebase_cleaner._get_item_creation_or_last_edit_date = MagicMock(return_value=datetime.now() - timedelta(days=31))
+    codebase_cleaner._get_item_creation_or_last_edit_date = MagicMock(
+        return_value=datetime.now() - timedelta(days=31)
+    )
 
-    mock_item1 = MagicMock(spec=Path)
+    # Mock items (files and directories)
+    mock_item1 = MagicMock(spec=os.DirEntry)
+    mock_item1.path = "/mock/path/repos/item1"
     mock_item1.is_dir.return_value = True
     mock_item1.is_file.return_value = False
 
-    mock_item2 = MagicMock(spec=Path)
-    mock_item2.is_dir.return_value = False
-    mock_item2.is_file.return_value = True
+    # Create a context manager that yields the mock items
+    def mock_scandir(dir_path):
+        if str(dir_path).endswith("repos"):
+            return [mock_item1]
+        elif str(dir_path).endswith("scripts"):
+            return []
+        else:
+            return []
 
-    with patch.object(Path, "exists", return_value=True), \
-         patch.object(Path, "iterdir", side_effect=[
-            [mock_item1, mock_item2],  # First directory with items
-            []  # Second dir is empty
-         ]), patch("analyticq.util.AnalyticQConst", MockAnalyticQConst):
-
+    # Patch os.scandir to return a context manager
+    with patch("os.scandir", side_effect=lambda x: MagicMock(__enter__=lambda _: mock_scandir(x), __exit__=lambda *_: None)):
         await codebase_cleaner.cleanup_old_codebase(dry_run=True)
 
+        # Assertions
+        assert codebase_cleaner._is_item_old.call_count == 1
+        assert codebase_cleaner._delete_item.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_cleanup_old_codebase_with_mixed_items(codebase_cleaner):
+    codebase_cleaner.base_dir = Path("/mock/path")
+    codebase_cleaner.retention_days = 30
+
+    # Mock items
+    mock_old_item = MagicMock(spec=os.DirEntry)
+    mock_old_item.path = "/mock/path/repos/old_item"
+    mock_old_item.is_dir.return_value = True
+    mock_old_item.is_file.return_value = False
+
+    mock_new_item = MagicMock(spec=os.DirEntry)
+    mock_new_item.path = "/mock/path/scripts/new_item"
+    mock_new_item.is_dir.return_value = False
+    mock_new_item.is_file.return_value = True
+
+    # Mock _is_item_old to return True for old items and False for new items
+    codebase_cleaner._is_item_old = MagicMock(side_effect=lambda item, _: "old" in str(item))
+    codebase_cleaner._delete_item = AsyncMock()
+
+    # Create a context manager that yields the mock items
+    def mock_scandir(dir_path):
+        if str(dir_path).endswith("repos"):
+            return [mock_old_item]
+        elif str(dir_path).endswith("scripts"):
+            return [mock_new_item]
+        else:
+            return []
+
+    # Patch os.scandir to return a context manager
+    with patch("os.scandir", side_effect=lambda x: MagicMock(__enter__=lambda _: mock_scandir(x), __exit__=lambda *_: None)):
+        await codebase_cleaner.cleanup_old_codebase(dry_run=True)
+
+        # Assertions
         assert codebase_cleaner._is_item_old.call_count == 2
-        assert codebase_cleaner._delete_item.call_count == 2
+        assert codebase_cleaner._delete_item.call_count == 1  # Only the old item is deleted

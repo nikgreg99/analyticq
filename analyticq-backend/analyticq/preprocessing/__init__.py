@@ -4,3 +4,4 @@ from .input import (CodebaseCleaner, CodebaseCloner, CodebaseClonerPathType,
                     CodebasePreprocessor)
 from .metric import (CodebaseMetricsCalculator, CodebaseMetricsCollector,
                      CodebaseMetricsReporter, FileMetrics)
+from .models import AnalyticQScanContextModel, CodebaseType

@@ -12,6 +12,7 @@ class StaticCheckParser(AnalyticQResultParser):
             "path": "location.file",
             "start_line": "location.line",
             "end_line": "end.line",
+            "column": "location.column",
             "severity": "severity"
         }
         self.severity_mapping = {

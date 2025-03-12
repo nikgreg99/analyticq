@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
 
@@ -16,9 +16,10 @@ class CppCheckParser(AnalyticQResultParser):
             "path": "file",
             "start_line": "line",
             "end_line": "line",
+            "columnn": "column",
             "severity": "severity",
             "code": "verbose",
-            "metadata": "metadata"
+            "issue_metadata": "metadata"
         }
         self.severity_map = {
             "error": AnalyticQSeverity.HIGH,
@@ -97,7 +98,7 @@ class CppCheckParser(AnalyticQResultParser):
                 f"Missing field while in CppCheck results: {str(e)}"
             ) from e
 
-    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResult:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             transformed_results = self.parse_xml_to_dict(raw_result)
             return super().parse_scan_result(transformed_results)

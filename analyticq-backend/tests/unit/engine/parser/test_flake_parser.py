@@ -1,14 +1,14 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.engine.parser import FlakeParser
 from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def flake_parser():
+def flake_parser() -> FlakeParser:
     return FlakeParser()
 
 
@@ -98,7 +98,7 @@ def test_parse_scan_result(flake_parser, sample_flake8_output):
     result = flake_parser.parse_scan_result(sample_flake8_output)
 
     # Verify the result is a valid AnalyticQSASTScanResult
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
 
     # Verify all issues were parsed
     assert len(result.issues) == 4
@@ -112,7 +112,7 @@ def test_parse_scan_result(flake_parser, sample_flake8_output):
 
     # Check that all issues have the correct confidence
     for issue in result.issues:
-        assert isinstance(issue, AnalyticQSASTIssue)
+        assert isinstance(issue, AnalyticQSASTIssueModel)
         assert issue.confidence == AnalyticQConfidence.UNKNOWN
 
     # Verify summary calculations
@@ -123,9 +123,9 @@ def test_parse_scan_result(flake_parser, sample_flake8_output):
     assert result.summary["by_severity"][AnalyticQSeverity.LOW.value] == 1
 
     # Verify metadata
-    assert result.metadata["tool_name"] == "flake8"
-    assert result.metadata["metrics"]["files_analyzed"] == 2
-    assert result.metadata["metrics"]["total_issues"] == 4
+    assert result.scan_metadata["tool_name"] == "flake8"
+    assert result.scan_metadata["metrics"]["files_analyzed"] == 2
+    assert result.scan_metadata["metrics"]["total_issues"] == 4
 
 
 def test_file_aggregation(flake_parser):
@@ -137,8 +137,8 @@ def test_file_aggregation(flake_parser):
     })
 
     assert len(result.issues) == 2, "Exptected 2 issues"
-    assert result.metadata["metrics"]["files_analyzed"] == 3, "Expected three file analyzed"
-    assert result.metadata["metrics"]["total_issues"] == 2
+    assert result.scan_metadata["metrics"]["files_analyzed"] == 3, "Expected three file analyzed"
+    assert result.scan_metadata["metrics"]["total_issues"] == 2
 
     # Check that filenames were correctly assigned
     paths = {issue.path for issue in result.issues}

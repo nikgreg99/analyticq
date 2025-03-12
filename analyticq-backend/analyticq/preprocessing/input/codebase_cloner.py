@@ -6,7 +6,7 @@ import shutil
 from enum import Enum
 from pathlib import Path
 from threading import Lock
-from typing import Optional
+from typing import Callable, Optional, Type
 from urllib.parse import urlparse
 
 from analyticq.config import AnalyticQBaseConfig
@@ -109,10 +109,40 @@ class CodebaseCloner:
         return CodebaseClonerProtocolType.HTTPS
 
     def _check_existing_path(self, path: Path) -> bool:
+        """
+        Check if a path already exists.
+
+        Args:
+            path (Path): Path to check for existence.
+
+        Returns:
+            bool: True if path exists, False otherwise.
+
+        Notes:
+            If path exists, logs an info message indicating the codebase already exists.
+        """
         outcome = path.exists()
         if outcome:
             logger.info(f"Codebase already exists at {path}. Skipping cloning...")
         return outcome
+
+    async def _clone_with_path_check(
+            self,
+            source_path: Path,
+            dest_path: Path,
+            operation: Callable,
+            success_message: str,
+            exception_class: Type[Exception],
+    ):
+        if self._check_existing_path(dest_path):
+            return dest_path
+
+        try:
+            await asyncio.to_thread(operation, source_path, dest_path)
+            logger.info(success_message)
+            return dest_path
+        except Exception as e:
+            raise exception_class(f"Failed to perform operation from {source_path} to {dest_path}: {e}")
 
     async def clone_remote_codebase(
         self,
@@ -164,6 +194,10 @@ class CodebaseCloner:
 
         Returns:
             Path: Path to the copied repository.
+        Raises:
+
+            CodebaseNotFoundException: If the source path does not exist.
+            CloneLocalRepositoryException: If copying fails.
         """
         source_path = Path(source_path)
         if not source_path.exists():
@@ -175,13 +209,14 @@ class CodebaseCloner:
             return dest_path
 
         logger.info(f"Copying local codebase from {source_path} to {dest_path}")
-
-        try:
-            await asyncio.to_thread(shutil.copytree, source_path, dest_path)
-            logger.info(f"Codebase copied successfully to {dest_path}")
-        except Exception as e:
-            raise CloneLocalRepositoryException(f"Failed to copy codebase from {source_path} to {dest_path}: {str(e)}")
-        return dest_path
+        path = await self._clone_with_path_check(
+            source_path,
+            dest_path,
+            shutil.copytree,
+            f"Codebase copied successfully to {dest_path}",
+            CloneLocalRepositoryException,
+        )
+        return path
 
     async def clone_local_script(self, script_path: str) -> Path:
         """
@@ -192,6 +227,10 @@ class CodebaseCloner:
 
         Returns:
             Path: Path to the copied script.
+
+        Raises:
+            CodebaseNotFoundException: If the codebase doensn't exist
+            CloneLocalScriptException If the cloning script operation failed
         """
         script_path = Path(script_path)
         script_dest_path = PathUtil.get_codebase_scripts_AnalyticQ_path() / script_path.name
@@ -202,13 +241,13 @@ class CodebaseCloner:
         if self._check_existing_path(script_dest_path):
             return script_dest_path
 
-        logger.info(f"Copying script from {script_path} to {script_dest_path}...")
-        try:
-            await asyncio.to_thread(shutil.copy, script_path, script_dest_path)
-            logger.info(f"Script copied successfully to {script_dest_path}")
-        except Exception as e:
-            raise CloneLocalScriptException(f"Failed to copy local script from {script_path} to {script_dest_path}: {e}")
-        return script_dest_path
+        return await self._clone_with_path_check(
+            script_path,
+            script_dest_path,
+            shutil.copy,
+            f"Script copied successfully to {script_dest_path}",
+            CloneLocalScriptException,
+        )
 
     async def clone(self, codebase_url: str, **kwargs) -> Path:
         """

@@ -22,8 +22,7 @@ RUN mkdir -p /output  \
 # Clean up unnecessary files
 RUN rm -rf /root/.cache /home/flake8/.cache
 
-VOLUME ["/code"]
-VOLUME [ "/output"]
+VOLUME ["/code", "/output"]
 
-# Run Pylint with the entry point script
+# Run flake8 with the entry point script
 ENTRYPOINT ["python", "run_flake.py"]

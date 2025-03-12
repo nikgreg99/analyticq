@@ -1,32 +1,26 @@
 ARG JAVA_VERSION=21
+
 FROM openjdk:${JAVA_VERSION}-jdk-slim
 
-ENV CHECKSTYLE_VERSION=10.21.3
+ENV CHECKSTYLE_VERSION=10.21.4
 ENV PATH="/checkstyle:$PATH"
 
-# Install necessary packages and clean up
-RUN apt-get update && \
-    apt-get install -y wget && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get update -o Acquire::Check-Valid-Until=false && \
+    apt-get install -y wget
 
-# Download and install Checkstyle
-RUN wget -O checkstyle-${CHECKSTYLE_VERSION}-all.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-${CHECKSTYLE_VERSION}/checkstyle-${CHECKSTYLE_VERSION}-all.jar && \
-    mkdir -p /checkstyle && \
-    mv checkstyle-${CHECKSTYLE_VERSION}-all.jar /checkstyle/checkstyle.jar && \
-    echo '#!/bin/bash\njava -jar /checkstyle/checkstyle.jar "$@"' > /checkstyle/checkstyle && \
-    chmod +x /checkstyle/checkstyle
+RUN apt-get update && apt-get install -y wget \
+    && wget -O /checkstyle.jar https://github.com/checkstyle/checkstyle/releases/download/checkstyle-${CHECKSTYLE_VERSION}/checkstyle-${CHECKSTYLE_VERSION}-all.jar \
+    && mkdir -p /checkstyle \
+    && mv /checkstyle.jar /checkstyle/ \
+    && apt-get clean
 
-# Set the working directory
 WORKDIR /checkstyle
 
-# Copy the run_checkstyle.sh script and make it executable
 COPY run_checkstyle.sh .
-COPY config.xml .
 RUN chmod +x run_checkstyle.sh
 
-# Define volumes for code and output
-VOLUME ["/code", "/output"]
+VOLUME [ "/code", "/output"]
 
-# Set the entrypoint to the run_checkstyle.sh script
-ENTRYPOINT ["./run_checkstyle.sh"]
+ENTRYPOINT [ "./run_checkstyle.sh" ]

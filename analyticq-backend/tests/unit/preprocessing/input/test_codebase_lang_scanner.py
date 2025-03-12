@@ -1,15 +1,19 @@
 import logging
+import os
 from collections import defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 from analyticq.config import AnalyticQBaseConfig
 from analyticq.preprocessing import (CodebaseLangScanner,
                                      CodebaseMetricsReporter)
-from analyticq.util import PathUtil, TimeTrackerUtils
+from analyticq.util import TimeTrackerUtils
 
 logger = logging.getLogger(__name__)
+
+BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
 
 
 @pytest.fixture
@@ -60,6 +64,8 @@ def mock_time_tracker():
 
 @pytest.fixture
 def scanner(mock_metrics_reporter, mock_time_tracker, mock_batch_util):
+    conf_path = BASE_DIR / "test_files"
+    AnalyticQBaseConfig.load_config_file(conf_path, "test_config.json")
     return CodebaseLangScanner(
         metrics_reporter=mock_metrics_reporter,
         time_tracker=mock_time_tracker,
@@ -92,15 +98,12 @@ async def test_detect_language_and_loc_text_only(scanner, tmp_path):
 
 @pytest.mark.asyncio
 async def test_process_file_relevant(scanner, tmp_path):
-    conf_path = PathUtil.get_backend_default_test_file_AnalyticQ_path()
-    conf_path = conf_path / "test_config.json"
-    AnalyticQBaseConfig.from_file(conf_path)
 
     test_file = tmp_path / "test.py"
     test_file.write_text("print('hello')")
 
     file_group = defaultdict(list)
-    await scanner.process_file(test_file, file_group)
+    await scanner.analyze_file(test_file, file_group)
 
     scanner.metrics_reporter.add_file_statistics.assert_called_once()
     assert "Python" in file_group, "Python should be in file group"
@@ -108,15 +111,12 @@ async def test_process_file_relevant(scanner, tmp_path):
 
 @pytest.mark.asyncio
 async def test_process_file_excluded(scanner, tmp_path):
-    conf_path = PathUtil.get_backend_default_test_file_AnalyticQ_path()
-    conf_path = conf_path / "test_config.json"
-    AnalyticQBaseConfig.from_file(conf_path)
 
     sample_file = tmp_path / "sample.exe"
     sample_file.write_text("")
 
     file_group = defaultdict(list)
-    await scanner.process_file(sample_file, file_group)
+    await scanner.analyze_file(sample_file, file_group)
 
     scanner.metrics_reporter.add_excluded_file.assert_called_once()
     assert len(file_group) == 0, f"Expceted 0, got {len(file_group)}"
@@ -124,9 +124,6 @@ async def test_process_file_excluded(scanner, tmp_path):
 
 @pytest.mark.asyncio
 async def test_process_dir(scanner, tmp_path):
-    conf_path = PathUtil.get_backend_default_test_file_AnalyticQ_path()
-    conf_path = conf_path / "test_config.json"
-    AnalyticQBaseConfig.from_file(conf_path)
 
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -139,7 +136,7 @@ async def test_process_dir(scanner, tmp_path):
 
     file_group = defaultdict(list)
     with patch("analyticq.preprocessing.DirFilter.is_irrelevant_dir", return_value=False):
-        await scanner.process_dir(src_dir, file_group)
+        await scanner.process_directory(src_dir, file_group)
 
     assert len(file_group) > 0, "Exptected dict not empty"
     scanner.time_tracker.update.assert_called()
@@ -149,17 +146,12 @@ async def test_process_dir(scanner, tmp_path):
 async def test_error_handling(scanner, tmp_path):
     non_existent = tmp_path / "not_exists.py"
     file_group = defaultdict(list)
-
-    await scanner.process_file(non_existent, file_group)
-
+    await scanner.analyze_file(non_existent, file_group)
     assert len(file_group) == 0, "Expected no files ared added"
 
 
 @pytest.mark.asyncio
 async def test_scan_codebase_languages(scanner, tmp_path):
-    conf_path = PathUtil.get_backend_default_test_file_AnalyticQ_path()
-    conf_path = conf_path / "test_config.json"
-    AnalyticQBaseConfig.from_file(conf_path)
 
     # Create a temporary directory structure
     src_dir = tmp_path / "src"
@@ -182,9 +174,6 @@ async def test_scan_codebase_languages(scanner, tmp_path):
 
 @pytest.mark.asyncio
 async def test_get_language_metric_report(scanner, tmp_path):
-    conf_path = PathUtil.get_backend_default_test_file_AnalyticQ_path()
-    conf_path = conf_path / "test_config.json"
-    AnalyticQBaseConfig.from_file(conf_path)
 
     # Create a temporary directory structure
     src_dir = tmp_path / "src"

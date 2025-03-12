@@ -21,7 +21,7 @@ sample.c,32,5,4,4,shell,system,"Shell injection risk","Use library calls",,CWE-7
 
 
 @pytest.fixture
-def parser() -> FlawFinderParser:
+def flawfinder_parser() -> FlawFinderParser:
     return FlawFinderParser()
 
 
@@ -34,10 +34,10 @@ def csv_data(sample_csv_file) -> str:
     return data
 
 
-def test_successful_parse(parser, csv_data):
+def test_successful_parse(flawfinder_parser, csv_data):
 
     """Test successful parsing of FlawFinder results."""
-    result = parser.parse_scan_result(csv_data)
+    result = flawfinder_parser.parse_scan_result(csv_data)
 
     assert result.scan_id is not None
     assert len(result.issues) == 2
@@ -49,48 +49,58 @@ def test_successful_parse(parser, csv_data):
     assert issue.severity == AnalyticQSeverity.CRITICAL
     assert issue.confidence == AnalyticQConfidence.UNKNOWN
     assert "buffer" in issue.message.lower()
-    assert issue.metadata["cwes"] == ["CWE-120", "CWE-20"]
+    assert issue.issue_metadata["cwes"] == ["CWE-120", "CWE-20"]
 
 
-def test_metadata_handling(parser, csv_data):
-    result = parser.parse_scan_result(csv_data)
+def test_metadata_handling(flawfinder_parser, csv_data):
+    result = flawfinder_parser.parse_scan_result(csv_data)
 
-    assert result.metadata["tool_name"] == "FlawFinder"
+    assert result.scan_metadata["tool_name"] == "FlawFinder"
     issue = result.issues[0]
-    assert "category" in issue.metadata
-    assert "cwes" in issue.metadata
-    assert "help_uri" in issue.metadata
+    assert "category" in issue.issue_metadata
+    assert "cwes" in issue.issue_metadata
+    assert "help_uri" in issue.issue_metadata
 
 
-def test_parser_initialization(parser):
+def test_parser_initialization(flawfinder_parser):
     """Test parser initialization and tool name."""
-    assert parser.tool_name == "FlawFinder"
+    assert flawfinder_parser.tool_name == "FlawFinder"
+    assert flawfinder_parser.field_mapping == {
+        "rule_id": "RuleId",
+        "message": "Warning",
+        "path": "File",
+        "start_line": "Line",
+        "end_line": "Line",
+        "severity": "Level",
+        "code": "Context",
+        "issue_metadata": "Metadata"
+    }
 
 
-def test_malformed_csv(parser):
+def test_malformed_csv(flawfinder_parser):
     malformed_input = '''File,Line,Column
 bad,data,format,extra,columns
 '''
     with pytest.raises(ScanParserException):
-        parser.parse_scan_result(malformed_input)
+        flawfinder_parser.parse_scan_result(malformed_input)
 
 
-def test_severity_mapping(parser):
-    assert parser._map_severity("1") == AnalyticQSeverity.LOW
-    assert parser._map_severity("2") == AnalyticQSeverity.LOW
-    assert parser._map_severity("3") == AnalyticQSeverity.MEDIUM
-    assert parser._map_severity("4") == AnalyticQSeverity.HIGH
-    assert parser._map_severity("5") == AnalyticQSeverity.CRITICAL
-    assert parser._map_severity("6") == AnalyticQSeverity.UNKNOWN
+def test_severity_mapping(flawfinder_parser):
+    assert flawfinder_parser._map_severity("1") == AnalyticQSeverity.LOW
+    assert flawfinder_parser._map_severity("2") == AnalyticQSeverity.LOW
+    assert flawfinder_parser._map_severity("3") == AnalyticQSeverity.MEDIUM
+    assert flawfinder_parser._map_severity("4") == AnalyticQSeverity.HIGH
+    assert flawfinder_parser._map_severity("5") == AnalyticQSeverity.CRITICAL
+    assert flawfinder_parser._map_severity("6") == AnalyticQSeverity.UNKNOWN
 
 
-def test_confidence_mapping(parser):
-    assert parser._map_confidence("any") == AnalyticQConfidence.UNKNOWN
+def test_confidence_mapping(flawfinder_parser):
+    assert flawfinder_parser._map_confidence("any") == AnalyticQConfidence.UNKNOWN
 
 
-def test_missing_required_field(parser):
+def test_missing_required_field(flawfinder_parser):
     incomplete_data = '''File,Line
     sample.c,1'''
 
     with pytest.raises(ScanParserException):
-        parser.parse_scan_result(incomplete_data)
+        flawfinder_parser.parse_scan_result(incomplete_data)

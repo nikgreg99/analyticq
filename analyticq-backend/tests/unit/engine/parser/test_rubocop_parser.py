@@ -7,7 +7,7 @@ from analyticq.engine.parser import RubocopParser
 
 
 @pytest.fixture
-def rubocop_parser():
+def rubocop_parser() -> RubocopParser:
     return RubocopParser()
 
 
@@ -131,4 +131,4 @@ def test_parse_empty_output(rubocop_parser):
     result = rubocop_parser.parse_scan_result(empty_rubocop_output)
     assert len(result.issues) == 0
     assert result.summary["total"] == 0
-    assert result.metadata["tool_name"] == "rubocop"
+    assert result.scan_metadata["tool_name"] == "rubocop"

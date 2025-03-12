@@ -1,12 +1,14 @@
 import pytest
-from analyticq.engine.core import (AnalyticQConfidence, AnalyticQSASTIssue,
-                                   AnalyticQSASTScanResult, AnalyticQSeverity)
+from analyticq.engine.core import (AnalyticQConfidence,
+                                   AnalyticQSASTIssueModel,
+                                   AnalyticQSASTScanResultModel,
+                                   AnalyticQSeverity)
 from analyticq.engine.parser import BanditParser
 from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def bandit_parser():
+def bandit_parser() -> BanditParser:
     return BanditParser()
 
 
@@ -55,9 +57,24 @@ def test_parse_empty_results(bandit_parser):
 
     result = bandit_parser.parse_scan_result(raw_results)
 
-    assert isinstance(result, AnalyticQSASTScanResult)
+    assert isinstance(result, AnalyticQSASTScanResultModel)
     assert len(result.issues) == 0
     assert result.summary["total"] == 0
+
+
+def test_init(bandit_parser):
+    assert bandit_parser.tool_name == "Bandit"
+    assert bandit_parser.field_mapping == {
+        "rule_id": "test_id",
+        "severity": "issue_severity",
+        "confidence": "issue_confidence",
+        "message": "issue_text",
+        "path": "filename",
+        "start_line": "line_number",
+        "end_line": "line_range",
+        "code": "code",
+        "issue_metadata": "issue_cwe"
+    }
 
 
 def test_severity_mapping(bandit_parser):
@@ -87,11 +104,11 @@ def test_parse_valid_results(bandit_parser, sample_bandit_result):
 
     results = bandit_parser.parse_scan_result(sample_bandit_result)
     # Validate findings
-    assert isinstance(results, AnalyticQSASTScanResult)
+    assert isinstance(results, AnalyticQSASTScanResultModel)
     assert len(results.issues) == 2
 
     issue_1 = results.issues[0]
-    assert isinstance(issue_1, AnalyticQSASTIssue)
+    assert isinstance(issue_1, AnalyticQSASTIssueModel)
     assert issue_1.rule_id == "B101"
     assert issue_1.severity == AnalyticQSeverity.HIGH
     assert issue_1.message == "Hardcoded password"
@@ -101,7 +118,7 @@ def test_parse_valid_results(bandit_parser, sample_bandit_result):
     assert issue_1.confidence == AnalyticQConfidence.HIGH
 
     issue_2 = results.issues[1]
-    assert isinstance(issue_2, AnalyticQSASTIssue)
+    assert isinstance(issue_2, AnalyticQSASTIssueModel)
     assert issue_2.rule_id == "B102"
     assert issue_2.severity == AnalyticQSeverity.MEDIUM
     assert issue_2.message == "Use of insecure function"
@@ -116,8 +133,8 @@ def test_parse_valid_results(bandit_parser, sample_bandit_result):
     assert results.summary["by_severity"]["MEDIUM"] == 1
 
     # Validate metadata
-    assert results.metadata["tool_name"] == "Bandit"
-    assert results.metadata["metrics"] == {"loc": 100, "nosec": 5}
+    assert results.scan_metadata["tool_name"] == "Bandit"
+    assert results.scan_metadata["metrics"] == {"loc": 100, "nosec": 5}
 
 
 def test_parse_missing_required_field(bandit_parser):

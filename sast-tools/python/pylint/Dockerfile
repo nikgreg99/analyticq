@@ -3,7 +3,6 @@ FROM python:${PYTHON_VERSION}-alpine AS builder
 
 RUN pip install pylint
 
-
 # Set the working directory
 WORKDIR /pylint
 
@@ -19,8 +18,7 @@ RUN mkdir -p /output  \
 # Clean up unnecessary files
 RUN rm -rf /root/.cache /home/pylint/.cache
 
-VOLUME ["/code"]
-VOLUME [ "/output"]
+VOLUME ["/code", "/output"]
 
 # Run Pylint with the entry point script
 ENTRYPOINT ["python", "run_pylint.py"]

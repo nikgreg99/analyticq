@@ -21,8 +21,9 @@ class CodebaseCleaner:
     def __new__(cls, *args, **kwargs):
         with cls._lock:
             if cls._instance is None:
-                _instance = super().__new__(cls)
-        return _instance
+                cls._instance = super().__new__(cls)
+                cls._instance._initialize(*args, **kwargs)
+        return cls._instance
 
     def __init__(self):
         if not hasattr(self, "_initialized"):
@@ -30,6 +31,23 @@ class CodebaseCleaner:
             codebase_config = AnalyticQBaseConfig.get("codebase")
             self.retention_days = codebase_config["retention"]
             self._initialized = True
+
+    def _initialize(self):
+        """
+        Initialize the CodebaseCleaner with configuration settings.
+        This method sets up the base directory for AnalyticQ and retrieves the retention period
+        from the configuration. It performs validation to ensure the retention period is valid.
+        Raises:
+            ValueError: If retention_days is not a non-negative integer.
+        """
+        self.base_dir = PathUtil.get_home_AnalyticQ_path()
+        codebase_config = AnalyticQBaseConfig.get("codebase")
+        self.retention_days = codebase_config["retention"]
+
+        if not isinstance(self.retention_days, int) or self.retention_days < 0:
+            raise ValueError("retention_days must be a non-negative integer")
+
+        self._initialized = True
 
     @lru_cache(maxsize=1000)
     def _get_item_creation_or_last_edit_date(self, item: Path) -> datetime:
@@ -86,8 +104,8 @@ class CodebaseCleaner:
             try:
                 await asyncio.to_thread(shutil.rmtree, item)
                 logger.info(f"Successfully removed: {item}")
-            except Exception:
-                logger.error(f"Failed to remove {item}")
+            except OSError as e:
+                logger.error(f"Failed to remove {item}: {e}", exc_info=True)
 
     async def cleanup_old_codebase(self, dry_run: bool = False) -> None:
         """
@@ -108,7 +126,12 @@ class CodebaseCleaner:
             AnalyticQConst.ANALYTICQ_SCRIPTS_FOLDER
         ]:
             dir_path = self.base_dir / subdir
-            if dir_path.exists():
-                for item in dir_path.iterdir():
+            if not dir_path.exists():
+                logger.warning(f"Directory does not exist: {dir_path}")
+                continue
+
+            with os.scandir(dir_path) as it:
+                for entry in it:
+                    item = Path(entry.path)
                     if self._is_item_old(item, retention_period):
                         await self._delete_item(item, dry_run)

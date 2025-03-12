@@ -1,6 +1,6 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResult
-from analyticq.engine.tools.python.pyright import PyrightTool
+from analyticq.engine.core.models import AnalyticQSASTScanResultModel
+from analyticq.engine.tools import PyrightTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -66,7 +66,7 @@ async def test_full_pyright_analysis(sample_code, pyright_tool):
         )
         print(results)
 
-        isinstance(results, AnalyticQSASTScanResult)
+        isinstance(results, AnalyticQSASTScanResultModel)
 
         assert len(results.issues) >= 0
 

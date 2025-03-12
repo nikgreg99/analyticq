@@ -1,6 +1,6 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResult
-from analyticq.engine.tools.c import CppCheckTool
+from analyticq.engine import CppCheckTool
+from analyticq.engine.core.models import AnalyticQSASTScanResultModel
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -136,11 +136,11 @@ async def test_full_cpp_analysis(sample_code, cppcheck_tool):
             codebase_path=str(sample_code),
         )
 
-        assert isinstance(result, AnalyticQSASTScanResult)
-        assert result.metadata["tool_name"] == "cppcheck"
+        assert isinstance(result, AnalyticQSASTScanResultModel)
+        assert result.scan_metadata["tool_name"] == "cppcheck"
         assert len(result.issues) > 0
 
-        assert "metrics" in result.metadata
+        assert "metrics" in result.scan_metadata
 
         for issue in result.issues:
             assert issue.path.endswith("test_sample.cpp")

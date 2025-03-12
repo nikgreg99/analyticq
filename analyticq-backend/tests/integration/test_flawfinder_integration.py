@@ -1,7 +1,7 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
-                                          AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult,
+                                          AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.engine.tools.c.flawfinder import FlawFinderTool
 from analyticq.exception import (ScanConfigurationException,
@@ -63,7 +63,7 @@ async def test_full_flawfinder_analysis(sample_code, flawfinder_tool):
         )
 
         # 3. Validate results structure
-        assert isinstance(results, AnalyticQSASTScanResult), "Invalid results type"
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
         assert len(results.issues) >= 3, "Should find at least 3 issues"
 
         # 4. Verify specific findings
@@ -71,7 +71,7 @@ async def test_full_flawfinder_analysis(sample_code, flawfinder_tool):
         found_strcpy = False
 
         for issue in results.issues:
-            assert isinstance(issue, AnalyticQSASTIssue)
+            assert isinstance(issue, AnalyticQSASTIssueModel)
             assert issue.path.endswith("test_sample.c")
 
             if "gets" in issue.message.lower():
@@ -90,8 +90,8 @@ async def test_full_flawfinder_analysis(sample_code, flawfinder_tool):
         assert results.summary["by_severity"]["HIGH"] >= 1
         assert results.summary["by_severity"]["CRITICAL"] >= 1
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

@@ -1,5 +1,10 @@
+from typing import Any, Dict
+
 from analyticq.engine.core import AnalyticQResultParser
-from analyticq.engine.core.models import AnalyticQConfidence, AnalyticQSeverity
+from analyticq.engine.core.models import (AnalyticQConfidence,
+                                          AnalyticQSASTScanResultModel,
+                                          AnalyticQSeverity)
+from analyticq.exception import ScanParserException
 
 
 class PylintParser(AnalyticQResultParser):
@@ -35,3 +40,9 @@ class PylintParser(AnalyticQResultParser):
             return AnalyticQSeverity.parse(self.severity_mapping[severity_level])
         except ValueError as e:
             raise ValueError(f"Invalid severity level: {severity_level}") from e
+
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+        try:
+            return super().parse_scan_result(raw_result)
+        except Exception as e:
+            raise ScanParserException(f"Unexpected error parsing Pylint results: {str(e)}") from e

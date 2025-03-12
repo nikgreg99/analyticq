@@ -3,7 +3,6 @@ import logging
 import os
 from collections import defaultdict
 from pathlib import Path
-from threading import Lock
 from typing import Any, Dict, List, Tuple
 
 from analyticq.preprocessing.filter import DirFilter, FileFilter
@@ -18,15 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class CodebaseLangScanner:
-
-    _instance = None
-    _lock = Lock()
-
-    def __new__(cls, *arg, **kwargs):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-        return cls._instance
 
     @inject
     def __init__(self,
@@ -104,7 +94,7 @@ class CodebaseLangScanner:
             logger.warning(f"Failed to detect language by content for {file_path}: {e}")
             return "Unknown", 0
 
-    async def process_file(self, file_path: Path, file_group: defaultdict):
+    async def analyze_file(self, file_path: Path, file_group: defaultdict):
         """
         Process a single file in the codebase to detect its programming language and collect metrics.
 
@@ -132,11 +122,11 @@ class CodebaseLangScanner:
                 self.metrics_reporter.add_excluded_file(file_path, size)
                 return
 
-            detected_language, loc = await self.detect_language_and_loc(file_path)
+            language, loc = await self.detect_language_and_loc(file_path)
             size = file_path.stat().st_size
-            self.metrics_reporter.add_file_statistics(file_path, detected_language, size, loc)
+            self.metrics_reporter.add_file_statistics(file_path, language, size, loc)
 
-            file_group[detected_language].append(file_path)
+            file_group[language].append(file_path)
 
         except FileNotFoundError:
             logger.warning(f"File not found (possibly deleted during scan): {file_path}")
@@ -145,7 +135,7 @@ class CodebaseLangScanner:
         except OSError as e:
             logger.error(f"OS error while processing file {file_path}: {e}")
 
-    async def process_files_batch(self, files: List[Path], file_group: defaultdict, params: BatchParameters) -> None:
+    async def _process_files_batch(self, files: List[Path], file_group: defaultdict, params: BatchParameters) -> None:
         """
         Process a batch of files concurrently with controlled concurrency.
         This method handles concurrent processing of multiple files using asyncio, with a semaphore
@@ -166,14 +156,41 @@ class CodebaseLangScanner:
 
         async def process_with_semaphore(file_path: Path) -> None:
             async with sem:
-                await self.process_file(file_path, file_group)
+                await self.analyze_file(file_path, file_group)
 
         await asyncio.gather(
             *[process_with_semaphore(file_path) for file_path in files],
             return_exceptions=True
         )
 
-    async def process_dir(self, dir_path: Path, file_groups: defaultdict):
+    async def _process_files(self, files: List[Path], file_groups: defaultdict) -> None:
+        """
+        Process a list of files in batches, updating file groups with language information.
+
+        This method handles the batch processing of files by splitting them into smaller chunks
+        and processing each batch separately while dynamically adjusting processing parameters.
+
+        Args:
+            files (List[Path]): List of Path objects representing files to be processed
+            file_groups (defaultdict): Dictionary to store files grouped by their language
+
+        Returns:
+            None
+
+        Note:
+            This method works asynchronously and uses batch processing for better performance
+            and resource management. The batch parameters are automatically adjusted based on
+            system performance and load.
+        """
+        params = await self.batch_util.adjust_parameters()
+        batch_ranges = self.batch_util.get_batch_ranges(len(files))
+
+        for start, end in batch_ranges:
+            batch = files[start:end]
+            await self._process_files_batch(batch, file_groups, params)
+            params = await self.batch_util.adjust_parameters()
+
+    async def process_directory(self, dir_path: Path, file_groups: defaultdict):
         """
         Recursively processes a directory to analyze files and subdirectories.
 
@@ -203,22 +220,15 @@ class CodebaseLangScanner:
             return
 
         try:
-            entries = [
-                Path(entry.path)
-                for entry in os.scandir(dir_path)
-                if not DirFilter.is_symlink(entry)]
+            entries = [Path(entry.path) for entry in os.scandir(dir_path)]
             files = [entry for entry in entries if entry.is_file()]
             directories = [entry for entry in entries if entry.is_dir()]
-            if files:
-                params = await self.batch_util.adjust_parameters()
-                batch_ranges = self.batch_util.get_batch_ranges(len(files))
-                for start, end in batch_ranges:
-                    batch = files[start:end]
-                    await self.process_files_batch(batch, file_groups, params)
-                    params = await self.batch_util.adjust_parameters()
 
-                for directory in directories:
-                    await self.process_dir(directory, file_groups)
+            if files:
+                await self._process_files(files, file_groups)
+
+            for directory in directories:
+                await self.process_directory(directory, file_groups)
 
         except PermissionError:
             logger.warning(f"Permission denied while accessing directory: {dir_path}")
@@ -246,7 +256,7 @@ class CodebaseLangScanner:
         self.time_tracker.start(total_files)
         file_groups = defaultdict(list)
 
-        await self.process_dir(root_codebase_path, file_groups)
+        await self.process_directory(root_codebase_path, file_groups)
         self.time_tracker.stop()
 
     def generate_codebase_report(self) -> Dict[str, Any]:

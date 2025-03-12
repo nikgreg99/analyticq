@@ -5,7 +5,7 @@ from analyticq.exception import ScanParserException
 
 
 @pytest.fixture
-def cppcheck_parser():
+def cppcheck_parser() -> CppCheckParser:
     return CppCheckParser()
 
 
@@ -129,10 +129,10 @@ def test_loc_parse(cppcheck_parser):
 def test_metadata_handling(cppcheck_parser, complex_xml_input):
     result = cppcheck_parser.parse_scan_result(complex_xml_input)
     first_issue = result.issues[0]
-
-    assert first_issue.metadata["cwe"] == "476"
-    assert "help_uri" in first_issue.metadata
-    assert len(first_issue.metadata["all_locations"]) == 1
+    print(first_issue)
+    assert first_issue.issue_metadata["cwe"] == "476"
+    assert "help_uri" in first_issue.issue_metadata
+    assert len(first_issue.issue_metadata["all_locations"]) == 1
 
 
 def test_error_parsing(cppcheck_parser):

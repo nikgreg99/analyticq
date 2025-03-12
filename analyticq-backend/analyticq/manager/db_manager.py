@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 from threading import Lock
 from typing import AsyncGenerator
 
@@ -24,6 +25,8 @@ class AnalyticQDatabaseManager:
 
     def __init__(self):
         if not hasattr(self, "_initialized"):
+            print("Ok")
+            print(os.environ.get("ANALYTICQ_DB_URL"))
             self._engine = create_async_engine(
                 os.environ.get("ANALYTICQ_DB_URL"),
                 echo=True
@@ -52,6 +55,7 @@ class AnalyticQDatabaseManager:
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
+    @asynccontextmanager
     async def get_db_session(self) -> AsyncGenerator[AsyncSession, None]:
         """
         Asynchronous database session generator.

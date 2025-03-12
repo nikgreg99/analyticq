@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -53,21 +53,24 @@ class AnalyticQSeverity(Enum):
             raise ValueError(f"Invalid severity level: {severity_str}")
 
 
-class AnalyticQScanContext(BaseModel):
+class AnalyticQSASTIssueModel(BaseModel):
     """
-    Context class for storing repository scan-related information.
+    A model representing a Security Analysis Static Testing (SAST) issue detected by AnalyticQ.
+
+    This class inherits from BaseModel and defines the structure of a security issue
+    found during static code analysis.
 
     Attributes:
-        repo_name (str): Repository name being scanned
-        branch (Optional[str]): Branch being scanned
-        last_commit_hash (Optional[str]): Hash of the last commit in scan
+        rule_id (str): Unique identifier of the rule that detected the issue.
+        severity (AnalyticQSeverity): The severity level of the detected issue.
+        confidence (AnalyticQConfidence): The confidence level of the detection.
+        code (str): The problematic code snippet. Defaults to "Not present".
+        message (str): Description of the issue. Defaults to "No message".
+        path (str): File path where the issue was found. Defaults to "unknown".
+        start_line (int): Starting line number of the issue in the file. Must be >= 0.
+        end_line (int): Ending line number of the issue in the file. Must be >= 0.
+        metadata (Dict[str, Any]): Additional information about the issue. Defaults to None.
     """
-    repo_name: str
-    branch: Optional[str] = None
-    last_commit_hash: Optional[str] = None
-
-
-class AnalyticQSASTIssue(BaseModel):
     rule_id: str
     severity: AnalyticQSeverity
     confidence: AnalyticQConfidence
@@ -76,10 +79,14 @@ class AnalyticQSASTIssue(BaseModel):
     path: str = Field(default="unknown")
     start_line: int = Field(default=0, ge=0)
     end_line: int = Field(default=0, ge=0)
-    metadata: Dict[str, Any] = Field(default=None)
+    column: int = Field(default=0, ge=0)
+    issue_metadata: Dict[str, Any] = Field(default=None)
+
+    class Config:
+        from_attributes = True
 
 
-class AnalyticQSASTScanResult(BaseModel):
+class AnalyticQSASTScanResultModel(BaseModel):
     """
     Contains results of a SAST scan in AnalyticQ.
 
@@ -91,7 +98,9 @@ class AnalyticQSASTScanResult(BaseModel):
         metadata (Dict[str, Any]): Additional scan metadata
     """
     scan_id: str
-    context: Optional[AnalyticQScanContext] = None
-    issues: List[AnalyticQSASTIssue]
+    issues: List[AnalyticQSASTIssueModel] = []
     summary: Dict[str, Any]
-    metadata: Dict[str, Any]
+    scan_metadata: Dict[str, Any] = {}
+
+    class Config:
+        from_attributes = True

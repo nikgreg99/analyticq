@@ -1,6 +1,6 @@
 import pytest
-from analyticq.engine.core.models import (AnalyticQSASTIssue,
-                                          AnalyticQSASTScanResult)
+from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
 from analyticq.engine.tools import RubocopTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -69,15 +69,15 @@ async def test_full_analysis(rubocop_tool, sample_code):
         print(results)
 
         # 3. Validate results structure
-        assert isinstance(results, AnalyticQSASTScanResult), "Invalid results type"
+        assert isinstance(results, AnalyticQSASTScanResultModel), "Invalid results type"
         assert len(results.issues) >= 7, "Should find at least 7 issues"
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
-        assert results.metadata["tool_name"] == "rubocop"
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
+        assert results.scan_metadata["tool_name"] == "rubocop"
 
         for issue in results.issues:
-            assert isinstance(issue, AnalyticQSASTIssue)
+            assert isinstance(issue, AnalyticQSASTIssueModel)
             assert issue.path.endswith("test_sample.rb")
 
     except ScanConfigurationException as e:
