@@ -17,7 +17,37 @@ logger = logging.getLogger(__name__)
 
 
 class CodebaseLangScanner:
+    """
+    A class responsible for scanning and analyzing a codebase to detect programming languages and collect metrics.
 
+    This class provides functionality to:
+    - Detect programming languages of files
+    - Count lines of code
+    - Process files in batches
+    - Generate codebase metrics reports
+
+    The scanner uses multiple detection methods and handles various edge cases while processing files.
+    It implements batch processing with controlled concurrency for better performance.
+
+    Attributes:
+        metrics_reporter (CodebaseMetricsReporter): Reporter for collecting and storing codebase metrics
+        time_tracker (TimeTrackerUtils): Utility for tracking processing time and progress
+        batch_util (BatchUtil): Utility for managing batch processing parameters
+
+    Dependencies:
+        - pygments for language detection
+        - asyncio for concurrent processing
+        - dependency injection framework
+
+    Example:
+        ```python
+        scanner = CodebaseLangScanner()
+        await scanner.scan_codebase(Path("/path/to/codebase"))
+        report = scanner.generate_codebase_report()
+        ```
+
+        The class  implementsvarious filtering mechanisms to exclude irrelevant files and directories.
+    """
     @inject
     def __init__(self,
                  metrics_reporter: Provide[CodebaseMetricsReporter],

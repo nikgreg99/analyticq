@@ -1,2 +1,2 @@
-from .cppcheck import CppCheckTool  # noqa
-from .flawfinder import FlawFinderTool  # noqa
+from .cppcheck import CppcheckTool  # noqa
+from .flawfinder import FlawfinderTool  # noqa

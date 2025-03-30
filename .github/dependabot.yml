@@ -7,7 +7,7 @@
   version: 2
   updates:
     - package-ecosystem: "pip"
-      directory: "/analyticq-backend"
+      directory: "/analyticq-backend/analyticq"
       schedule:
         interval: "weekly"
     - package-ecosystem: "github-actions"

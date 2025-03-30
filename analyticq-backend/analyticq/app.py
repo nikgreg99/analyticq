@@ -1,17 +1,22 @@
+import asyncio
 import logging
+import platform
 import subprocess
 import time
 from contextlib import asynccontextmanager
 from typing import List
 
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from analyticq.celery_app import get_celery_app
 from analyticq.config.di import AnalyticQContainer
-from analyticq.manager import AnalyticQDatabaseManager
-from analyticq.routes.test_route import router as test_router
-from analyticq.util import AnalyticQConst, ImportUtil, PathUtil
+from analyticq.engine.core import AnalyticQToolDiscoverer
+from analyticq.manager import AnalyticQDatabaseManager, DockerImageManager
+from analyticq.manager.tool_manager import AnalyticQSASTManager
+from analyticq.util import AnalyticQConst, PathUtil
 from fastapi import FastAPI
-
-import analyticq
+from fastapi.middleware.cors import CORSMiddleware
 
 from .config.base_config import AnalyticQBaseConfig
 from .config.logger_conf import logging_init
@@ -19,7 +24,7 @@ from .config.logger_conf import logging_init
 logger = logging.getLogger(__name__)
 
 
-def check_git_installed() -> None:
+async def check_git_installed() -> None:
     """
     Checks if Git is installed and accessible in the system PATH.
 
@@ -36,11 +41,11 @@ def check_git_installed() -> None:
         requires Git to be properly installed and configured in the system.
     """
 
-    process = subprocess.run(
+    process = await asyncio.to_thread(
+        subprocess.run,
         ["git", "--version"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        check=True
     )
 
     if process.returncode != 0:
@@ -135,26 +140,39 @@ async def backend_context(app: FastAPI):
         # Resources automatically cleaned up after context exits
     """
     start_time = time.time()
-
     container = AnalyticQContainer()
+    logging_init()
 
     try:
+        logger.info("Init AnalyticQ backend resources...")
+
+        # Init persitence layer
+        logger.info("Init DB persistence layer...")
         db = AnalyticQDatabaseManager()
         await db.init_db()
         app.state.db = db
 
+        # Verify Git installation for dcloning codebase
+        logger.info("Verify Git installation...")
+        await check_git_installed()
+
+        logger.info("Verify Docker installation...")
+        await DockerImageManager.check_docker_availability()
+
+        logger.info("Init Celery backend and related tasks")
+        # Init Celery tasks
         celery_app = get_celery_app()
         app.state.celery = celery_app
 
-        logger.info("Init AnalyticQ backend resources...")
-        logging_init()
+        logger.info("Checking root exsistence for scanning codebase")
         await create_AnalyticQ_root_structure()
 
-        logger.info("Verify Git installation...")
-        check_git_installed()
+        logger.info("Initializing AnalyticQ SAST Tool Registry...")
+        AnalyticQToolDiscoverer.discover_and_register_tools()
 
-        all_modules = ImportUtil.discover_modules(analyticq)
-        container.wire(modules=all_modules)
+        analyticq_mangaer = AnalyticQSASTManager()
+        prepocessing_data = await analyticq_mangaer.scan_codebase("https://github.com/SmartData-Polito/cannypot")
+        print(prepocessing_data)
 
         logger.info(f"Analyticq backend started in {time.time() - start_time:2f} seconds")
 
@@ -162,14 +180,65 @@ async def backend_context(app: FastAPI):
 
     except Exception as e:
         logger.critical(f"Error starting AnalyticQ backend: {str(e)}", exc_info=True)
-        raise RuntimeError("Critical error from initizalizing Analyticq backend") from e
     finally:
         # Cleanup resources (dependencies, connection, ecc)
         if hasattr(app.state, "db"):
             await app.state.db.close()
+
         logging.shutdown()
         container.unwire()
         logger.info("Shutdown AnalyticQ backend...")
+
+
+def set_app_CORS_policy(app: FastAPI) -> None:
+    """
+    Sets up Cross-Origin Resource Sharing (CORS) policy for the FastAPI application.
+
+    This function configures CORS middleware to handle cross-origin requests. By default,
+    it allows all methods and headers but requires origins to be explicitly specified.
+
+    Args:
+        app (FastAPI): The FastAPI application instance to configure CORS for.
+
+    Example:
+        set_app_CORS_policy(app)
+    """
+    origins = []
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+
+
+def set_app_routes(app: FastAPI) -> None :
+    """
+    Set up API routes for the FastAPI application.
+
+    This function configures the routing for different API endpoints by including
+    various routers that handle specific functionalities of the application.
+
+    Parameters
+    ----------
+    app : FastAPI
+        The FastAPI application instance to which routes will be added.
+
+    Notes
+    -----
+    The following routers are included:
+        - stats_router: Handles statistics-related endpoints
+        - context_router: Handles context-related endpoints
+        - tool_router: Handles tool-related endpoints
+        - issue_router: Handles issue-related endpoints
+    """
+    from analyticq.api import contexts, issues, stats, tools
+
+    app.include_router(stats.stats_router)
+    app.include_router(contexts.context_router)
+    app.include_router(tools.tool_router)
+    app.include_router(issues.issue_router)
 
 
 def create_app(config_file: str = AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE,
@@ -188,7 +257,12 @@ def create_app(config_file: str = AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE,
     app = FastAPI(
         title=AnalyticQBaseConfig.get("app_name"),
         debug=AnalyticQBaseConfig.get("debug"),
-        lifespan=backend_context
+        lifespan=backend_context,
     )
-    app.include_router(test_router)
+
+    # Set app routes
+    set_app_routes(app)
+    # Set CORS policy for interacting with a frontend specified in the config
+    set_app_CORS_policy(app)
+
     return app

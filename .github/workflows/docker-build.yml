@@ -1,9 +1,6 @@
 name: Docker Build and Push Workflow
 
 on:
-  push:
-    paths:
-      - '**/Dockerfile'
   workflow_call:
     inputs:
       image_name:

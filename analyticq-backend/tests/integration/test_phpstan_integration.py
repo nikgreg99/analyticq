@@ -1,5 +1,5 @@
 import pytest
-from analyticq.engine import PHPStanTool
+from analyticq.engine import PhpstanTool
 from analyticq.engine.core.models import AnalyticQSASTScanResultModel
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -8,7 +8,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def phpstan_tool():
     "Initialize and configure StaticcheckTool with test settings."""
-    tool = PHPStanTool()
+    tool = PhpstanTool()
     # Reduce timeout for test environment
     return tool
 

@@ -49,7 +49,7 @@ jobs:
   push-gosec:
     uses: ./.github/workflows/docker-build.yml
     with:
-      image_name: gosecc
+      image_name: gosec
       dockerfile: ./sast-tools/go/gosec/Dockerfile
       context: ./sast-tools/go/gosec
 
@@ -112,7 +112,7 @@ jobs:
   push-njsscan:
     uses: ./.github/workflows/docker-build.yml
     with:
-      image_name: njjscan
+      image_name: njssscan
       dockerfile: ./sast-tools/js/njsscan/Dockerfile
       context: ./sast-tools/js/njsscan
 
@@ -121,4 +121,4 @@ jobs:
     with:
       image_name: bearer
       dockerfile: ./sast-tools/multi/bearer/Dockerfile
-      context: ./sast-tools/multi/beaere
+      context: ./sast-tools/multi/bearer

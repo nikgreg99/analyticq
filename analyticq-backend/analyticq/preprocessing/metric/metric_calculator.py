@@ -3,7 +3,23 @@ from typing import Dict, List
 
 
 class CodebaseMetricsCalculator:
-
+    """A utility class for calculating various metrics related to a codebase's files and languages.
+    This class provides static methods to compute different statistical measures and metrics
+    for analyzing programming language usage and file characteristics within a codebase.
+    It includes calculations for average sizes, percentages, medians, and standard deviations
+    of file sizes across different programming languages.
+    Methods:
+        _average_size(data: Dict) -> float:
+            Calculates average file size from total size and count.
+        _percentage_files(data: Dict, total_files: int) -> int:
+            Computes percentage of files for a given language relative to total files.
+        _median_size(file_sizes: List[int]) -> float:
+            Determines median file size from a list of file sizes.
+        _standard_deviation(file_sizes: List[int]) -> float:
+            Calculates standard deviation of file sizes.
+        compute_language_metrics(language_stats: Dict[str, Dict], total_files: int) -> Dict:
+            Computes comprehensive metrics for each programming language in the codebase.
+    """
     @staticmethod
     def _average_size(data: Dict) -> float:
         """Calculate the average size from the provided data dictionary.

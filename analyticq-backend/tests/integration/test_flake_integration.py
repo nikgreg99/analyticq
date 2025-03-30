@@ -1,4 +1,6 @@
 import pytest
+from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
 from analyticq.engine.tools import FlakeTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -147,10 +149,16 @@ async def test_full_flake8_analysis(sample_code, flake8_tool):
             codebase_path=str(sample_code),
         )
 
-        # 5. Validate summary
+        isinstance(results, AnalyticQSASTScanResultModel)
+
+        for issue in results.issues:
+            isinstance(issue, AnalyticQSASTIssueModel)
+
+        # 4. Validate summary
         assert results.summary["total"] == 1
         assert "by_severity" in results.summary
 
+        # 5. Validate metadata
         assert "tool_name" in results.scan_metadata
         assert "metrics" in results.scan_metadata
 

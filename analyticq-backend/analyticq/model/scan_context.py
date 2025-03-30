@@ -1,49 +1,38 @@
-from typing import List, Optional
+from __future__ import annotations
 
-from analyticq.manager import AnalyticQDatabaseManager
+from typing import List
+
 from analyticq.manager.db_manager import Base
-from analyticq.preprocessing.models import (AnalyticQScanContextModel,
-                                            CodebaseType)
-from sqlalchemy import Enum, String, delete, insert, select, update
-from sqlalchemy.orm import Mapped, mapped_column
+from analyticq.validator.context import AnalyticQCodebaseType
+from sqlalchemy import Enum, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
-class AnalyticQScanContext(Base):
+class AnalyticQContext(Base):
+    """
+    A class representing the context of a code analysis scan in AnalyticQ.
+
+    This class stores information about the repository being analyzed, including its name,
+    type, branch, and commit hash for version control tracking. It also maintains relationships
+    with scan results and preproacessing analysis.
+
+    Attributes:
+        id (int): The primary key identifier for the context.
+        repo_name (str): The unique name of the repository being analyzed.
+        input_type (AnalyticQCodebaseType): The type of codebase being analyzed (enum).
+        branch (str): The branch name for remote repositories.
+        last_commit_hash (str): The hash of the last commit for remote repositories.
+        scans (List[AnalyticQSASTScanResult]): Related SAST scan results.
+        stats (AnalyticQPreprocessingAnalysis): Related preprocessing analysis.
+    """
 
     __tablename__ = "analyticq_scan_context"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    repo_name: Mapped[str] = mapped_column(String, nullable=False)
-    input_type = mapped_column(Enum(CodebaseType), nullable=True)
-    branch: Mapped[str] = mapped_column(String, nullable=True)
-    last_commit_hash = mapped_column(String, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
+    repo_name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    input_type = mapped_column(Enum(AnalyticQCodebaseType), nullable=True)
+    branch: Mapped[str] = mapped_column(String, nullable=True)  # Provide if the repo is a remote URL
+    last_commit_hash = mapped_column(String, nullable=True)  # Provided if the repo is a remote URL
 
-    @staticmethod
-    async def get_by_repo_name(repo_name: str) -> Optional["AnalyticQScanContext"]:
-        async with AnalyticQDatabaseManager().get_db_session() as session:
-            return await session.get(AnalyticQScanContext, repo_name)
-
-    @staticmethod
-    async def get_multiple_by_repo_name(repo_names: List[str]) -> List["AnalyticQScanContext"]:
-        async with AnalyticQDatabaseManager().get_db_session() as session:
-            stmt = select(AnalyticQScanContext).where(AnalyticQScanContext.repo_name.in_(repo_names))
-            result = await session.execute(stmt)
-            return result.all()
-
-    @staticmethod
-    async def add(context_data: "AnalyticQScanContextModel") -> None:
-        async with AnalyticQDatabaseManager().get_db_session() as session:
-            stmt = insert(AnalyticQScanContext).values(**context_data.dict())
-            await session.execute(stmt)
-
-    @staticmethod
-    async def update_by_repo_name(repo_name: str, **kwargs) -> None:
-        async with AnalyticQDatabaseManager().get_db_session() as session:
-            stmt = update(AnalyticQScanContext).where(AnalyticQScanContext.repo_name == repo_name).values(**kwargs)
-            await session.execute(stmt)
-
-    @staticmethod
-    async def delete_by_repo_name(repo_name: str) -> None:
-        async with AnalyticQDatabaseManager().get_db_session() as session:
-            stmt = delete(AnalyticQScanContext).where(AnalyticQScanContext.repo_name == repo_name)
-            await session.execute(stmt)
+    scans: Mapped[List["AnalyticQSASTScanResult"]] = relationship("AnalyticQSASTScanResult", back_populates="context")  # type: ignore # noqa
+    stats: Mapped["AnalyticQStats"] = relationship("AnalyticQStats", back_populates="context") # type: ignore # noqa

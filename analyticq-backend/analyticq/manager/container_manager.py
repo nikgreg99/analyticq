@@ -51,6 +51,7 @@ class AnalyticQContainerManager:
         if not self.initialized:
             try:
                 self.docker = aiodocker.Docker()
+                await self.docker.version()
                 self.initialized = True
                 self.image_manager = DockerImageManager(self.docker)
             except Exception as e:

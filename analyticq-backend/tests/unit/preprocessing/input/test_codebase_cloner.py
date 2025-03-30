@@ -8,8 +8,10 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException,
-                                 CodebaseUnknownTypeException)
-from analyticq.preprocessing import (CodebaseCloner, CodebaseClonerPathType,
+                                 CodebaseUnknownTypeException,
+                                 ExtractArchiveException)
+from analyticq.preprocessing import (ArchiveType, CodebaseCloner,
+                                     CodebaseClonerPathType,
                                      CodebaseClonerProtocolType)
 from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
@@ -221,32 +223,37 @@ async def test_clone_local_script_failure(codebase_cloner):
 
 
 @pytest.mark.parametrize(
-    ("path", "exists", "is_file", "is_dir", "has_git", "expected"),
+    ("path", "exists", "is_file", "is_dir", "has_git", "is_archive", "expected"),
     [
         # Case 1: Remote repo
-        ("https://github.com/user/repo.git", False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
-        ("git@github.com:user/repo.git", False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
+        ("https://github.com/user/repo.git", False, False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
+        ("git@github.com:user/repo.git", False, False, False, False, False, CodebaseClonerPathType.REMOTE_REPO),
 
         # Case 2: Simulating non existing path
-        ("/non/existing/path", False, False, False, False, CodebaseClonerPathType.UNKNOWN),
+        ("/non/existing/path", False, False, False, False, False, CodebaseClonerPathType.UNKNOWN),
 
         # Case 3: Local script detection
-        ("/home/user/script.py", True, True, False, False, CodebaseClonerPathType.SCRIPT),
+        ("/home/user/script.py", True, True, False, False, False, CodebaseClonerPathType.SCRIPT),
 
         # Case 4: Local repository (no .git folder)
-        ("/home/user/project", True, False, True, False, CodebaseClonerPathType.LOCAL_REPO),
+        ("/home/user/project", True, False, True, False, False, CodebaseClonerPathType.LOCAL_REPO),
 
         # Case 5: Git Repository
-        ("/home/user/git_poject", True, False, True, True, CodebaseClonerPathType.GIT_REPO)
+        ("/home/user/git_poject", True, False, True, True, False, CodebaseClonerPathType.GIT_REPO),
+
+        # Case 6: Archive codebase
+        ("/home/user/project.zip", True, True, False, False, True, CodebaseClonerPathType.ARCHIVE),
+        ("/home/user/project.tar.gz", True, True, False, False, True, CodebaseClonerPathType.ARCHIVE),
 
     ]
 )
-def test_get_codebase_type(path, exists, is_file, is_dir, has_git, expected, codebase_cloner):
+def test_get_codebase_type(path, exists, is_file, is_dir, has_git, is_archive, expected, codebase_cloner):
 
     with patch("os.path.exists", return_value=exists), \
          patch("os.path.isfile", return_value=is_file), \
          patch("os.path.isdir", return_value=is_dir), \
-         patch("os.path.exists", side_effect=lambda p: has_git if p.endswith(".git") else exists):
+         patch("os.path.exists", side_effect=lambda p: has_git if p.endswith(".git") else exists), \
+         patch.object(CodebaseCloner, "_is_archive", return_value=is_archive):
 
         result = codebase_cloner._get_codebase_type(path)
         assert result == expected, f"Failed with path {path}"
@@ -256,6 +263,84 @@ def test_get_protocol(codebase_cloner):
     assert codebase_cloner._get_protocol("git@github.com:user/repo.git") == CodebaseClonerProtocolType.SSH
     assert codebase_cloner._get_protocol("https://github.com/user/repo.git") == CodebaseClonerProtocolType.HTTPS
     assert codebase_cloner._get_protocol("http://github.com/user/repo.git") == CodebaseClonerProtocolType.HTTP
+
+
+def test_is_archive(codebase_cloner):
+    # Test Positive cases
+    assert codebase_cloner._is_archive("/path/to/archive.zip") is True, "Expected to be an archive"
+    assert codebase_cloner._is_archive("/path/to/archive.tar") is True, "Expected to be an archive"
+    assert codebase_cloner._is_archive("/path/to/archive.tar.gz") is True, "Exeptected to be an archive"
+    assert codebase_cloner._is_archive("/path/to/archive.tgz") is True, "Expected to be an archive"
+    assert codebase_cloner._is_archive("/path/to/archive.tar.bz2") is True, "Expected to be an archive"
+    assert codebase_cloner._is_archive("/path/to/archive.tbz2") is True, "Expected to be an archive"
+
+    # Test negative cases
+    assert codebase_cloner._is_archive("/path/to/file.py") is False, "Expected not to be an archive"
+    assert codebase_cloner._is_archive("/path/to/dir") is False, "Expected not to be an archive"
+
+
+def test_get_archive_type(codebase_cloner):
+    assert codebase_cloner._get_archive_type("/path/to/archive.zip") == ArchiveType.ZIP
+    assert codebase_cloner._get_archive_type("/path/to/archive.tar") == ArchiveType.TAR
+    assert codebase_cloner._get_archive_type("/path/to/archive.tar.gz") == ArchiveType.TAR_GZ
+    assert codebase_cloner._get_archive_type("/path/to/archive.tgz") == ArchiveType.TAR_GZ
+    assert codebase_cloner._get_archive_type("/path/to/archive.tar.bz2") == ArchiveType.TAR_BZ2
+    assert codebase_cloner._get_archive_type("/path/to/archive.tbz2") == ArchiveType.TAR_BZ2
+    assert codebase_cloner._get_archive_type("/path/to/unknown.ext") == ArchiveType.UNKNOWN
+
+
+@pytest.mark.asyncio
+async def test_extract_archive_zip_success(codebase_cloner):
+    archive_path = Path("/source/archive.zip")
+    dest_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / "archive"
+
+    # Mock the necessary dependencies
+    with patch('analyticq.util.PathUtil.get_codebase_repositories_AnalyticQ_path', return_value=dest_path.parent), \
+         patch.object(Path, 'exists', side_effect=[True, False]), \
+         patch.object(CodebaseCloner, '_get_archive_type', return_value=ArchiveType.ZIP), \
+         patch('os.makedirs') as mock_makedirs, \
+         patch('zipfile.ZipFile') as mock_zipfile, \
+         patch('asyncio.to_thread') as mock_to_thread:
+
+        # Configure mock behavior
+        mock_zipfile_instance = MagicMock()
+        mock_zipfile.return_value.__enter__.return_value = mock_zipfile_instance
+
+        # Call the method
+        result = await codebase_cloner.extract_archive(str(archive_path))
+
+        # Verify the correct calls were made
+        mock_makedirs.assert_called_once_with(dest_path, exist_ok=True)
+        mock_zipfile.assert_called_once_with(archive_path, 'r')
+        mock_to_thread.assert_called_once_with(mock_zipfile_instance.extractall, dest_path)
+        assert result == dest_path
+
+
+@pytest.mark.asyncio
+async def test_extract_archive_tar_success(codebase_cloner):
+    archive_path = Path("/source/archive.tar.gz")
+    dest_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / "archive"
+
+    # Mock the necessary dependencies
+    with patch('analyticq.util.PathUtil.get_codebase_repositories_AnalyticQ_path', return_value=dest_path.parent), \
+         patch.object(Path, 'exists', side_effect=[True, False]), \
+         patch.object(CodebaseCloner, '_get_archive_type', return_value=ArchiveType.TAR_GZ), \
+         patch('os.makedirs') as mock_makedirs, \
+         patch('tarfile.open') as mock_tarfile, \
+         patch('asyncio.to_thread') as mock_to_thread:
+
+        # Configure mock behavior
+        mock_tarfile_instance = MagicMock()
+        mock_tarfile.return_value.__enter__.return_value = mock_tarfile_instance
+
+        # Call the method
+        result = await codebase_cloner.extract_archive(str(archive_path))
+
+        # Verify the correct calls were made
+        mock_makedirs.assert_called_once_with(dest_path, exist_ok=True)
+        mock_tarfile.assert_called_once_with(archive_path)
+        mock_to_thread.assert_called_once_with(mock_tarfile_instance.extractall, dest_path)
+        assert result == dest_path
 
 
 @pytest.mark.asyncio
@@ -306,6 +391,41 @@ async def test_clone_local_script(codebase_cloner):
         result_path = await codebase_cloner.clone(codebase_url)
         assert result_path == expected_script_path, f"Expected {expected_script_path}, git {result_path}"
         mock_clone_script.assert_called_once_with(codebase_url)
+
+
+@pytest.mark.asyncio
+async def test_extract_archive_file_not_found(codebase_cloner):
+    archive_path = Path("/source/nonexistent.zip")
+
+    with patch.object(Path, 'exists', return_value=False):
+        with pytest.raises(CodebaseNotFoundException):
+            await codebase_cloner.extract_archive(str(archive_path))
+
+
+@pytest.mark.asyncio
+async def test_extract_archive_unsupported_format(codebase_cloner):
+    archive_path = Path("/source/unknown.format")
+
+    with patch.object(Path, 'exists', return_value=True), \
+         patch.object(CodebaseCloner, '_get_archive_type', return_value=ArchiveType.UNKNOWN):
+
+        with pytest.raises(ExtractArchiveException):
+            await codebase_cloner.extract_archive(str(archive_path))
+
+
+@pytest.mark.asyncio
+async def test_clone_with_archive(codebase_cloner):
+    archive_path = "/source/archive.zip"
+    expected_dest_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / "archive"
+
+    with patch('analyticq.util.PathUtil'), \
+         patch.object(CodebaseCloner, '_get_codebase_type', return_value=CodebaseClonerPathType.ARCHIVE), \
+         patch.object(CodebaseCloner, 'extract_archive', return_value=expected_dest_path) as mock_extract_archive:
+
+        result_path = await codebase_cloner.clone(archive_path)
+
+        assert result_path == expected_dest_path, f"Expected {expected_dest_path}, got {result_path}"
+        mock_extract_archive.assert_called_once_with(archive_path)
 
 
 @pytest.mark.asyncio

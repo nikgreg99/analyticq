@@ -1,3 +1,4 @@
+import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Union
@@ -9,7 +10,37 @@ from .models import (AnalyticQConfidence, AnalyticQSASTIssueModel,
 
 
 class AnalyticQResultParser(ABC):
+    """Abstract base class for parsing security analysis tool results into a standardized format.
 
+    This class provides a framework for converting tool-specific output formats into a
+    standardized AnalyticQ format. It handles field mapping, severity levels, confidence
+    levels, and metadata processing.
+
+    Attributes:
+        tool_name (str): Name of the security analysis tool being used
+        field_mapping (Dict[str, str]): Mapping between tool-specific and standardized field names
+
+        ```python
+        class CustomToolParser(AnalyticQResultParser):
+            def __init__(self):
+                    "severity": "impact.severity",
+                    "confidence": "reliability",
+                    "rule_id": "check.id"
+                super().__init__("CustomTool", field_mapping)
+        ```
+
+    Notes:
+        - Subclasses must implement _map_severity and _map_confidence methods
+        - The field_mapping dictionary supports dot notation for nested fields
+        - All parsing methods include error handling for malformed input
+
+        ScanParserException: When parsing fails due to invalid input format or unexpected errors
+
+    See Also:
+        AnalyticQSASTScanResultModel: The output model for parsed results
+        AnalyticQSeverity: Enumeration of standardized severity levels
+        AnalyticQConfidence: Enumeration of standardized confidence levels
+    """
     def __init__(self, tool_name: str, field_mapping: Dict[str, str]):
         """
         Args:
@@ -188,11 +219,13 @@ class AnalyticQResultParser(ABC):
 
             summary = self._generate_summary(issues)
             metadata = self._generate_metadata()
+            new_scan_id = str(uuid.uuid4())
 
             return AnalyticQSASTScanResultModel(
-                scan_id="1",
+                scan_id=str(new_scan_id),
                 issues=issues,
                 summary=summary,
+                tool_name=self.tool_name,
                 scan_metadata=metadata
             )
 

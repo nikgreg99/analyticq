@@ -3,7 +3,7 @@ from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTIssueModel,
                                           AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
-from analyticq.engine.tools import SpotBugTool
+from analyticq.engine.tools import SpotbugsTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -11,7 +11,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def spotbugs_tool():
     "Initialize and configure StaticcheckTool with test settings."""
-    tool = SpotBugTool()
+    tool = SpotbugsTool()
     # Reduce timeout for test environment
     return tool
 

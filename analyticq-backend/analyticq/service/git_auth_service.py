@@ -14,7 +14,34 @@ logger = logging.getLogger(__name__)
 
 
 class GitAuthService:
+    """ A service class for managing SSH key authentication for Git operations.
 
+    This class implements the Singleton pattern and provides methods to manage SSH keys,
+    including loading them into the SSH agent, configuring Git to use specific SSH keys,
+    and extracting key properties. It handles both Windows and Unix-like operating systems.
+
+    Attributes:
+        _instance (GitAuthService): The singleton instance of the class.
+        _lock (Lock): A threading lock to ensure thread-safe singleton instantiation.
+
+    Methods:
+        _is_windows_os(): Checks if the current OS is Windows.
+        _start_ssh_agent(): Starts the SSH agent service.
+        _is_key_loaded(ssh_key_path): Checks if an SSH key is loaded in the agent.
+        load_ssh_key(ssh_key_path): Loads an SSH key into the SSH agent.
+        configure_git_ssh(ssh_key_path): Configures Git to use a specific SSH key.
+        get_ssh_key_properties(ssh_key_path): Retrieves properties of an SSH key.
+        extract_ssh_auth_token(ssh_key_path): Extracts authentication token from SSH key.
+        remove_ssh_key(ssh_key_path): Removes an SSH key from the SSH agent.
+
+    Example:
+        git_auth = GitAuthService()
+        await git_auth.configure_git_ssh(Path('/path/to/ssh/key'))
+
+    Note:
+        This service requires the SSH agent to be available on the system.
+        On Windows, it attempts to start the SSH agent service if not running.
+    """
     _instance = None
     _lock = Lock()
 
@@ -32,6 +59,28 @@ class GitAuthService:
             bool: True if the operating system is Windows, False otherwise.
         """
         return platform.system().lower() == "windows"
+
+    async def check_ssh_availability(self) -> bool:
+        """
+        Check if SSH is available on the system by attempting to run the SSH version command.
+
+        Returns:
+            bool: True if SSH is available and working, False otherwise.
+                - Returns True if 'ssh -V' command executes successfully
+                - Returns False if command fails or SSH is not found on system
+        """
+        try:
+            await asyncio.to_thread(
+                subprocess.run,
+                ["ssh", "-V"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True
+            )
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.warning("SSH is not available ont the system")
+            return False
 
     async def _start_ssh_agent(self) -> None:
         """
@@ -61,7 +110,7 @@ class GitAuthService:
                         sock_path = line.split('=')[1].strip().split(';')[0]
                         os.environ['SSH_AUTH_SOCK'] = sock_path
                         break
-                    os.environ["SSH_AUTH_SOCK"] = result.stdout.split("=")[1].strip().split(";")[0]
+                    os.environ["SSH_AUTH_SOCK"] = sock_path
 
     async def _is_key_loaded(self, ssh_key_path: Path) -> bool:
         """
@@ -75,13 +124,16 @@ class GitAuthService:
         """
         try:
             result = await asyncio.to_thread(subprocess.run, ["ssh-add", "-l"], capture_output=True, text=True, check=True)
-            return PathUtil.path_to_str(ssh_key_path) in result.stdout
+            return any(PathUtil.path_to_str(ssh_key_path) in line for line in result.stdout.splitlines())
         except subprocess.CalledProcessError:
             return False
 
     async def load_ssh_key(self, ssh_key_path: Path) -> None:
         if not ssh_key_path.exists():
             raise FileNotFoundError(f"SSH key not found at {ssh_key_path}")
+
+        if not await self.check_ssh_availability():
+            raise RuntimeError("SSH is not available on the system")
 
         await self._start_ssh_agent()
 
@@ -109,8 +161,12 @@ class GitAuthService:
         Raises:
             Exception: If there is an error loading the SSH key.
         """
+        if not await self.check_ssh_availability():
+            raise RuntimeError("SSH is not available on the system")
+
         if not await self._is_key_loaded(ssh_key_path):
             await self.load_ssh_key(ssh_key_path)
+
         os.environ["GIT_SSH_COMMAND"] = f"ssh -i {ssh_key_path} -o IdentitiesOnly=yes"
         logger.info("Git SSH authentication configured successfully.")
 

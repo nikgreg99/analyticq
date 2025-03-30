@@ -10,6 +10,18 @@ from typing import Any, Dict, List, Optional, Union
 
 
 class OutputFormat(Enum):
+    """
+    Enumeration class representing different output formats for tool strategy results.
+
+    The OutputFormat enum defines supported file formats for exporting/storing analysis results.
+
+    Values:
+        JSON: JavaScript Object Notation format
+        CSV: Comma Separated Values format
+        XML: Extensible Markup Language format
+        SARIF: Static Analysis Results Interchange Format
+        PLAIN: Plain text format. The default one
+    """
     JSON = "json"
     CSV = "csv"
     XML = "xml"
@@ -18,17 +30,91 @@ class OutputFormat(Enum):
 
 
 class FormatStrategy(ABC):
+    """Abstract base class defining a strategy pattern for formatting results.
+
+    This class serves as an interface for different formatting strategies that can be
+    applied to raw results from various tools or processes.
+
+    Methods
+    -------
+    format(raw_result: str) -> Union[Dict, list]
+        Abstract method that formats a raw string result into either a dictionary or list.
+        Must be implemented by concrete strategy classes.
+
+    is_format(content: str) -> bool
+        Static method to check if content matches the format.
+        Default implementation returns False.
+        Should be overridden by concrete strategy classes to provide actual format validation.
+
+    Notes
+    -----
+    All concrete format strategy classes should inherit from this abstract base class
+    and implement the format() method according to their specific formatting requirements.
+    """
     @abstractmethod
     def format(self, raw_result: str) -> Union[Dict, list]:
+        """
+        Formats the raw output result from a tool execution.
+
+        Args:
+            raw_result (str): The raw string output from executing a tool.
+
+        Returns:
+            Union[Dict, list]: The formatted result as either a dictionary or list structure.
+
+        Raises:
+            None
+
+        Example:
+            >>> strategy = ToolStrategyOutput()
+            >>> raw = "some tool output"
+            >>> formatted = strategy.format(raw)
+        """
         pass
 
     @staticmethod
     def is_format(content: str) -> bool:
+        """
+        Check if a string content matches a specific format.
+
+        Args:
+            content (str): The string content to check format for.
+
+        Returns:
+            bool: False by default, indicating no format validation is implemented.
+        """
         return False
 
 
 class JSONFormatStrategy(FormatStrategy):
+    """ A strategy class for handling JSON format conversion operations.
+
+    This class implements the FormatStrategy interface to handle JSON-specific formatting operations,
+    providing methods to validate and parse JSON-formatted strings into Python data structures.
+
+    Methods:
+        format(raw_result: str) -> Union[Dict, list]:
+            Converts a JSON-formatted string into a Python dictionary or list.
+
+        is_format(content: str) -> bool:
+            Validates whether a given string is in valid JSON format.
+    """
+
     def format(self, raw_result: str) -> Union[Dict, list]:
+        """
+        Formats raw string result into a Python dictionary or list.
+
+        This method attempts to parse a JSON-formatted string into a Python data structure.
+
+        Args:
+            raw_result (str): JSON-formatted string to be parsed
+
+        Returns:
+            Union[Dict, list]: Parsed Python dictionary or list object
+
+        Raises:
+            json.JSONDecodeError: If the input string is not valid JSON
+        """
         return json.loads(raw_result)
 
     @staticmethod
@@ -56,7 +142,41 @@ class JSONFormatStrategy(FormatStrategy):
 
 
 class CSVFormatStrategy(FormatStrategy):
+    """
+    A strategy class for formatting CSV data strings into structured data.
+    This class implements the FormatStrategy interface and provides methods to format
+    CSV string data into a list of dictionaries and validate CSV formatted content.
+    Methods:
+        format(raw_result: str) -> list:
+            Converts a CSV string into a list of dictionaries.
+        is_format(content: str) -> bool:
+            Validates if a string contains properly formatted CSV data.
+    """
     def format(self, raw_result: str) -> list:
+        """
+        Formats raw CSV string data into a list of dictionaries.
+
+        This method takes a raw CSV string, converts it into a CSV-like object using StringIO,
+        and returns a list where each element is a dictionary representing a row from the CSV,
+        with column headers as keys.
+
+        Args:
+            raw_result (str): A string containing CSV formatted data.
+
+        Returns:
+            list: A list of dictionaries where each dictionary represents a row from the CSV data,
+                  with column headers as keys and row values as values.
+
+        Example:
+            If raw_result is:
+            "name,age\nJohn,30\nJane,25"
+
+            The output will be:
+            [
+                {'name': 'John', 'age': '30'},
+                {'name': 'Jane', 'age': '25'}
+            ]
+        """
         csv_file = StringIO(raw_result)
         reader = csv.DictReader(csv_file)
         return list(reader)
@@ -94,7 +214,47 @@ class XMLNode:
 
 
 class XMLFormatStrategy(FormatStrategy):
+    """
+    A strategy class for parsing and formatting XML content.
 
+    This class implements the FormatStrategy interface to handle XML-specific formatting operations.
+    It provides functionality to parse XML strings into a tree structure of XMLNode objects and
+    convert them back to dictionary representations.
+
+        preserve_whitespaces (bool, optional): If True, preserves whitespace in text content.
+            If False, strips whitespace from text content. Defaults to False.
+
+    Attributes:
+        preserve_whitespaces (bool): Flag indicating whether to preserve whitespace in text content.
+
+    Methods:
+        parse_string(xml_string: str) -> XMLNode:
+            Parses an XML string into an XMLNode tree structure.
+
+        _parse_element(element: ET.Element) -> XMLNode:
+            Internal method to recursively parse XML elements into XMLNode objects.
+
+        to_dict(node: XMLNode) -> Dict:
+            Converts an XMLNode tree structure into a dictionary representation.
+
+        is_format(content: str) -> bool:
+            Validates if a given string is valid XML content.
+
+        format(raw_result: str) -> Dict:
+            Formats raw XML string into a dictionary representation.
+
+        >>> formatter = XMLFormatStrategy()
+        >>> result = formatter.format('<root><child>text</child></root>')
+        >>> print(result)
+        {
+            'tag': 'root',
+            'attributes': {},
+            'children': {
+                'child': {
+                    'tag': 'child',
+                    'attributes': {},
+                    'text': 'text'
+    """
     def __init__(self, preserve_whitespaces: bool = False):
         self.preserve_whitespaces = preserve_whitespaces
 
@@ -169,6 +329,33 @@ class XMLFormatStrategy(FormatStrategy):
 
 
 class SarifFormatStrategy(FormatStrategy):
+    """A strategy class for handling SARIF (Static Analysis Results Interchange Format) output.
+
+    This class implements the FormatStrategy interface to process SARIF-formatted results.
+    SARIF is a standard JSON-based format for static analysis tools to report results.
+
+    Methods:
+        is_format(raw_result: str) -> Dict[str, Any]:
+            Determines if the input string is in valid SARIF format.
+
+            Args:
+                raw_result (str): The raw string to be checked.
+
+            Returns:
+                bool: True if the input is valid SARIF format, False otherwise.
+
+        format(raw_result: str) -> Dict[str, Any]:
+            Converts the raw SARIF string into a parsed dictionary.
+
+            Args:
+                raw_result (str): The raw SARIF string to be formatted.
+
+            Returns:
+                Dict[str, Any]: The parsed SARIF data as a dictionary.
+
+            Raises:
+                json.decoder.JSONDecodeError: If the input string is not valid JSON.
+    """
 
     def is_format(raw_result: str) -> Dict[str, Any]:
         try:

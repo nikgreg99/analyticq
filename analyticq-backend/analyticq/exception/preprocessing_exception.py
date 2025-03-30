@@ -68,3 +68,14 @@ class CleanupErrorException(Exception):
 
     """
     pass
+
+
+class ExtractArchiveException(Exception):
+    """
+    Exception raised when there is an error during archive extraction.
+
+    This exception is used to handle errors that occur during the process of extracting
+    files from an archive (e.g., zip, tar, etc.).
+
+    """
+    pass

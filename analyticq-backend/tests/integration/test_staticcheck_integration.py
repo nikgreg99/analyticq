@@ -2,7 +2,7 @@ import pytest
 from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTIssueModel,
                                           AnalyticQSASTScanResultModel)
-from analyticq.engine.tools import StaticCheckTool
+from analyticq.engine.tools import StaticcheckTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -10,7 +10,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def staticcheck_tool():
     "Initialize and configure StaticcheckTool with test settings."""
-    tool = StaticCheckTool()
+    tool = StaticcheckTool()
     # Reduce timeout for test environment
     tool.container_manager.runtime_config.timeout = 120
     return tool

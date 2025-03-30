@@ -39,8 +39,8 @@ class CodebasePreprocessor:
                  cloner: Provide[CodebaseCloner] = None,
                  language_scanner: Provide[CodebaseLangScanner] = None):
         if not hasattr(self, "_initialized"):
-            self.cloner = cloner or CodebaseCloner()
-            self.language_scanner = language_scanner or CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
+            self.cloner = CodebaseCloner()
+            self.language_scanner = CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
             self._initialized = True
 
     async def preprocess_codebase(

@@ -21,5 +21,5 @@ def get_celery_app():
     return celery_app
 
 
-# Need to be started indipently from Fast API
+# Need to be started indipendently from Fast API
 celery = get_celery_app()

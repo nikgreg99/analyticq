@@ -1,2 +1,2 @@
-from .checkstyle import CheckStyleTool  # noqa
-from .spotbugs import SpotBugTool  # noqa
+from .checkstyle import CheckstyleTool  # noqa
+from .spotbugs import SpotbugsTool  # noqa

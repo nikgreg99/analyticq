@@ -104,12 +104,32 @@ async def test_load_ssh_key(mock_ssh_key_path):
 
 
 @pytest.mark.asyncio
+async def test_load_ssh_key_ssh_not_available(mock_ssh_key_path):
+
+    service = GitAuthService()
+
+    with patch.object(service, "check_ssh_availability", return_value=False), \
+         patch.object(service, "_start_ssh_agent"), \
+         patch.object(service, "_is_key_loaded"), \
+         patch('subprocess.run'):
+
+        with pytest.raises(RuntimeError, match="SSH is not available on the system"):
+            await service.load_ssh_key(Path(mock_ssh_key_path))
+
+        service._start_ssh_agent.assert_not_called()
+
+        service._is_key_loaded.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_configure_git_ssh(mock_ssh_key_path):
     service = GitAuthService()
 
     # Mock key loading methods
-    with patch.object(service, '_is_key_loaded', return_value=False), \
+    with patch.object(service, 'check_ssh_availability', return_value=True), \
+         patch.object(service, '_is_key_loaded', return_value=False), \
          patch('subprocess.run') as mock_run, \
+         patch('platform.system', return_value='Windows'), \
          patch.dict(os.environ, {}, clear=True):
 
         # Mock successful key loading
@@ -124,12 +144,30 @@ async def test_configure_git_ssh(mock_ssh_key_path):
 
 
 @pytest.mark.asyncio
+async def test_configure_git_ssh_ssh_not_available(mock_ssh_key_path):
+
+    service = GitAuthService()
+
+    with patch.object(service, "check_ssh_availability", return_value=False), \
+         patch.object(service, "_is_key_loaded"), \
+         patch.dict(os.environ, {}, clear=True):
+
+        with pytest.raises(RuntimeError, match="SSH is not available on the system"):
+            await service.configure_git_ssh(Path(mock_ssh_key_path))
+
+        service._is_key_loaded.assert_not_called()
+
+        assert "GIT_SSH_COMMAND" not in os.environ
+
+
+@pytest.mark.asyncio
 async def test_configure_git_ssh_key_already_loaded(mock_ssh_key_path):
 
     service = GitAuthService()
 
     # Mock key already loaded
-    with patch.object(service, '_is_key_loaded', return_value=True), \
+    with patch.object(service, 'check_ssh_availability', return_value=True), \
+         patch.object(service, '_is_key_loaded', return_value=True), \
          patch.dict(os.environ, {}, clear=True):
 
         await service.configure_git_ssh(Path(mock_ssh_key_path))

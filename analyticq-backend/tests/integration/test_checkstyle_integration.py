@@ -5,7 +5,7 @@ from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTIssueModel,
                                           AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
-from analyticq.engine.tools import CheckStyleTool
+from analyticq.engine.tools import CheckstyleTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -13,7 +13,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def checkstyle_tool():
     """Initialize and configure CheckstyleTool with test settings."""
-    tool = CheckStyleTool()
+    tool = CheckstyleTool()
     # Reduce timeout for test environment
     return tool
 

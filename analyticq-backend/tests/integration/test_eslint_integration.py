@@ -1,6 +1,7 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResultModel
-from analyticq.engine.tools import ESLintTool
+from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
+from analyticq.engine.tools import EslintTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -8,7 +9,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def eslint_tool():
     """Initialize and configure EslintkTool with test settings."""
-    tool = ESLintTool()
+    tool = EslintTool()
     return tool
 
 
@@ -158,6 +159,9 @@ async def test_full_eslint_analysis(sample_code, eslint_tool):
         assert result.scan_metadata["tool_name"] == "eslint"
 
         assert len(result.issues) == 0
+
+        for issue in result.issues:
+            assert isinstance(issue, AnalyticQSASTIssueModel)
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

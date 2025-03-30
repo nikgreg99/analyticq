@@ -14,7 +14,26 @@ logger = logging.getLogger(__name__)
 
 
 class CodebaseCleaner:
-
+    """ A singleton class responsible for cleaning up old codebase files in the AnalyticQ system.
+    This class manages the deletion of old repositories and scripts based on a configured retention period.
+    It implements the singleton pattern to ensure only one instance handles cleanup operations.
+    Attributes:
+        base_dir (Path): The base directory path for AnalyticQ.
+        retention_days (int): Number of days to retain files before they become eligible for deletion.
+    Class Attributes:
+        _instance (CodebaseCleaner): Singleton instance of the class.
+        _lock (Lock): Thread lock for ensuring thread-safe singleton instantiation.
+    Example:
+        ```
+        cleaner = CodebaseCleaner()
+        await cleaner.cleanup_old_codebase(dry_run=True)
+        ```
+    Note:
+        - The class uses a thread-safe singleton pattern to prevent multiple instances.
+        - Configuration is loaded from AnalyticQBaseConfig under the "codebase" section.
+        - Supports both Windows and Unix-based systems for file timestamp retrieval.
+        ValueError: If the configured retention_days is not a non-negative integer.
+    """
     _instance = None
     _lock = Lock()
 

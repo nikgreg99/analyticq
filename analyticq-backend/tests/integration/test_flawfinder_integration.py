@@ -3,7 +3,7 @@ from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTIssueModel,
                                           AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
-from analyticq.engine.tools.c.flawfinder import FlawFinderTool
+from analyticq.engine.tools.c.flawfinder import FlawfinderTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -43,7 +43,7 @@ def sample_code(tmp_path_factory):
 @pytest.fixture(scope="module")
 def flawfinder_tool():
     """Initialize and configure FlawfinderTool with test settings."""
-    tool = FlawFinderTool()
+    tool = FlawfinderTool()
     # Reduce timeout for test environment
     tool.container_manager.runtime_config.timeout = 120
     return tool

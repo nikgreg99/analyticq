@@ -5,7 +5,22 @@ from analyticq.engine.parser import GoSecParser
 from analyticq.manager import AnalyticQContainerManager
 
 
-class GoSecTool(AnalyticQSASTTool):
+class GosecTool(AnalyticQSASTTool):
+    """
+    A SAST tool implementation for analyzing Go code using Gosec security scanner.
+    This class extends AnalyticQSASTTool to provide Go-specific static security analysis
+    capabilities using the Gosec container image.
+    Attributes:
+        supported_languages (set): Set containing "go" as the supported language.
+    Notes:
+        - Uses Gosec scanner (https://github.com/securego/gosec) as the underlying analyzer
+        - Security options are configured to prevent privilege escalation
+    Example:
+        tool = GosecTool()
+        # Use tool methods inherited from AnalyticQSASTTool for analysis
+    """
+
+    supported_languages = {"go"}
 
     def __init__(self):
         container_manager = AnalyticQContainerManager(

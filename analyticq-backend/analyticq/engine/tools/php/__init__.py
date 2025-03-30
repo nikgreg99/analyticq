@@ -1,1 +1,1 @@
-from .phpstan import PHPStanTool  # noqa
+from .phpstan import PhpstanTool  # noqa

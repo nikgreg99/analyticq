@@ -1,6 +1,7 @@
 import pytest
-from analyticq.engine import CppCheckTool
-from analyticq.engine.core.models import AnalyticQSASTScanResultModel
+from analyticq.engine import CppcheckTool
+from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -8,7 +9,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def cppcheck_tool():
     """Initialize and configure CppcheckTool with test settings."""
-    tool = CppCheckTool()
+    tool = CppcheckTool()
     return tool
 
 
@@ -144,6 +145,7 @@ async def test_full_cpp_analysis(sample_code, cppcheck_tool):
 
         for issue in result.issues:
             assert issue.path.endswith("test_sample.cpp")
+            assert isinstance(issue, AnalyticQSASTIssueModel)
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

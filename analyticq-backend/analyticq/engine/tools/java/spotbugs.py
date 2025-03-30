@@ -5,7 +5,20 @@ from analyticq.engine.parser import SpotBugsParser
 from analyticq.manager import AnalyticQContainerManager
 
 
-class SpotBugTool(AnalyticQSASTTool):
+class SpotbugsTool(AnalyticQSASTTool):
+    """SpotBugsTool is a SAST analysis tool for Java code using SpotBugs.
+    This class extends AnalyticQSASTTool to provide static code analysis capabilities
+    specifically for Java applications using the SpotBugs analyzer.
+    Attributes:
+        supported_languages (set): A set containing "java" as the only supported language.
+    Example:
+        tool = SpotbugsTool()
+        results = tool.analyze(source_code_path)
+    Notes:
+        - Spotbugs official repository: https://spotbugs.github.io
+    """
+
+    supported_languages = {"java"}
 
     def __init__(self):
         container_manager = AnalyticQContainerManager(

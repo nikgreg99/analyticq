@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import shutil
+import tarfile
+import zipfile
 from enum import Enum
 from pathlib import Path
 from threading import Lock
@@ -14,7 +16,8 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CloneLocalScriptException,
                                  CloneRemoteRepositoryException,
                                  CodebaseNotFoundException,
-                                 CodebaseUnknownTypeException)
+                                 CodebaseUnknownTypeException,
+                                 ExtractArchiveException)
 from analyticq.service import GitAuthService
 from analyticq.util import PathUtil
 from dependency_injector.wiring import Provide, inject
@@ -29,6 +32,7 @@ class CodebaseClonerPathType(Enum):
     LOCAL_REPO = "local"
     REMOTE_REPO = "remote"
     GIT_REPO = "repo"
+    ARCHIVE = "archive"
     SCRIPT = "script"
     UNKNOWN = "unknown"
 
@@ -40,8 +44,55 @@ class CodebaseClonerProtocolType(Enum):
     SSH = "ssh"
 
 
-class CodebaseCloner:
+class ArchiveType(Enum):
+    """Enumeration for supported archive types"""
+    ZIP = "zip"
+    TAR = "tar"
+    TAR_GZ = "tar.gz"
+    TAR_BZ2 = "tar.bz2"
+    UNKNOWN = "unknown"
 
+
+class CodebaseCloner:
+    """A singleton class responsible for cloning and managing different types of codebases.
+
+    This class handles various types of codebases including remote Git repositories,
+    local repositories, individual scripts, and archive files. It implements thread-safe
+    singleton pattern to ensure only one instance exists throughout the application.
+
+    Attributes:
+        default_branch (str): The default branch name used for cloning repositories.
+        git_auth_service (GitAuthService): Service handling Git authentication.
+        archive_extensions (dict): Mapping of file extensions to ArchiveType enums.
+
+    Methods:
+        clone(codebase_url: str, **kwargs) -> Path:
+            Main method to clone any type of codebase.
+
+        clone_remote_codebase(codebase_url: str, branch: str = None, tag: Optional[str] = None,
+                             protocol: CodebaseClonerProtocolType = CodebaseClonerProtocolType.HTTPS) -> Path:
+            Clones remote Git repositories.
+
+        clone_local_codebase(source_path: str) -> Path:
+            Copies local repository directories.
+
+        clone_local_script(script_path: str) -> Path:
+            Copies individual script files.
+
+        extract_archive(archive_path: str) -> Path:
+            Extracts supported archive formats.
+
+    Supported Archive Types:
+        - ZIP (.zip)
+        - TAR (.tar)
+        - TAR_GZ (.tar.gz, .tgz)
+        - TAR_BZ2 (.tar.bz2, .tbz2)
+
+        >>> path = await cloner.clone("https://github.com/user/repo.git")
+        >>> path = await cloner.clone("path/to/local/repo")
+        >>> path = await cloner.clone("path/to/script.py")
+        >>> path = await cloner.clone("path/to/archive.zip")
+    """
     _instance = None
     _lock = Lock()
 
@@ -59,6 +110,51 @@ class CodebaseCloner:
             self.default_branch = codebase_config["default_branch"]
             self._initialized = True
             self.git_auth_service = git_auth_service
+            # Define supported archive extensions
+            self.archive_extesions = {
+                ".zip": ArchiveType.ZIP,
+                ".tar": ArchiveType.TAR,
+                ".tar.gz": ArchiveType.TAR_GZ,
+                ".tgz": ArchiveType.TAR_GZ,
+                ".tar.bz2": ArchiveType.TAR_BZ2,
+                ".tbz2": ArchiveType.TAR_BZ2
+            }
+
+    def _is_archive(self, path: str) -> bool:
+        """
+        Check if a file path corresponds to an archive file.
+
+        Args:
+            path (str): Path to check for archive file extension.
+
+        Returns:
+            bool: True if the path ends with a known archive extension, False otherwise.
+
+        Example:
+            >>> cloner = CodebaseCloner()
+            >>> cloner.is_archive("example.zip")
+            True
+            >>> cloner.is_archive("example.txt")
+            False
+        """
+        path_lower = path.lower()
+        return any(path_lower.endswith(ext) for ext in self.archive_extesions.keys())
+
+    def _get_archive_type(self, path: str) -> ArchiveType:
+        """Determine the archive type based on the file extension.
+
+        Args:
+            path (str): The file path to check.
+
+        Returns:
+            ArchiveType: The type of archive based on the file extension.
+                        Returns ArchiveType.UNKNOWN if extension is not recognized.
+        """
+        path_lower = path.lower()
+        for ext, archive_type in self.archive_extesions.items():
+            if path_lower.endswith(ext):
+                return archive_type
+        return ArchiveType.UNKNOWN
 
     def _get_codebase_type(self, path: str) -> CodebaseClonerPathType:
         """
@@ -79,6 +175,8 @@ class CodebaseCloner:
             return CodebaseClonerPathType.UNKNOWN
 
         if os.path.isfile(path):
+            if self._is_archive(path):
+                return CodebaseClonerPathType.ARCHIVE
             return CodebaseClonerPathType.SCRIPT  # Prioritize script detection
 
         if os.path.isdir(path):
@@ -249,6 +347,75 @@ class CodebaseCloner:
             CloneLocalScriptException,
         )
 
+    async def extract_archive(self, archive_path: str) -> Path:
+        """
+        Extracts an archive file to a destination directory.
+
+        This method handles ZIP, TAR, TAR.GZ and TAR.BZ2 archive formats. The destination
+        directory is created based on the archive filename (without extension).
+
+        Args:
+            archive_path (str): Path to the archive file to extract
+
+        Returns:
+            Path: Path object pointing to the extraction destination directory
+
+        Raises:
+            CodebaseNotFoundException: If the archive file does not exist
+            ExtractArchiveException: If the archive format is unsupported or extraction fails
+
+        Example:
+            >>> extractor = CodebaseCloner()
+            >>> dest_path = await extractor.extract_archive("mycode.zip")
+            >>> print(dest_path)
+            /path/to/extraction/mycode
+
+        Notes:
+            - For .tar.gz and .tar.bz2 files, the .tar portion is also removed from the destination name
+            - If extraction fails, any partially created destination directory is cleaned up
+            - If destination already exists and is valid, returns path without re-extracting
+        """
+
+        archive_path = Path(archive_path)
+
+        if not archive_path.exists():
+            raise CodebaseNotFoundException(f"Archive file does not exist at: {archive_path}")
+
+        archive_type = self._get_archive_type(str(archive_path))
+        if archive_type == ArchiveType.UNKNOWN:
+            raise ExtractArchiveException(f"Unsupported archive format: {archive_path}")
+
+        dest_name = archive_path.stem
+        # Handle double extensions like .tar.gz
+        if archive_type in [ArchiveType.TAR_GZ, ArchiveType.TAR_BZ2] and dest_name.endswith(".tar"):
+            dest_name = dest_name[:-4]
+
+        dest_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / dest_name
+
+        if self._check_existing_path(dest_path):
+            return dest_path
+
+        logger.info(f"Extracting archive from {archive_path} to {dest_path}")
+
+        try:
+            os.makedirs(dest_path, exist_ok=True)
+
+            if archive_type == ArchiveType.ZIP:
+                with zipfile.ZipFile(archive_path, "r") as zip_ref:
+                    await asyncio.to_thread(zip_ref.extractall, dest_path)
+            elif archive_type in [ArchiveType.TAR, ArchiveType.TAR_GZ, ArchiveType.TAR_BZ2]:
+                with tarfile.open(archive_path) as tar_ref:
+                    await asyncio.to_thread(tar_ref.extractall, dest_path)
+
+            logger.info(f"Archive extracted succesfully to {dest_path} ")
+        except Exception as e:
+            # Clean up the directory if extraction failed
+            if dest_path.exists():
+                shutil.rmtree(dest_path)
+            raise ExtractArchiveException(f"Failed to extract archive {archive_path}: {e}")
+
+        return dest_path
+
     async def clone(self, codebase_url: str, **kwargs) -> Path:
         """
         Clone a codebase from a given URL.
@@ -288,6 +455,8 @@ class CodebaseCloner:
                 path = await self.clone_local_codebase(codebase_url)
             case CodebaseClonerPathType.SCRIPT:
                 path = await self.clone_local_script(codebase_url)
+            case CodebaseClonerPathType.ARCHIVE:
+                path = await self.extract_archive(codebase_url)
             case _:
                 raise CodebaseUnknownTypeException(f"Unknown codebase type: {codebase_url_type}")
         return path

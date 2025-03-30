@@ -1,2 +1,2 @@
-from .gosec import GoSecTool  # noqa
-from .staticcheck import StaticCheckTool  # noqa
+from .gosec import GosecTool  # noqa
+from .staticcheck import StaticcheckTool  # noqa

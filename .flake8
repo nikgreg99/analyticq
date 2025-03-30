@@ -4,5 +4,4 @@ ignore = E501, W503, E203
 exclude =
     __init__.py,
     .git,
-    tests/*,
     venv/*

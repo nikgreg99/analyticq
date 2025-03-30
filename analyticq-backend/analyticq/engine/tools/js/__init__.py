@@ -1,2 +1,2 @@
-from .eslint import ESLintTool  # noqa
-from .njsscan import NjsScanTool  # noqa
+from .eslint import EslintTool  # noqa
+from .njsscan import NjsscanTool  # noqa

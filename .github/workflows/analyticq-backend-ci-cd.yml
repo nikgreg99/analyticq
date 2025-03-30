@@ -48,10 +48,10 @@ jobs:
             echo "SECRET_KEY=test_env_secret_key" > analyticq-backend/config/.env.test
             echo '{"host": "localhost", "port": 8000}' > analyticq-backend/config/analyticq_backend_config.json
 
-        - name: Run Flake 8 linter
+        - name: Run Flake 8 linter on production code
           run: |
               pip install flake8
-              flake8 analyticq-backend
+              flake8 analyticq-backend/analyticq
 
         - name: Run unit tests and code coverage generation report
           run: |

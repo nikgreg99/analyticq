@@ -1,5 +1,6 @@
 import pytest
-from analyticq.engine.core.models import AnalyticQSASTScanResultModel
+from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
+                                          AnalyticQSASTScanResultModel)
 from analyticq.engine.tools import PyrightTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
@@ -70,9 +71,12 @@ async def test_full_pyright_analysis(sample_code, pyright_tool):
 
         assert len(results.issues) >= 0
 
-        assert "tool_name" in results.metadata
-        assert "metrics" in results.metadata
-        assert results.metadata["tool_name"] == "pyright"
+        for issue in results.issues:
+            isinstance(issue, AnalyticQSASTIssueModel)
+
+        assert "tool_name" in results.scan_metadata
+        assert "metrics" in results.scan_metadata
+        assert results.scan_metadata["tool_name"] == "pyright"
 
     except ScanConfigurationException as e:
         pytest.fail(f"Configuration error: {str(e)}")

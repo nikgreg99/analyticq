@@ -1,11 +1,10 @@
 from analyticq.preprocessing import CodebaseCleaner
-from analyticq.util.decorator import inject_task_dependecies
 from celery import shared_task
 
 
-@inject_task_dependecies
 @shared_task
-async def cleanup_old_codebase(codebase_cleaner: CodebaseCleaner):
+async def cleanup_old_codebase():
+    codebase_cleaner = CodebaseCleaner()
     """
     Asynchronously cleans up old codebase data using the provided CodebaseCleaner instance.
 

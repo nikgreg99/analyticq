@@ -1,7 +1,7 @@
 import pytest
 from analyticq.engine.core.models import (AnalyticQSASTIssueModel,
                                           AnalyticQSASTScanResultModel)
-from analyticq.engine.tools import GoSecTool
+from analyticq.engine.tools import GosecTool
 from analyticq.exception import (ScanConfigurationException,
                                  ScanTimeoutException)
 
@@ -9,7 +9,7 @@ from analyticq.exception import (ScanConfigurationException,
 @pytest.fixture(scope="module")
 def gosec_tool():
     """Initialize and configure GosecTool with test settings."""
-    tool = GoSecTool()
+    tool = GosecTool()
     # Reduce timeout for test environment
     tool.container_manager.runtime_config.timeout = 120
     return tool

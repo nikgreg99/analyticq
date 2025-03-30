@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
 import aiodocker.exceptions
 from analyticq.exception import ScanConfigurationException
@@ -13,6 +13,34 @@ from .tool_strategy_output import StringToolFormatter
 
 
 class AnalyticQSASTTool(ABC):
+    """Abstract base class representing a Static Application Security Testing (SAST) tool.
+
+    This class provides a common interface for different SAST tools to be integrated into
+    the AnalyticQ system. It handles container-based tool execution and result parsing.
+
+    Attributes:
+        supported_languages (Set[str]): Set of programming languages supported by the SAST tool.
+        analyzer (AnalyticQAnalyzer): Component responsible for running the analysis.
+        parser (AnalyticQResultParser): Component responsible for parsing scan results.
+        container_manager (AnalyticQContainerManager): Manager for container operations.
+        image_name (str): Name of the Docker image for the SAST tool.
+        image_tag (str): Tag of the Docker image for the SAST tool.
+
+    Example:
+        ```python
+        class MySASTTool(AnalyticQSASTTool):
+            supported_languages = {'python', 'javascript'}
+
+            def __init__(self):
+                super().__init__(
+                    analyzer=MyAnalyzer(),
+                    parser=MyParser(),
+                    container_manager=MyContainerManager(),
+                    image_name="my-sast-tool",
+                    image_tag="latest"
+        ```
+    """
+    supported_languages: Set[str] = set()
 
     def __init__(self,
                  analyzer: AnalyticQAnalyzer,
@@ -77,3 +105,8 @@ class AnalyticQSASTTool(ABC):
             raise ScanConfigurationException(
                 f"Invalid configuration: {str(e)}"
             ) from e
+
+    @classmethod
+    def get_supported_languages(cls) -> Set[str]:
+        """Return the set of languages supported by this tool"""
+        return cls.supported_languages

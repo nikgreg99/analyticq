@@ -6,6 +6,19 @@ from analyticq.manager import AnalyticQContainerManager
 
 
 class PylintTool(AnalyticQSASTTool):
+    """A tool for analyzing Python code using Pylint.
+    This tool integrates Pylint static code analyzer into the AnalyticQ framework.
+    It uses a containerized environment to run Pylint analysis on Python source code.
+    Attributes:
+        supported_languages (set): Set containing "python" as the only supported language.
+    Note:
+        - Pylint official repository: https://github.com/pylint-dev/pylint
+    Example:
+        >>> pylint_tool = PylintTool()
+        >>> results = pylint_tool.analyze(source_code)
+    """
+
+    supported_languages = {"python"}
 
     def __init__(self):
         container_manager = AnalyticQContainerManager(
