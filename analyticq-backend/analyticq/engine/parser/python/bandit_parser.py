@@ -39,6 +39,28 @@ class BanditParser(AnalyticQResultParser):
             raise e
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+        """
+        Parse the raw results from a Bandit SAST scan into a standardized format.
+
+        This method processes the raw JSON output from a Bandit security scan, extracts relevant
+        information about identified issues, and converts it into an AnalyticQSASTScanResultModel object.
+
+        Args:
+            raw_result (Dict[str, Any]): The raw scan results from Bandit in dictionary format.
+                Expected to contain 'results', 'metrics', and 'generated_at' keys.
+
+        Returns:
+            AnalyticQSASTScanResultModel: A standardized scan result object containing the parsed
+                security issues and metadata from the Bandit scan.
+
+        Raises:
+            ScanParserException: If there are any errors parsing the scan results, including:
+                - Invalid result format
+                - Missing required fields
+                - Unexpected data structures
+            TypeError: If the input data types are incorrect
+            AttributeError: If required attributes are missing from the input
+        """
         try:
             bandit_issues = raw_result.get("results", [])
             scan = super().parse_scan_result(bandit_issues)

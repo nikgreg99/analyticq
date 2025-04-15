@@ -1,3 +1,4 @@
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
@@ -7,6 +8,8 @@ from analyticq.exception import ScanParserException
 
 from .models import (AnalyticQConfidence, AnalyticQSASTIssueModel,
                      AnalyticQSASTScanResultModel, AnalyticQSeverity)
+
+logger = logging.getLogger(__name__)
 
 
 class AnalyticQResultParser(ABC):
@@ -197,12 +200,13 @@ class AnalyticQResultParser(ABC):
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             issues = []
+            new_scan_id = str(uuid.uuid4())
             for raw_issue in raw_result:
                 # Map fields using the tool-specific mapping
                 severity = self._get_field(raw_issue, "severity", "unknown")
                 confidence = self._get_field(raw_issue, "confidence", "unknown")
 
-                procossed_metadata = self._process_metadata(raw_issue)
+                processed_metadata = self._process_metadata(raw_issue)
 
                 issue = AnalyticQSASTIssueModel(
                     rule_id=self._get_field(raw_issue, "rule_id"),
@@ -213,16 +217,15 @@ class AnalyticQResultParser(ABC):
                     path=self._get_field(raw_issue, "path", default="unknown"),
                     start_line=self._get_field(raw_issue, "start_line", default=0),
                     end_line=self.map_endline(self._get_field(raw_issue, "end_line", default=0)),
-                    issue_metadata=procossed_metadata
+                    issue_metadata=processed_metadata
                 )
                 issues.append(issue)
 
             summary = self._generate_summary(issues)
             metadata = self._generate_metadata()
-            new_scan_id = str(uuid.uuid4())
 
             return AnalyticQSASTScanResultModel(
-                scan_id=str(new_scan_id),
+                scan_id=new_scan_id,
                 issues=issues,
                 summary=summary,
                 tool_name=self.tool_name,

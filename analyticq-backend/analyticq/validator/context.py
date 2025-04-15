@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -32,6 +33,8 @@ class AnalyticQContextModel(BaseModel):
     input_type: Optional[AnalyticQCodebaseType] = None  # Type of input (remote, repo, local, script or acrchive)
     branch: Optional[str] = None  # Only for Git repositories (default one is main/master)
     last_commit_hash: Optional[str] = None  # Only for Git repositories
+    created_at: Optional[datetime] = None  # Timestamp when the record is created
+    updated_at: Optional[datetime] = None  # Timestamp when the record is updated
 
     class Config:
         from_attributes = True

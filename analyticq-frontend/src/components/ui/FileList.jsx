@@ -10,7 +10,7 @@ import {
 } from  "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
 import { FaDeleteLeft } from "react-icons/fa6";
-
+import { formatBytes } from "components/utils/files";
 
 /**
  * A component that displays a list of files with their names and sizes.
@@ -40,17 +40,6 @@ export const FileList = ({
     if (!files || files.length === 0) return null;
 
     const sortedFiles = [...files].sort((a,b) => a.name.localeCompare(b.name));
-
-    const formatSize = (size) => {
-        const units = ["Bytes", "KB", "MB", "GB", "TB"]
-        let unitIndex = 0;
-        let fileSize = size;
-        while(fileSize >= 1024 &&  unitIndex < units.length - 1){
-            fileSize /= 1024;
-            unitIndex++;
-        }
-        return `${fileSize.toFixed(2)} ${units[unitIndex]}`;
-    }
 
     return (
         <VStack
@@ -96,7 +85,7 @@ export const FileList = ({
                 >
                     <Box flex="1" display="flex" justifyContent="space-between" alignItems="center">
                         <Text color="GrayText">{file.name}</Text>
-                        <Text color="GrayText">{formatSize(file.size)}</Text>
+                        <Text color="GrayText">{formatBytes(file.size)}</Text>
                     </Box>
                     {onDeleteFile && (
                         <IconButton

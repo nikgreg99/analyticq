@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Dict
 
 from analyticq.engine.core.models import AnalyticQConfidence, AnalyticQSeverity
 from analyticq.manager.db_manager import Base
-from sqlalchemy import JSON, Enum, ForeignKey, Integer, String
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 
 class AnalyticQSASTIssue(Base):
@@ -34,7 +36,7 @@ class AnalyticQSASTIssue(Base):
     __tablename__ = "analyticq_sast_issues"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-    scan_id: Mapped[str] = mapped_column(ForeignKey("analyticq_sast_scan_results.scan_id"), index=True)
+    scan_id: Mapped[int] = mapped_column(ForeignKey("analyticq_sast_scan_results.id"), index=True)
     # Rule Id can follow different convention, depending on the tool used for the analysis
     rule_id: Mapped[str] = mapped_column(String, nullable=False)
     severity: Mapped[AnalyticQSeverity] = mapped_column(Enum(AnalyticQSeverity), nullable=False)
@@ -48,5 +50,18 @@ class AnalyticQSASTIssue(Base):
     issue_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
     summary: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
+
     # Relationship (using forward reference)
     scan_result: Mapped["AnalyticQSASTScanResult"] = relationship("AnalyticQSASTScanResult", back_populates="issues")  # type: ignore # noqa
+
+
+@event.listens_for(AnalyticQSASTIssue, 'before_insert')
+def receive_before_insert_issue(mapper, connection, target):
+    target.created_at = datetime.now()
+
+
+@event.listens_for(AnalyticQSASTIssue, 'after_update')
+def receive_before_update_issue(mapper, connection, target):
+    target.updated_at = datetime.now()

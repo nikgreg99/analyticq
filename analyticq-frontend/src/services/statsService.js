@@ -1,6 +1,16 @@
 import axios from "axios";
 import { API_BASE_URL } from "config";
 
+/**
+ * Axios instance configured for making HTTP requests to the stats API endpoint.
+ * @constant {AxiosInstance}
+ * @default
+ * @example
+ * // Making a GET request using stats_api
+ * stats_api.get('/some-endpoint')
+ *   .then(response => console.log(response.data))
+ *   .catch(error => console.error(error));
+ */
 const stats_api = axios.create({
     baseURL: `${API_BASE_URL}/stats`,
     headers: {
@@ -16,16 +26,6 @@ const stats_api = axios.create({
  */
 export const getStats =(statsId) =>
     stats_api.get(`/${statsId}`).then((res) => res.data);
-
-
-/**
- * Retrieves the context information for a specific stats ID.
- * @param {string|number} statsId - The unique identifier of the stats.
- * @returns {Promise<Object>} A promise that resolves to the context data.
- * @throws {Error} If the API request fails.
- */
-export const getContextByStatsId = (statsId) =>
-    stats_api.get(`/${statsId}/context`).then((res) => res.data);
 
 
 /**

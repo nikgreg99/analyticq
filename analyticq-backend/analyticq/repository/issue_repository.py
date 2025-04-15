@@ -5,7 +5,7 @@ from typing import List, Optional
 from analyticq.engine.core import AnalyticQSASTIssueModel
 from analyticq.manager import AnalyticQDatabaseManager
 from analyticq.model.issue import AnalyticQSASTIssue
-from sqlalchemy import and_, delete, insert, select, update
+from sqlalchemy import and_, delete, func, insert, select, update
 
 
 class AnalyticQSASTIssueRepository:
@@ -24,7 +24,58 @@ class AnalyticQSASTIssueRepository:
             Deletes an issue by its ID asynchronously.
     """
 
-    async def get_by_id(self, issue_id: int) -> Optional["AnalyticQSASTIssueModel"]:
+    async def get_all_issues(self) -> List[AnalyticQSASTIssueModel]:
+        """
+        Retrieves all contexts from the database without pagination.
+
+        Returns:
+            List[AnalyticQContextModel]: A list of all context models in the database.
+
+        Example:
+            contexts = await context_repository.get_all_contexts()
+        """
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            stmt = select(AnalyticQSASTIssue)
+            result = await session.execute(stmt)
+            contexts = result.scalars().all()
+            return [AnalyticQSASTIssueModel.model_validate(context) for context in contexts]
+
+    async def get_all_issues_paginated(
+        self,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> List[AnalyticQSASTIssueModel]:
+        """
+        Retrieves a paginated list of all SAST issues from the database.
+
+        This method fetches SAST issues with pagination support, returning both the issues
+        and the total count of all issues in the database.
+
+        Args:
+            offset (int, optional): Number of records to skip. Defaults to 0.
+            limit (int, optional): Maximum number of records to return. Defaults to 100.
+
+        Returns:
+            Tuple[List[AnalyticQSASTIssueModel], int]: A tuple containing:
+                - List of SAST issues as AnalyticQSASTIssueModel objects
+                - Total count of all issues in the database
+
+        Example:
+            issues, total = await repo.get_all_issues_paginated(offset=20, limit=10)
+        """
+
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+
+            count_stmt = select(func.count()).select_from(AnalyticQSASTIssue)
+            count_result = await session.execute(count_stmt)
+            total_count = count_result.scalar_one()
+
+            query = select(AnalyticQSASTIssue).offset(offset).limit(limit)
+            result = await session.execute(query)
+            issues = result.scalars().all()
+            return [AnalyticQSASTIssueModel.model_validate(issue) for issue in issues], total_count
+
+    async def get_issue_by_id(self, issue_id: int) -> Optional["AnalyticQSASTIssueModel"]:
         """
         Retrieves an AnalyticQSASTIssue by its ID from the database.
 
@@ -41,7 +92,7 @@ class AnalyticQSASTIssueRepository:
                 return AnalyticQSASTIssueModel.model_validate(issue)
             return None
 
-    async def add(self, issue_data: "AnalyticQSASTIssueModel") -> AnalyticQSASTIssueModel:
+    async def add_issue(self, issue_data: "AnalyticQSASTIssueModel") -> AnalyticQSASTIssueModel:
         """
         Adds a new SAST issue to the database.
         Args:
@@ -63,7 +114,33 @@ class AnalyticQSASTIssueRepository:
             created_issue = result.scalar_one()
             return AnalyticQSASTIssueModel.model_validate(created_issue)
 
-    async def update_by_id(self, issue_id: int, issue_data: AnalyticQSASTIssueModel) -> AnalyticQSASTIssueModel:
+    async def add_multiple_issues(self, issue_data: List[AnalyticQSASTIssueModel]) -> List[AnalyticQSASTIssueModel]:
+        """
+        Adds multiple SAST issues to the database.
+
+        This method takes a list of AnalyticQSASTIssueModel objects and inserts them into the database.
+        Each issue must have a scan_id associated with it.
+
+        Args:
+            issue_data (List[AnalyticQSASTIssueModel]): A list of SAST issue models to be added to the database.
+
+        Returns:
+            List[AnalyticQSASTIssueModel]: A list of the created SAST issue models with their database IDs.
+
+        Raises:
+            ValueError: If any issue in the input list lacks a scan_id.
+        """
+        if any("scan_id" not in issue.model_dump() or issue.scan_id is None for issue in issue_data):
+            raise ValueError("Each issue must have a scan_id")
+
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            issue_list = [issue.model_dump() for issue in issue_data]
+            stmt = insert(AnalyticQSASTIssue).values(issue_list).returning(AnalyticQSASTIssue)
+            result = await session.execute(stmt)
+            created_issues = result.scalars().all()
+            return [AnalyticQSASTIssueModel.model_validate(issue) for issue in created_issues]
+
+    async def update_issue_by_id(self, issue_id: int, issue_data: AnalyticQSASTIssueModel) -> AnalyticQSASTIssueModel:
         """
         Updates a SAST issue in the database by its ID.
         Args:
@@ -85,7 +162,7 @@ class AnalyticQSASTIssueRepository:
             updated_issue = result.scalar_one()
             return AnalyticQSASTIssueModel.model_validate(updated_issue)
 
-    async def delete_by_id(self, issue_id: int) -> bool:
+    async def delete_issue_by_id(self, issue_id: int) -> bool:
         """
         Delete an issue from the database by its ID.
 
@@ -105,7 +182,7 @@ class AnalyticQSASTIssueRepository:
 
     async def filter_scan_issues(
             self,
-            scan_id: str,
+            scan_id: int,
             severity: Optional[str] = None,
             confidence: Optional[str] = None
     ) -> List[AnalyticQSASTIssueModel]:

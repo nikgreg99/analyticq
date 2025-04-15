@@ -15,7 +15,7 @@ class AnalyticQExcludedFiles(Base):
     """
     __tablename__ = "analyticq_excluded_files"
 
-    id: Mapped[int] = mapped_column(Integer, nullable=False, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, index=True, primary_key=True, autoincrement=True)
     count: Mapped[int] = mapped_column(Integer, nullable=False)
     total_size: Mapped[int] = mapped_column(Integer, nullable=False)
     files: Mapped[list] = mapped_column(JSON, nullable=False, default=[])

@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Dict, List
 
 from analyticq.manager.db_manager import Base
-from sqlalchemy import JSON, ForeignKey, Integer
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from .excluded_files import AnalyticQExcludedFiles
 
@@ -21,7 +23,7 @@ class AnalyticQStats(Base):
     """
     __tablename__ = "analyticq_stats"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
     context_id: Mapped[int] = mapped_column(Integer, ForeignKey("analyticq_scan_context.id"), nullable=True)
     total_files_scanned: Mapped[int] = mapped_column(Integer, nullable=False)
     total_size_scanned : Mapped[int] = mapped_column(Integer, nullable=False)
@@ -30,5 +32,18 @@ class AnalyticQStats(Base):
     language_statistics: Mapped[dict] = mapped_column(JSON, nullable=True, default={})
     files: Mapped[List[Dict]] = mapped_column(JSON, nullable=True, default=[])
 
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
+
     excluded_files: Mapped["AnalyticQExcludedFiles"] = relationship("AnalyticQExcludedFiles")
     context: Mapped["AnalyticQContext"] = relationship("AnalyticQContext", back_populates="stats") # type: ignore # noqa
+
+
+@event.listens_for(AnalyticQStats, 'before_insert')
+def receive_before_insert_scan(mapper, connection, target):
+    target.created_at = datetime.now()
+
+
+@event.listens_for(AnalyticQStats, 'after_update')
+def receive_before_update_scan(mapper, connetction, target):
+    target.updated_at = datetime.now()

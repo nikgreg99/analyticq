@@ -108,7 +108,7 @@ async def test_get_context_by_repo_name_not_found(context_service: AnalyticQCont
         await context_service.get_context_by_repo_name("test_repo")
 
     # Assert the exception details
-    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
     context_repository.get_by_repo_name.assert_called_once_with("test_repo")
 
 
@@ -197,3 +197,52 @@ async def test_delete_context_failure(context_service: AnalyticQContextService, 
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert exc_info.value.detail == "An error occurred while deleting the context."
     context_repository.delete_by_repo_name.assert_called_once_with("test_repo")
+
+
+@pytest.mark.asyncio
+async def test_create_context_if_not_exists_success(context_service: AnalyticQContextService, context_repository: AsyncMock):
+    """
+    Test creating a context if it doesn't exist successfully.
+    """
+    # Mock the repository to return a valid context
+    context_repository.add_if_not_exists.return_value = AnalyticQContextModel(**TEST_CONTEXT_DATA)
+
+    # Create a ContextCreateRequest object
+    context_data = ContextCreateRequest(**TEST_CONTEXT_DATA)
+
+    # Call the service method
+    result = await context_service.create_context_if_not_exists(context_data)
+
+    # Assert the result
+    assert isinstance(result, AnalyticQContextModel)
+    assert result.repo_name == "test_repo"
+    context_repository.add_if_not_exists.assert_called_once_with(context_data)
+
+
+@pytest.mark.asyncio
+async def test_create_context_if_not_exists_validation_error(context_service, context_repository):
+
+    context_repository.add_if_not_exists.side_effect = ValueError("Invalid input data")
+
+    context_data = ContextCreateRequest(**TEST_CONTEXT_DATA)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await context_service.create_context_if_not_exists(context_data)
+
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Invalid input data" in exc_info.value.detail
+    context_repository.add_if_not_exists.assert_called_once_with(context_data)
+
+
+@pytest.mark.asyncio
+async def test_create_context_if_not_exist_failure(context_service: AnalyticQContextService, context_repository: AsyncMock):
+    context_repository.add_if_not_exists.side_effect = Exception("Database Error")
+
+    context_data = ContextCreateRequest(**TEST_CONTEXT_DATA)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await context_service.create_context_if_not_exists(context_data)
+
+    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    assert "An error occurred while creating the context: Database Error" in exc_info.value.detail
+    context_repository.add_if_not_exists.assert_called_once_with(context_data)

@@ -9,6 +9,8 @@ from analyticq.repository.context_repository import \
 from analyticq.repository.scan_repository import (
     AnalyticQSASTIssue, AnalyticQSASTIssueModel, AnalyticQSASTScanResult,
     AnalyticQSASTScanResultModel, AnalyticQScanResultRepository)
+from analyticq.repository.stats_repository import \
+    AnalyticQStatsRepository  # noqa
 from sqlalchemy import insert, select, text
 
 BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
@@ -70,7 +72,6 @@ TEST_UPDATED_RESULT_DATA = {
 }
 
 TEST_ISSUE_DATA = {
-    "scan_id": "scan_123",
     "rule_id": "rule_456",
     "severity": "HIGH",
     "confidence": "HIGH",

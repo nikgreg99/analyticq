@@ -1,7 +1,6 @@
 import logging
 
-from analyticq.repository.stats_repository import (AnalyticQContextModel,
-                                                   AnalyticQStatsModel,
+from analyticq.repository.stats_repository import (AnalyticQStatsModel,
                                                    AnalyticQStatsRepository)
 from fastapi import HTTPException, status
 
@@ -38,7 +37,7 @@ class AnalyticQStatsService:
             including error handling and logging.
         """
         try:
-            stats = await self.repo.add_statistics(stats_data)
+            stats = await self.repo.add_stats(stats_data)
             if not stats:
                 logger.error("Failed to retrieve created preprocessing analysis from the repository.")
                 raise HTTPException(
@@ -84,6 +83,8 @@ class AnalyticQStatsService:
                     detail=f"Stats {stats_id} not found."
                 )
             return stats
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Unexpected error while retrieving stasts with ID {stats_id}: {str(e)}")
             raise HTTPException(
@@ -91,15 +92,15 @@ class AnalyticQStatsService:
                 detail=f"An unexpected error occurred while retrieving the stats. {stats_id}"
             )
 
-    async def get_context_by_stats_id(self, stats_id: int) -> AnalyticQContextModel:
+    async def get_stats_by_context_id(self, context_id: int) -> AnalyticQStatsModel:
         """
         Retrieves the context associated with a specific stats ID.
 
         Args:
-            stats_id (int): The ID of the stats entry to get the context for.
+            contetx:id (int): The ID of the stats entry to get the context for.
 
         Returns:
-            AnalyticQContextModel: The context model associated with the stats ID.
+            AnalyticQStatsModel:: The stats model ssociated with the context ID.
 
         Raises:
             HTTPException:
@@ -107,18 +108,21 @@ class AnalyticQStatsService:
                 - 500 if an unexpected error occurs during retrieval
         """
         try:
-            context = await self.repo.get_context_by_id(stats_id)
-            if not context:
-                logger.error(f"Context related to stats {stats_id} not found.")
+            stats = await self.repo.get_stats_by_context_id(context_id)
+            if not stats:
+                logger.error(f"No stats {context_id} not found.")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Context related to stats {stats_id} not found."
+                    detail=f"Stats releated to contect {context_id} not found."
                 )
+            return stats
+        except HTTPException:
+            raise
         except Exception as e:
-            logger.error(f"Unexpected error while retrieving content related to stats with ID {stats_id}: {str(e)}")
+            logger.error(f"Unexpected error while retrieving content related to stats with ID {context_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"An unexpected error occurred while retrieving the stats. {stats_id}"
+                detail=f"An unexpected error occurred while retrieving the stats. {context_id}"
             )
 
     async def update_stats(self, stats_id: int, stats_data: AnalyticQStatsModel) -> AnalyticQStatsModel:
@@ -144,6 +148,8 @@ class AnalyticQStatsService:
                 )
             logger.info(f"Stats updated successfully: {stats.id}")
             return stats
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"An unexpected error occurred while retrieving the stats with ID {stats_id}: {str(e)}")
             raise HTTPException(
@@ -179,6 +185,8 @@ class AnalyticQStatsService:
                     detail=f"Stats with {stats_id} not found"
                 )
             logger.info(f"Ststs deleted successfully: {stats_id}")
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

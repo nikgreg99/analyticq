@@ -46,7 +46,7 @@ async def test_docker_available(image_manager):
 
 @pytest.mark.asyncio
 async def test_docker_not_available(image_manager):
-    with patch("asyncio.create_subprocess_exec") as mock_create_subprocess_exec:
+    with patch("asyncio.to_thread") as mock_create_subprocess_exec:
         mock_process = AsyncMock()
         mock_process.returncode = 1
         mock_process.communicate.return_value = (b"", b"Docker command not found")
@@ -58,7 +58,7 @@ async def test_docker_not_available(image_manager):
 
 @pytest.mark.asyncio
 async def test_docker_command_not_found(image_manager):
-    with patch("asyncio.create_subprocess_exec") as mock_create_subprocess_exec:
+    with patch("asyncio.to_thread") as mock_create_subprocess_exec:
         mock_create_subprocess_exec.side_effect = FileNotFoundError("Docker command not found")
 
         with pytest.raises(DockerNotFoundException):

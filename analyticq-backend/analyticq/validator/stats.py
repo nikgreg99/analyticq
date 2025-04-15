@@ -100,6 +100,7 @@ class AnalyticQStatsModel(BaseModel):
             the analysis.
     """
     id: Optional[int] = None
+    context_id: Optional[int] = None
     excluded_files_id: Optional[int] = None
     files: Dict[str, List[AnalyticQFileInfoModel]]
     language_statistics: Dict[str, AnalyticQCodebaseLanguageStatistics]

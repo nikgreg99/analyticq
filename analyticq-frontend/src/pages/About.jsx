@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
-  Box,
   Container,
   Heading,
   Text,
   VStack
 } from '@chakra-ui/react';
+import { updatePageMetadata } from 'components/utils/metadata';
 
 export const AboutPage = () => {
+
+  useEffect(() => {
+    updatePageMetadata(
+      'About the scanner',
+      'About the SAST Scanner',
+      "/about"
+    )
+  },[]);
+
   return (
     <Container maxW="container.md" py={16}>
       <VStack
@@ -20,17 +29,17 @@ export const AboutPage = () => {
           size="xl"
           ml={2}
           color="blackAlpha.800"
-          >
-            AnalyticQ SAST Analysis Tool
+        >
+          AnalyticQ SAST Analysis Tool
         </Heading>
 
         <Text
-            textAlign="center"
-            fontSize="lg"
-            color="blackAlpha.800"
-            maxW="600px"
-          >
-            Master's Thesis Project developied by Nicolas Gregori
+          textAlign="center"
+          fontSize="lg"
+          color="blackAlpha.800"
+          maxW="600px"
+        >
+          Master's Thesis Project developed by Nicolas Gregori
         </Text>
 
         <Text
@@ -39,9 +48,9 @@ export const AboutPage = () => {
           maxW="700px"
           lineClamp="tall"
           color="blackAlpha.800"
-          >
-              A project focused  on a Static Application
-              Security Testing (SAST) system tool to identify vulnerabilities in source code.
+        >
+          A project focused  on a Static Application
+          Security Testing (SAST) system tool to identify vulnerabilities in source code.
         </Text>
       </VStack>
     </Container>

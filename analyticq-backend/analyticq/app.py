@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import platform
 import subprocess
 import time
@@ -171,9 +172,7 @@ async def backend_context(app: FastAPI):
         AnalyticQToolDiscoverer.discover_and_register_tools()
 
         analyticq_mangaer = AnalyticQSASTManager()
-        prepocessing_data = await analyticq_mangaer.scan_codebase("https://github.com/SmartData-Polito/cannypot")
-        print(prepocessing_data)
-
+        await analyticq_mangaer.scan_codebase("https://github.com/paulc4/microservices-demo")
         logger.info(f"Analyticq backend started in {time.time() - start_time:2f} seconds")
 
         yield
@@ -203,10 +202,11 @@ def set_app_CORS_policy(app: FastAPI) -> None:
     Example:
         set_app_CORS_policy(app)
     """
-    origins = []
+    origins = [os.environ.get("ANALYTICQ_FRONTEND_CORS_URL")]
+    logger.info(origins)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"]
@@ -230,13 +230,15 @@ def set_app_routes(app: FastAPI) -> None :
     The following routers are included:
         - stats_router: Handles statistics-related endpoints
         - context_router: Handles context-related endpoints
+        - scan_router. Handles scan-related endpoints
         - tool_router: Handles tool-related endpoints
         - issue_router: Handles issue-related endpoints
     """
-    from analyticq.api import contexts, issues, stats, tools
+    from analyticq.api import contexts, issues, scans, stats, tools
 
     app.include_router(stats.stats_router)
     app.include_router(contexts.context_router)
+    app.include_router(scans.scan_router)
     app.include_router(tools.tool_router)
     app.include_router(issues.issue_router)
 

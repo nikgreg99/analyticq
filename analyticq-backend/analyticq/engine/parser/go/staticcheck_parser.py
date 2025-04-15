@@ -27,6 +27,18 @@ class StaticCheckParser(AnalyticQResultParser):
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
+        """
+        Maps the severity level from the tool-specific format to AnalyticQ severity format.
+
+        Args:
+            severity_level (str): The severity level from the tool output
+
+        Returns:
+            AnalyticQSeverity: The mapped severity level in AnalyticQ format
+
+        Raises:
+            ValueError: If the severity level cannot be mapped to a valid AnalyticQSeverity
+        """
         try:
             return AnalyticQSeverity.parse(self.severity_mapping[severity_level])
         except ValueError as e:

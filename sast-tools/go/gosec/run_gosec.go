@@ -18,8 +18,11 @@ func main() {
 
 	// Check if /code directory exists and is not empty
 	entries, err := os.ReadDir(codePath)
-	if err != nil || len(entries) == 0 {
-		log.Fatal("Directory /code is empty or not mounted correctly")
+	if err != nil {
+		log.Fatalf("Error accessing /code directory: %v", err)
+	}
+	if len(entries) == 0 {
+		log.Fatal("Directory /code is empty")
 	}
 
 	// Check gosec version
@@ -35,13 +38,24 @@ func main() {
 	goModPath := filepath.Join(codePath, "go.mod")
 	_, err = os.Stat(goModPath)
 
-	var args []string
+	// Prepare command arguments
+	args := []string{"-fmt=json", "-out", outputPath}
+
+	// Add stdout flag only if needed
+	if os.Getenv("PRINT_STDOUT") == "true" {
+		args = append(args, "-stdout")
+	}
+
+	// Scan based on module presence
 	if os.IsNotExist(err) {
-		log.Println("No go.mod file found, scanning all Go files in /code.")
-		args = []string{"-fmt=json", "-out", outputPath, "-stdout", "./..."} // Scansiona tutto il codice in modo ricorsivo
+		log.Println("No go.mod file found, scanning all Go files in /code")
+		// For non-module mode, specific file patterns may work better
+		args = append(args, "./...")
 	} else {
-		log.Println("go.mod file found, scanning as Go module.")
-		args = []string{"-fmt=json", "-out", outputPath, "-stdout", "./..."} // Scansiona come modulo Go
+		log.Println("go.mod file found, scanning as Go module")
+		// For module mode, let's make sure we're in the right context
+		os.Setenv("GO111MODULE", "on")
+		args = append(args, "./...")
 	}
 
 	// Log the exact gosec command being executed
@@ -49,16 +63,21 @@ func main() {
 
 	// Run gosec inside /code directory
 	cmd = exec.Command("gosec", args...)
-	cmd.Dir = codePath // Set working directory to the code path
+	cmd.Dir = codePath
+	cmd.Stdout = os.Stdout // Show stdout directly
+	cmd.Stderr = os.Stderr // Show stderr directly
 
-	output, err := cmd.CombinedOutput()
+	err = cmd.Run()
 	if err != nil {
 		log.Printf("Gosec completed with issues: %v", err)
 	}
 
-	// Log gosec output
-	log.Printf("Gosec output: %s", string(output))
-	log.Printf("Gosec report saved to %s", outputPath)
+	// Verify output file exists
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		log.Printf("Warning: Output file %s was not created", outputPath)
+	} else {
+		log.Printf("Gosec report saved to %s", outputPath)
+	}
 
 	// Always exit with 0 regardless of gosec findings
 	os.Exit(0)

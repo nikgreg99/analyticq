@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class AnalyticQConfidence(Enum):
@@ -17,7 +18,7 @@ class AnalyticQConfidence(Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
-    CRITICAL = "CRIICAL"
+    CRITICAL = "CRITICAL"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
@@ -72,7 +73,7 @@ class AnalyticQSASTIssueModel(BaseModel):
         metadata (Dict[str, Any]): Additional information about the issue. Defaults to None.
     """
     id: Optional[int] = None
-    scan_id: Optional[str] = ""
+    scan_id: Optional[int] = None
     rule_id: str
     severity: AnalyticQSeverity = AnalyticQSeverity.UNKNOWN
     confidence: AnalyticQConfidence = AnalyticQConfidence.UNKNOWN
@@ -84,6 +85,16 @@ class AnalyticQSASTIssueModel(BaseModel):
     column: int = Field(default=0, ge=0)
     issue_metadata: Dict[str, Any] = Field(default={})
     summary: Dict[str, Any] = Field(default={})
+
+    created_at: Optional[datetime] = None  # Timestamp when the record is created
+    updated_at: Optional[datetime] = None  # Timestamp when the record is updated
+
+    @field_validator('severity', 'confidence', mode='before')
+    @classmethod
+    def convert_enum_to_string(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
     class Config:
         from_attributes = True
@@ -108,6 +119,9 @@ class AnalyticQSASTScanResultModel(BaseModel):
     issues: List[AnalyticQSASTIssueModel] = []
     summary: Dict[str, Any] = Field(default_factory=dict)
     scan_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    created_at: Optional[datetime] = None  # Timestamp when the record is created
+    updated_at: Optional[datetime] = None  # Timestamp when the record is updated
 
     class Config:
         from_attributes = True

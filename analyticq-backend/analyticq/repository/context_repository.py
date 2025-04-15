@@ -1,13 +1,16 @@
+import logging
 from typing import List, Optional
 
 from analyticq.manager import AnalyticQDatabaseManager
-from analyticq.model.scan_context import AnalyticQContext
+from analyticq.model.context import AnalyticQContext
 from analyticq.repository.scan_repository import (
     AnalyticQSASTScanResult, AnalyticQSASTScanResultModel,
     AnalyticQScanResultRepository)
 from analyticq.validator.context import AnalyticQContextModel
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.orm import selectinload
+
+logger = logging.getLogger(__name__)
 
 
 class AnalyticQContextRepository:
@@ -47,26 +50,30 @@ class AnalyticQContextRepository:
         Example:
         contexts, total = await context_repository.get_contexts_paginated(1, 10)
         """
+
+        if page < 1 or page_size < 1:
+            raise ValueError("Page and page_size must be positive integers")
+
         async with AnalyticQDatabaseManager().get_db_session() as session:
             # Get total count
-            count_stmt = select(AnalyticQDatabaseManager.func.count()).select_from(AnalyticQContext)
+            count_stmt = select(func.count()).select_from(AnalyticQContext)
             count_result = await session.execute(count_stmt)
             total_count = count_result.scalar_one()
 
             # Get paginated results
             offset = (page - 1) * page_size
-            stmt = select(AnalyticQContext).offset(offset).limit(page_size)
+            stmt = select(AnalyticQContext).order_by(AnalyticQContext.id).offset(offset).limit(page_size)
             result = await session.execute(stmt)
             contexts = result.scalars().all()
 
             return [AnalyticQContextModel.model_validate(context) for context in contexts], total_count
 
-    async def get_by_id(self, scan_id: int) -> Optional["AnalyticQContextModel"]:
+    async def get_by_id(self, id: int) -> Optional["AnalyticQContextModel"]:
         """
         Retrieves a context by its scan ID from the database.
 
         Args:
-            scan_id (int): The ID of the scan context to retrieve.
+            id (int): The ID of the scan context to retrieve.
 
         Returns:
             Optional[AnalyticQContextModel]: The context model if found, None otherwise.
@@ -75,7 +82,7 @@ class AnalyticQContextRepository:
             context = await context_repository.get_by_id(123)
         """
         async with AnalyticQDatabaseManager().get_db_session() as session:
-            scan_context = await session.get(AnalyticQContext, scan_id)
+            scan_context = await session.get(AnalyticQContext, id)
             if scan_context:
                 return AnalyticQContextModel.model_validate(scan_context)
 
@@ -95,9 +102,33 @@ class AnalyticQContextRepository:
         async with AnalyticQDatabaseManager().get_db_session() as session:
             stmt = select(AnalyticQContext).where(AnalyticQContext.repo_name == repo_name)
             result = await session.execute(stmt)
-            scan_context = result.scalars().first()
-            if scan_context:
-                return AnalyticQContextModel.model_validate(scan_context)
+            context = result.scalars().first()
+            if context:
+                return AnalyticQContextModel.model_validate(context)
+            return None
+
+    async def get_by_repo_name_prefix(self, prefix: str) -> List[AnalyticQSASTScanResultModel]:
+        """
+        Retrieves a list of AnalyticQ context models that match a repository name prefix.
+
+        Args:
+            prefix (str): The prefix to search for in repository names.
+
+        Returns:
+            List[AnalyticQSASTScanResultModel]: A list of AnalyticQ context models where the repository name
+            starts with the given prefix. Returns an empty list if no matches are found.
+
+        Example:
+            contexts = await repo.get_by_repo_name_prefix("test-")
+            # Returns contexts with repo names like "test-repo1", "test-repo2", etc.
+        """
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            stmt = select(AnalyticQContext).where(AnalyticQContext.repo_name.startswith(prefix))
+            result = await session.execute(stmt)
+            contexts = result.scalars().all()
+            if contexts:
+                return [AnalyticQContextModel.model_validate(context) for context in contexts]
+            return []
 
     async def get_scans_by_repo_name(self, repo_name: str) -> List[AnalyticQSASTScanResultModel]:
         """
@@ -150,6 +181,33 @@ class AnalyticQContextRepository:
             stmt = insert(AnalyticQContext).values(context_data.model_dump()).returning(AnalyticQContext)
             result = await session.execute(stmt)
             new_context = result.scalar_one()
+            return AnalyticQContextModel.model_validate(new_context)
+
+    async def add_if_not_exists(self, context_data: "AnalyticQContextModel") -> AnalyticQContextModel:
+        """
+        Adds a new context to the database if it doesn't already exist based on repo_name.
+
+        Args:
+            context_data (AnalyticQContextModel): The context data model to be added.
+
+        Returns:
+            AnalyticQContextModel: The existing context if found, otherwise the newly created context.
+
+        Raises:
+            SQLAlchemyError: If there is a database error during the operation.
+        """
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            stmt = select(AnalyticQContext).where(AnalyticQContext.repo_name == context_data.repo_name)
+            result = await session.execute(stmt)
+            existing_context = result.scalars().first()
+
+            if existing_context:
+                return AnalyticQContextModel.model_validate(existing_context)
+
+            stmt = insert(AnalyticQContext).values(context_data.model_dump()).returning(AnalyticQContext)
+            result = await session.execute(stmt)
+            new_context = result.scalar_one()
+
             return AnalyticQContextModel.model_validate(new_context)
 
     async def update_by_repo_name(self, repo_name: str, **kwargs) -> AnalyticQContextModel:

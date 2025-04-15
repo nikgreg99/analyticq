@@ -25,7 +25,6 @@ class AnalyticQDatabaseManager:
 
     def __init__(self):
         if not hasattr(self, "_initialized"):
-            print(os.environ.get("ANALYTICQ_DB_URL"))
             self._engine = create_async_engine(
                 os.environ.get("ANALYTICQ_DB_URL"),
                 echo=True

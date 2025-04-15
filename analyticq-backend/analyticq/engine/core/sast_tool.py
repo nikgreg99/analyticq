@@ -98,7 +98,7 @@ class AnalyticQSASTTool(ABC):
                 timeout=timeout
             )
             dict_output = StringToolFormatter.from_str_to_dict(raw_result)
-            print(dict_output)
+            # print(dict_output)
             return self.parser.parse_scan_result(dict_output)
 
         except ValueError as e:

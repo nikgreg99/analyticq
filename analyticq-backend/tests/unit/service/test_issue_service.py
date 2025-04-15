@@ -117,7 +117,7 @@ async def test_delete_issue_success(issue_service, issue_repository):
     Test deleting an issue successfully.
     """
     # Mock the repository to return None
-    issue_repository.delete_by_id.return_value = None
+    issue_repository.delete_by_id.return_value = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
 
     # Call the service method
     await issue_service.delete_issue(1)
@@ -178,5 +178,5 @@ async def test_delete_issue_failure(issue_service, issue_repository):
 
     # Assert the exception details
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert exc_info.value.detail == "Error deleting issue: Database error"
+    assert exc_info.value.detail == "An unexpected error occurred while deleting the issue."
     issue_repository.delete_by_id.assert_called_once_with(1)

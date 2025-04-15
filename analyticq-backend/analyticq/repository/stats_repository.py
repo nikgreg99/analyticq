@@ -5,10 +5,9 @@ from typing import Optional
 from analyticq.manager import AnalyticQDatabaseManager
 from analyticq.model.excluded_files import AnalyticQExcludedFiles
 from analyticq.model.stats import AnalyticQStats
-from analyticq.validator.context import AnalyticQContextModel
 from analyticq.validator.stats import AnalyticQStatsModel
 from sqlalchemy import delete, insert, select, update
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 
 class AnalyticQStatsRepository:
@@ -29,7 +28,7 @@ class AnalyticQStatsRepository:
             Deletes statistics data from the database.
     """
 
-    async def add_statistics(self, stats_data: AnalyticQStatsModel) -> AnalyticQStatsModel:
+    async def add_stats(self, stats_data: AnalyticQStatsModel) -> AnalyticQStatsModel:
         """
         Adds statistics data to the database.
 
@@ -43,7 +42,7 @@ class AnalyticQStatsRepository:
             SQLAlchemyError: If there's an error during database operation.
         """
         async with AnalyticQDatabaseManager().get_db_session() as session:
-            stats_dict = stats_data.model_dump()
+            stats_dict = stats_data.model_dump(exclude={"id"})
 
         # First create the excluded_files record if needed
             if 'excluded_files' in stats_dict:
@@ -59,7 +58,7 @@ class AnalyticQStatsRepository:
 
             await session.refresh(new_stats, ['excluded_files'])
 
-        return AnalyticQStatsModel.model_validate(new_stats)
+            return AnalyticQStatsModel.model_validate(new_stats)
 
     async def get_stats_by_id(self, id: int) -> Optional["AnalyticQStatsModel"]:
         """
@@ -87,26 +86,34 @@ class AnalyticQStatsRepository:
                 return AnalyticQStatsModel.model_validate(stats_record)
             return None
 
-    async def get_context_by_id(self, context_id: int) -> Optional[AnalyticQContextModel]:
+    async def get_stats_by_context_id(self, context_id: int) -> Optional[AnalyticQStatsModel]:
         """
         Retrieve the context associated with a specific stats ID from the database.
         Args:
-            context_id (int): The ID of the statistics analysis to fetch the context for.
+            stats_id (int): The ID of the statistics analysis to fetch the context for.
         Returns:
             Optional[AnalyticQContextModel]: The context model if found, None otherwise.
         Notes:
             This method queries the database for a stats analysis entry matching the given ID
             and returns its associated context if it exists.
-        """
+            """
         async with AnalyticQDatabaseManager().get_db_session() as session:
-            stmt = (select(AnalyticQStats)
-                    .options(joinedload(AnalyticQStats.context))
-                    .where(AnalyticQStats.id == context_id)
-                    )
+            stmt = (
+                select(AnalyticQStats)
+                .options(
+                    selectinload(AnalyticQStats.excluded_files),
+                    selectinload(AnalyticQStats.context)
+                )
+                .where(AnalyticQStats.context_id == context_id)
+                .order_by(AnalyticQStats.created_at.desc())
+                .limit(1)
+            )
             result = await session.execute(stmt)
-            analysis = result.scalars().first()
-
-            return AnalyticQContextModel.model_validate(analysis.context) if analysis else None
+            stats_record = result.scalar_one_or_none()
+            if stats_record:
+                await session.refresh(stats_record)
+                return AnalyticQStatsModel.model_validate(stats_record)
+            return None
 
     async def update_stats(self, stats_id: int, stats_data: AnalyticQStatsModel) -> AnalyticQStatsModel:
         """"

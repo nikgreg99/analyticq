@@ -48,8 +48,6 @@ class AnalyticQCeleryManager:
         1. Updates Celery configuration from settings (excluding autodiscover_tasks and beat_schedule)
         2. Autodiscovers tasks from specified packages if autodiscover_tasks is configured
         3. Updates the beat schedule with CELERY_BEAT configuration
-        Returns:
-            None
         """
         celery_conf_dict = self.settings.model_dump(exclude=["autodiscover_tasks", "beat_schedule"])
         self.celery.conf.update(celery_conf_dict)

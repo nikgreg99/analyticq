@@ -19,6 +19,49 @@ class AnalyticQSASTIssueService:
     def __init__(self, issue_repository: "AnalyticQSASTIssueRepository"):
         self.issue_repo = issue_repository
 
+    async def get_all_issues(self) -> List[AnalyticQSASTIssueModel]:
+        try:
+            return await self.issue_repo.get_all_issues()
+        except Exception as e:
+            logger.error(f"Error getting all issues: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error getting all issues: {str(e)}"
+            )
+
+    async def get_all_issues_paginated(self, offset, limit) -> List[AnalyticQSASTIssueModel]:
+        """
+        Retrieves a paginated list of SAST issues from the database.
+
+        Args:
+            offset (int): The number of records to skip before starting to collect results.
+            limit (int): The maximum number of records to return.
+
+        Returns:
+            List[AnalyticQSASTIssueModel]: A list of SAST issue models within the specified pagination range.
+
+        Raises:
+            HTTPException:
+                - HTTP 404 if no issues are found in the database
+                - HTTP 500 if there's an internal server error during retrieval
+        """
+        try:
+            issues, total_counts = await self.issue_repo.get_all_issues_paginated(offset, limit)
+            if not issues:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Issue table is empty:"
+                )
+            return issues, total_counts
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting paginated issues: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error getting paginated issues: {str(e)}"
+            )
+
     async def get_issue(self, issue_id: int) -> AnalyticQSASTIssueModel:
         """
         Retrieves a specific SAST issue by its ID.
@@ -31,13 +74,15 @@ class AnalyticQSASTIssueService:
         """
         try:
 
-            issue = await self.issue_repo.get_by_id(issue_id)
+            issue = await self.issue_repo.get_issue_by_id(issue_id)
             if not issue:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Issue {issue_id} not found"
                 )
             return issue
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Error getting issue {issue_id}: {str(e)}")
             raise HTTPException(
@@ -60,7 +105,7 @@ class AnalyticQSASTIssueService:
                 - HTTP 500: Internal server error when issue creation fails or cannot be retrieved.
         """
         try:
-            issue = await self.issue_repo.add(issue_data)
+            issue = await self.issue_repo.add_issue(issue_data)
             if not issue:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -80,6 +125,30 @@ class AnalyticQSASTIssueService:
                 detail=f"Error creating issue: {str(e)}"
             )
 
+    async def create_multiple_issue(self, issues_data: List[IssueCreateRequest]) -> List[AnalyticQSASTIssueModel]:
+        try:
+            issues = await self.issue_repo.add_multiple_issues([AnalyticQSASTIssueModel(**issue.model_dump()) for issue in issues_data])
+            if not issues:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve created issues"
+                )
+            return issues
+        except HTTPException:
+            raise
+        except ValueError as e:
+            logger.error(f"Validation error while creating multiple issues: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid input data: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Error creating multiple issues: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error creating multiple issues: {str(e)}"
+            )
+
     async def update_issue(self, issue_id: int, updated_data: IssueUpdateRequest) -> AnalyticQSASTIssueModel:
         """
         Updates an existing issue with the provided data.
@@ -97,7 +166,7 @@ class AnalyticQSASTIssueService:
                 - 500: If there's an error during the update process.
         """
         try:
-            issue = await self.issue_repo.update_by_id(issue_id, **updated_data.model_dump(exclude_unset=True))
+            issue = await self.issue_repo.update_issue_by_id(issue_id, **updated_data.model_dump(exclude_unset=True))
             if not issue:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -105,6 +174,8 @@ class AnalyticQSASTIssueService:
                 )
             logger.info(f"Issue updated successfully: {issue.id}")
             return issue
+        except HTTPException:
+            raise
         except ValueError as e:
             logger.error(f"Validation error while updating issue: {str(e)}")
             raise HTTPException(
@@ -159,7 +230,7 @@ class AnalyticQSASTIssueService:
             None
         """
         try:
-            deleted = await self.issue_repo.delete_by_id(issue_id)
+            deleted = await self.issue_repo.delete_issue_by_id(issue_id)
             if not deleted:
                 logger.error(f"Issue {issue_id} not found during deletion.")
                 raise HTTPException(
@@ -167,6 +238,8 @@ class AnalyticQSASTIssueService:
                     detail=f"Issue {issue_id} not found."
                 )
             logger.info(f"Issue deleted successfully: {issue_id}")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Unexpected error while deleting issue {issue_id}: {str(e)}")
             raise HTTPException(

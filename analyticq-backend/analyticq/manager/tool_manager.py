@@ -1,10 +1,15 @@
 import logging
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from analyticq.engine.core import AnalyticQSASToolRegistry
 from analyticq.preprocessing import CodebasePreprocessor
+from analyticq.repository.context_repository import AnalyticQContextRepository
+from analyticq.repository.scan_repository import (
+    AnalyticQSASTScanResultModel, AnalyticQScanResultRepository)
+from analyticq.service import AnalyticQContextService, AnalyticQScanService
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +29,37 @@ class AnalyticQSASTManager:
     def __init__(self):
         self.registry = AnalyticQSASToolRegistry()
         self.codebase_preprocesseor = CodebasePreprocessor()
+        self.context_service = AnalyticQContextService(AnalyticQContextRepository())
+        self.scan_service = AnalyticQScanService(AnalyticQScanResultRepository())
+
+    async def save_scan_for_codebase(
+            self,
+            path: Path,
+            scan: AnalyticQSASTScanResultModel
+    ) -> None:
+
+        if not path or not path.exists():
+            logger.warning("Cannot save scan: Invalid or non-existent codebase path")
+        try:
+            repo_name = path.name
+            logger.info(f"Scan saved for context repository: {repo_name}")
+            context = await self.context_service.get_context_by_repo_name(repo_name)
+            context_id = context.id
+            scan.context_id = context_id
+            await self.scan_service.create_scan(scan)
+        except Exception as e:
+            logger.error(f"Failed to save scan for codebase at {path}: {str(e)}")
 
     async def scan_codebase(
             self,
             codebase_path: str,
             config_paths: Optional[Dict[str, str]] = None,
-            timeout: Optional[int] = None
+            timeout: Optional[int] = None,
+            branch="master"
     ) -> Dict[str, Any]:
 
         # Preprocess the codebase to gather file and language information
-        codebase_data = await self.codebase_preprocesseor.preprocess_codebase(codebase_url=codebase_path)
+        codebase_data = await self.codebase_preprocesseor.preprocess_codebase(codebase_url=codebase_path, branch="master")
 
         # Identify root folders for each language
         language_to_root_folders = self.identify_root_folders(codebase_data)
@@ -76,6 +102,8 @@ class AnalyticQSASTManager:
                             codebase_path=folder,
                             timeout=timeout
                         )
+                        print(result)
+                        await self.save_scan_for_codebase(Path(codebase_path), result)
                         folder_results[folder] = result
 
                     language_results[tool_name] = {
@@ -83,9 +111,7 @@ class AnalyticQSASTManager:
                         "results": folder_results
                     }
 
-                    print(codebase_data)
                     language_stats = codebase_data.get("language_statistics", {}).get(language, {})
-                    print(language_stats)
 
                     scan_results[language] = {
                         "tools_run": list(tools_for_language),
@@ -98,7 +124,6 @@ class AnalyticQSASTManager:
                 except Exception as e:
                     logger.error(f"Error running {tool_name} tool on {language} files: {str(e)}")
                     language_results[tool_name] = {"error": str(e)}
-
         return scan_results
 
     def identify_root_folders(self, file_data: Dict[str, Any]) -> Dict[str, List[str]]:

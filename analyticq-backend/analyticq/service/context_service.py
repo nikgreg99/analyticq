@@ -113,6 +113,62 @@ class AnalyticQContextService:
                 detail=f"An error occurred while creating the context: {str(e)}"
             )
 
+    async def create_context_if_not_exists(self, context_data: ContextCreateRequest) -> AnalyticQContextModel:
+        """
+        Creates a new context if it doesn't already exist.
+
+        This method attempts to create a new context based on the provided data. If creation fails
+        or validation errors occur, appropriate HTTP exceptions are raised.
+
+        Args:
+            context_data (ContextCreateRequest): The data for creating the new context
+
+        Returns:
+            AnalyticQContextModel: The created context model
+
+        Raises:
+            HTTPException: With status code 400 if input validation fails
+            HTTPException: With status code 500 if context creation fails or other errors occur
+        """
+        try:
+            context = await self.context_repo.add_if_not_exists(context_data)
+            if not context:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve created context"
+                )
+            return context
+        except ValueError as e:
+            logger.error(f"Validation error while creating context: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid input data: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Error creating context: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An error occurred while creating the context: {str(e)}"
+            )
+
+    async def get_context_by_id(self, id: str) -> AnalyticQContextModel:
+        try:
+            context = await self.context_repo.get_by_id(id)
+            if not context:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Failed to retrieve created context"
+                )
+            return context
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while retrieving context for context with ID {id}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An error occurred while retrieving the context: {str(e)}"
+            )
+
     async def get_context_by_repo_name(self, repo_name: str) -> AnalyticQContextModel:
         """
         Retrieve a context by repository name.
@@ -135,8 +191,44 @@ class AnalyticQContextService:
                     detail=f"Context with name {repo_name} not found"
                 )
             return context
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"Unexpected error while retrieving context for repository {repo_name}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An error occurred while retrieving the context: {str(e)}"
+            )
+
+    async def get_contexts_by_repo_prefix(self, repo_name_prefix: str) -> List[AnalyticQContextModel]:
+        """
+        Retrieve contexts by repository name prefix.
+
+        This method fetches all contexts that match a given repository name prefix from the database.
+
+        Args:
+            repo_name_prefix (str): The prefix of the repository name to search for.
+
+        Returns:
+            List[AnalyticQContextModel]: A list of context objects matching the repository name prefix.
+
+        Raises:
+            HTTPException: If there's an error retrieving the contexts:
+                - HTTP_500_INTERNAL_SERVER_ERROR: For unexpected server-side errors.
+
+        Example:
+            >>> contexts = await context_service.get_contexts_by_repo_prefix("my-repo")
+        """
+        try:
+            contexts = await self.context_repo.get_by_repo_name_prefix(repo_name_prefix)
+            if not contexts:
+                logger.error(f"Context with repo name prefix {repo_name_prefix} not found.")
+                return []
+            return contexts
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while retrieving context for repository {repo_name_prefix}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An error occurred while retrieving the context: {str(e)}"
@@ -190,6 +282,8 @@ class AnalyticQContextService:
                 )
             logger.info(f"Context updated successfully: {repo_name}")
             return context
+        except HTTPException:
+            raise
         except ValueError as e:
             logger.error(f"Validation error while updating context: {str(e)}")
             raise HTTPException(
@@ -217,7 +311,9 @@ class AnalyticQContextService:
             None
         """
         try:
-            await self.context_repo.delete_by_repo_name(repo_name)
+            deleted = await self.context_repo.delete_by_repo_name(repo_name)
+            if not deleted:
+                logger.error(f"Context with {repo_name} not found during deletion.")
             logger.info(f"Context deleted successfully: {repo_name}")
         except Exception as e:
             logger.error(f"Error deleting context for repository {repo_name}: {str(e)}")

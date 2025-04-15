@@ -1,14 +1,22 @@
+import logging
+from pathlib import Path
 from threading import Lock
 from typing import Dict, Optional
 
 from analyticq.preprocessing.metric import (CodebaseMetricsCalculator,
                                             CodebaseMetricsCollector,
                                             CodebaseMetricsReporter)
+from analyticq.repository.context_repository import AnalyticQContextRepository
+from analyticq.repository.stats_repository import AnalyticQStatsRepository
+from analyticq.service import AnalyticQContextService, AnalyticQStatsService
 from analyticq.util import BatchUtil, TimeTrackerUtils
+from analyticq.validator.stats import AnalyticQStatsModel
 from dependency_injector.wiring import Provide, inject
 
 from .codebase_cloner import CodebaseCloner
 from .codebase_lang_scanner import CodebaseLangScanner
+
+logger = logging.getLogger(__name__)
 
 
 class CodebasePreprocessor:
@@ -42,9 +50,32 @@ class CodebasePreprocessor:
             self.cloner = CodebaseCloner()
             self.language_scanner = CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
             self._initialized = True
+            self.context_service = AnalyticQContextService(AnalyticQContextRepository())
+            self.stats_service = AnalyticQStatsService(AnalyticQStatsRepository())
+
+    async def save_stats_for_codebase(
+            self,
+            path: Path,
+            **stats: Dict[str, str]
+    ) -> None:
+        if not path or not path.exists():
+            logger.warning("Cannot save context: Invalid or non-existent codebase path")
+            return None
+        try:
+            repo_name = path.name
+            logger.info(f"Context saved for repository: {repo_name}")
+            context = await self.context_service.get_context_by_repo_name(repo_name)
+            context_id = context.id
+            stats['context_id'] = context_id
+            new_stats = AnalyticQStatsModel(**stats)
+            # new_stats.id = 2
+            await self.stats_service.create_stats(new_stats)
+        except Exception as e:
+            logger.error(f"Failed to save context for codebase at {path}: {str(e)}")
 
     async def preprocess_codebase(
-            self, codebase_url: str,
+            self,
+            codebase_url: str,
             branch: Optional[str] = None,
             tag: Optional[str] = None,
             ssh_key_path: Optional[str] = None) -> Dict:
@@ -71,6 +102,8 @@ class CodebasePreprocessor:
         try:
             repo_path = await self.cloner.clone(codebase_url, **codebase_info)
             await self.language_scanner.scan_codebase(repo_path)
+            stats = self.language_scanner.generate_codebase_report()
+            await self.save_stats_for_codebase(repo_path, **stats)
             return self.language_scanner.generate_codebase_report()
         except Exception as e:
             raise Exception(f"Failed to preprocess codebase: {e}")

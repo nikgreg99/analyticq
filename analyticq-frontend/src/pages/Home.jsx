@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     VStack,
@@ -14,13 +14,38 @@ import { FileList } from 'components/ui/FileList';
 import { GitRepoInput } from 'components/ui/GitRepoInput';
 import { FaFileArchive , FaGit} from 'react-icons/fa'
 import { useColorModeValue } from 'components/ui/color-mode';
+import { updatePageMetadata } from 'components/utils/metadata';
 
+/**
+ * HomePage component that provides a user interface for code analysis.
+ * Allows users to analyze code either from a Git repository or local files.
+ *
+ * @component
+ * @returns {JSX.Element} A container with tabs for Git repository or local file analysis options
+ *
+ * @state {string} tab - Current selected tab ('git' or 'local')
+ * @state {File[]} selectedFiles - Array of files selected for local analysis
+ * @state {string} gitUrl - URL of the Git repository to analyze
+ * @state {string} branch - Selected branch of the Git repository
+ *
+ * @example
+ * return (
+ *   <HomePage />
+ * )
+ */
 export const HomePage = () => {
-    const [tab, setTab] = useState('git')
+    const [tab, setTab] = useState('git');
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [gitUrl, setGitUrl] = useState('');
     const [branch, setBranch] = useState('');
 
+    useEffect(() => {
+        updatePageMetadata(
+            "Welcome to AnalyticQ",
+             'AnalyticQ Home',
+            '/home'
+        )
+    },[]);
 
     const handleFileDrop = (acceptedFiles) => {
         setSelectedFiles(prevFiles => {
@@ -89,6 +114,7 @@ export const HomePage = () => {
                         variant="enclosed"
                         colorScheme="blue"
                         value={tab}
+                        defaultValue='git'
                         onValueChange={(e) => setTab(e.value)}
                     >
                         <Tabs.List mb={4}>

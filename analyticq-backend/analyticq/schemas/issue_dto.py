@@ -1,6 +1,7 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from analyticq.engine import AnalyticQConfidence, AnalyticQSeverity
+from analyticq.validator.issue import AnalyticQSASTIssueModel
 from pydantic import BaseModel, Field
 
 
@@ -49,3 +50,20 @@ class IssueFilter(BaseModel):
     """
     severity: Optional[AnalyticQSeverity] = None
     confidence: Optional[AnalyticQConfidence] = None
+
+
+class PaginatedIssueResponse(BaseModel):
+    """A model representing a paginated response for AnalyticQContext items.
+
+    Attributes:
+        items (List[AnalyticQContextModel]): List of context items for the current page
+        total (int): Total number of items across all pages
+        page (int): Current page number
+        page_size (int): Number of items per page
+        has_more (bool): Indicates whether more items exist in subsequent pages
+    """
+    items: List[AnalyticQSASTIssueModel]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool

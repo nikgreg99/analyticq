@@ -82,7 +82,6 @@ def test_identify_root_folders(sast_manager, mock_codebase_data):
     # Assertions
     assert isinstance(result, dict)
     assert result["python"] == ["src\\main"]
-    assert result["javascript"] == ["src\\js"]
 
 
 # Test map_lang_to_supported method

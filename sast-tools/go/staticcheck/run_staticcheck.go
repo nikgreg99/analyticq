@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"bytes"
+	"io"
 )
 
 func main() {
@@ -19,7 +21,7 @@ func main() {
 	if err != nil {
 		log.Printf("Error checking staticcheck version: %v", err)
 	}
-	log.Printf("Staticcheck version: %s", string(output))
+	log.Printf("Staticcheck version: %s", strings.TrimSpace(string(output)))
 
 	// Define paths
 	codePath := "/code"
@@ -27,8 +29,11 @@ func main() {
 
 	// Check if /code directory exists and is not empty
 	entries, err := os.ReadDir(codePath)
-	if err != nil || len(entries) == 0 {
-		log.Fatal("Directory /code is empty or not mounted correctly")
+	if err != nil {
+		log.Fatalf("Error accessing code directory: %v", err)
+	}
+	if len(entries) == 0 {
+		log.Fatal("Directory /code is empty")
 	}
 
 	// Find all Go files
@@ -38,7 +43,13 @@ func main() {
 			return err
 		}
 		if !info.IsDir() && strings.HasSuffix(path, ".go") {
-			filesToScan = append(filesToScan, path)
+			// Convert absolute path to relative path for better staticcheck output
+			relPath, err := filepath.Rel(codePath, path)
+			if err == nil {
+				filesToScan = append(filesToScan, relPath)
+			} else {
+				filesToScan = append(filesToScan, path)
+			}
 		}
 		return nil
 	})
@@ -46,34 +57,43 @@ func main() {
 		log.Fatalf("Error walking directory: %v", err)
 	}
 
-	// Check if it's a Go module
 	if len(filesToScan) == 0 {
 		log.Fatal("No valid Go files found in the directory")
 	}
 
-	log.Printf("Files to scan: %v", filesToScan)
+	log.Printf("Found %d Go files to scan", len(filesToScan))
 
+	// Check if it's a Go module
 	goModPath := filepath.Join(codePath, "go.mod")
 	_, err = os.Stat(goModPath)
+	isModule := !os.IsNotExist(err)
 
+	// Prepare command
 	var args []string
-	if os.IsNotExist(err) {
-		log.Println("No go.mod file found, scanning individual files.")
-		args = append([]string{"-f", "json"}, filesToScan...)
-	} else {
-		log.Println("go.mod file found, scanning as Go module.")
+	if isModule {
+		log.Println("go.mod file found, scanning as Go module")
 		args = []string{"-f", "json", "./..."}
+		// Explicitly set GO111MODULE for consistent behavior
+		os.Setenv("GO111MODULE", "on")
+	} else {
+		log.Println("No go.mod file found, scanning individual files")
+		args = append([]string{"-f", "json"}, filesToScan...)
 	}
 
 	// Run staticcheck
-	log.Println("Running staticcheck...")
+	log.Printf("Running staticcheck with args: %v", args)
 	cmd = exec.Command("staticcheck", args...)
-	cmd.Dir = codePath // Set working directory to the code path
+	cmd.Dir = codePath
 
-	output, err = cmd.CombinedOutput()
+	// Capture stdout and stderr separately
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
 	if err != nil {
-		// Don't exit on linting errors, just log them
-		log.Printf("Staticcheck completed with issues: %v", err)
+		log.Printf("Staticcheck command error: %v", err)
+		log.Printf("Stderr: %s", stderr.String())
 	}
 
 	// Ensure output directory exists
@@ -82,30 +102,77 @@ func main() {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
+	// Check if we have any JSON output
+	stdoutStr := stdout.String()
+	if len(stdoutStr) == 0 {
+		// No output - likely no issues found or command failed
+		log.Println("No output from staticcheck, creating empty JSON array")
+		err = os.WriteFile(outputPath, []byte("[]"), 0644)
+		if err != nil {
+			log.Fatalf("Failed to write empty output file: %v", err)
+		}
+		log.Printf("Empty staticcheck report saved to %s", outputPath)
+		os.Exit(0)
+	}
 
-	// Handle streaming JSON objects and convert to an array
+	// Process JSON output
 	var jsonObjects []interface{}
-	decoder := json.NewDecoder(strings.NewReader(string(output)))
-	for decoder.More() {
+
+	// Log sample of output for debugging
+	if len(stdoutStr) > 100 {
+		log.Printf("First 100 chars of stdout: %s...", stdoutStr[:100])
+	} else {
+		log.Printf("Complete stdout: %s", stdoutStr)
+	}
+
+	// Try to decode each line as separate JSON object
+	decoder := json.NewDecoder(strings.NewReader(stdoutStr))
+	for {
 		var obj interface{}
-		if err := decoder.Decode(&obj); err != nil {
+		err := decoder.Decode(&obj)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
 			log.Printf("Failed to decode JSON object: %v", err)
+			// Skip to next line to try to recover
+			buffer := make([]byte, 1024)
+			_, err = decoder.Buffered().Read(buffer)
+			decoder = json.NewDecoder(strings.NewReader(stdoutStr[decoder.InputOffset():]))
 			continue
 		}
 		jsonObjects = append(jsonObjects, obj)
 	}
 
-	finalOutput, err := json.MarshalIndent(jsonObjects, "", "  ")
-	if err != nil {
-		log.Fatalf("Failed to marshal final JSON output: %v", err)
-	}
+	// If parsing failed completely, write the raw output for investigation
+	if len(jsonObjects) == 0 {
+		log.Println("Failed to parse any JSON objects, saving raw output for debugging")
+		debugPath := outputPath + ".debug"
+		err = os.WriteFile(debugPath, stdout.Bytes(), 0644)
+		if err != nil {
+			log.Printf("Failed to write debug file: %v", err)
+		} else {
+			log.Printf("Raw output saved to %s for debugging", debugPath)
+		}
 
-	err = os.WriteFile(outputPath, finalOutput, 0644)
-	if err != nil {
-		log.Fatalf("Failed to write output file: %v", err)
+		// Still write an empty JSON array as the official output
+		err = os.WriteFile(outputPath, []byte("[]"), 0644)
+		if err != nil {
+			log.Fatalf("Failed to write empty output file: %v", err)
+		}
+	} else {
+		// Successfully parsed some objects
+		finalOutput, err := json.MarshalIndent(jsonObjects, "", "  ")
+		if err != nil {
+			log.Fatalf("Failed to marshal final JSON output: %v", err)
+		}
+
+		err = os.WriteFile(outputPath, finalOutput, 0644)
+		if err != nil {
+			log.Fatalf("Failed to write output file: %v", err)
+		}
+		log.Printf("Staticcheck output with %d issues saved to %s", len(jsonObjects), outputPath)
 	}
-	log.Printf("Staticcheck output saved to %s", outputPath)
-	log.Printf("Print final %s", finalOutput)
 
 	// Always exit with 0 regardless of staticcheck findings
 	os.Exit(0)

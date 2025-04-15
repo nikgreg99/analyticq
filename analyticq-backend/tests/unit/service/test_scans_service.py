@@ -62,7 +62,7 @@ async def test_create_scan_success(scan_service, scan_repository):
     Test creating a scan successfully.
     """
     # Mock the repository to return a valid scan
-    scan_repository.add.return_value = AnalyticQSASTScanResultModel(**TEST_SCAN_DATA)
+    scan_repository.add_scan.return_value = AnalyticQSASTScanResultModel(**TEST_SCAN_DATA)
 
     # Create a ScanCreateRequest object
     scan_data = ScanCreateRequest(**TEST_SCAN_DATA)
@@ -73,7 +73,7 @@ async def test_create_scan_success(scan_service, scan_repository):
     # Assert the result
     assert isinstance(result, AnalyticQSASTScanResultModel)
     assert result.scan_id == "scan_123"
-    scan_repository.add.assert_called_once_with(scan_data)
+    scan_repository.add_scan.assert_called_once_with(scan_data)
 
 
 @pytest.mark.asyncio
@@ -103,7 +103,7 @@ async def test_create_scan_failure(scan_service, scan_repository):
     Test creating a scan with a failure.
     """
     # Mock the repository to raise an exception
-    scan_repository.add.side_effect = Exception("Database error")
+    scan_repository.add_scan.side_effect = Exception("Database error")
 
     # Create a ScanCreateRequest object
     scan_data = ScanCreateRequest(**TEST_SCAN_DATA)
@@ -115,7 +115,7 @@ async def test_create_scan_failure(scan_service, scan_repository):
     # Assert the exception details
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert exc_info.value.detail == "Error creating scan Database error"
-    scan_repository.add.assert_called_once_with(scan_data)
+    scan_repository.add_scan.assert_called_once_with(scan_data)
 
 
 @pytest.mark.asyncio

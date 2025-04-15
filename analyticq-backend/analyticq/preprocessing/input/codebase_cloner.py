@@ -19,7 +19,11 @@ from analyticq.exception import (CloneLocalRepositoryException,
                                  CodebaseUnknownTypeException,
                                  ExtractArchiveException)
 from analyticq.service import GitAuthService
+from analyticq.service.context_service import (AnalyticQContextRepository,
+                                               AnalyticQContextService,
+                                               ContextCreateRequest)
 from analyticq.util import PathUtil
+from analyticq.validator.context import AnalyticQCodebaseType
 from dependency_injector.wiring import Provide, inject
 from git import Repo
 from git.exc import GitCommandError
@@ -110,6 +114,8 @@ class CodebaseCloner:
             self.default_branch = codebase_config["default_branch"]
             self._initialized = True
             self.git_auth_service = git_auth_service
+            self.context_service = AnalyticQContextService(AnalyticQContextRepository())
+
             # Define supported archive extensions
             self.archive_extesions = {
                 ".zip": ArchiveType.ZIP,
@@ -119,6 +125,102 @@ class CodebaseCloner:
                 ".tar.bz2": ArchiveType.TAR_BZ2,
                 ".tbz2": ArchiveType.TAR_BZ2
             }
+
+    def get_latest_commit_hash(self, repo_path: Path) -> Optional[str]:
+        """
+        Gets the latest commit hash from a Git repository.
+
+        Args:
+            repo_path (Path): Path to the Git repository.
+
+        Returns:
+            Optional[str]: The hexadecimal SHA hash of the latest commit if successful, None otherwise.
+            Returns None if the path is not a Git repository or if there was an error accessing it.
+        """
+        try:
+            if (repo_path / ".git").exists():
+                repo = Repo(repo_path)
+                return repo.head.commit.hexsha
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get latest commit hash: {str(e)}")
+            return None
+
+    def map_to_codebase_type(self, cloner_type: CodebaseClonerPathType) -> AnalyticQCodebaseType:
+        """
+        Maps the CodebaseClonerPathType to the corresponding AnalyticQCodebaseType.
+        Args:
+            cloner_type (CodebaseClonerPathType): The type of cloner path to map.
+        Returns:
+            AnalyticQCodebaseType: The corresponding codebase type.
+        Raises:
+            ValueError: If no mapping exists for the given cloner type.
+        Example:
+            >>> map_to_codebase_type(CodebaseClonerPathType.REMOTE_REPO)
+            AnalyticQCodebaseType.REMOTE
+        """
+
+        mapping = {
+            CodebaseClonerPathType.REMOTE_REPO: AnalyticQCodebaseType.REMOTE,
+            CodebaseClonerPathType.GIT_REPO: AnalyticQCodebaseType.REPO,
+            CodebaseClonerPathType.LOCAL_REPO: AnalyticQCodebaseType.LOCAL_DIR,
+            CodebaseClonerPathType.ARCHIVE: AnalyticQCodebaseType.ARCHIVE,
+            CodebaseClonerPathType.SCRIPT: AnalyticQCodebaseType.SCRIPT
+        }
+
+        if cloner_type not in mapping:
+            raise ValueError(f"No mapping exists for cloner type: {cloner_type}")
+
+        return mapping[cloner_type]
+
+    async def save_context_for_codebase(self, path: Path, codebase_type: CodebaseClonerPathType, **additional_info) -> None:
+        """
+        Saves the context information for a given codebase path asynchronously.
+        This method creates or updates the context for a codebase by extracting relevant information
+        like repository name, input type, branch (for git repositories), and last commit hash.
+        The context is saved through the context service if it doesn't already exist.
+        Args:
+            path (Path): The filesystem path to the codebase directory
+            codebase_type (CodebaseClonerPathType): The type of the codebase (e.g. local, remote repo, git repo)
+            **additional_info: Additional keyword arguments containing extra context information
+                - branch (str, optional): The git branch name for repositories
+        Returns:
+            None
+        Raises:
+            Exception: If there is an error while saving the context information
+        Notes:
+            - If the path is invalid or doesn't exist, a warning is logged and the method returns
+            - For git repositories (remote or local), branch and last commit hash information is included
+            - Context creation is skipped if an identical context already exists
+        """
+        if not path or not path.exists():
+            logger.warning("Cannot save context: Invalid or non-existent codebase path")
+            return
+        try:
+            input_type = self.map_to_codebase_type(codebase_type)
+            repo_name = path.name
+
+            context_data = {
+                "repo_name": repo_name,
+                "input_type": input_type
+            }
+
+            if codebase_type in [CodebaseClonerPathType.REMOTE_REPO, CodebaseClonerPathType.GIT_REPO]:
+                branch = additional_info.get("branch", self.default_branch)
+                last_commit_hash = self.get_latest_commit_hash(path)
+
+                context_data.update({
+                    "branch": branch,
+                    "last_commit:hash": last_commit_hash
+                })
+
+            request = ContextCreateRequest(**context_data)
+
+            await self.context_service.create_context_if_not_exists(request)
+            logger.info(f"Context saved for repository: {repo_name}")
+
+        except Exception as e:
+            logger.error(f"Failed to save context for codebase at {path}: {str(e)}")
 
     def _is_archive(self, path: str) -> bool:
         """
@@ -447,16 +549,28 @@ class CodebaseCloner:
                     tag = kwargs.get("tag", None)
                     ssk_key_path = kwargs.get("ssh_key_path", None)
                     protocol = self._get_protocol(codebase_url)
+
                     if ssk_key_path:
                         await self.git_auth_service.configure_git_ssh(ssk_key_path)
                         credentials = await self.git_auth_service.extract_ssh_auth_token(ssk_key_path)
+
                     path = await self.clone_remote_codebase(codebase_url, branch, tag, credentials, protocol)
+                    # Save context with additional repo-specific info
+                    await self.save_context_for_codebase(path, codebase_url_type, branch=branch, tag=tag)
+
             case CodebaseClonerPathType.GIT_REPO | CodebaseClonerPathType.LOCAL_REPO:
                 path = await self.clone_local_codebase(codebase_url)
+                await self.save_context_for_codebase(path, codebase_url_type)
+
             case CodebaseClonerPathType.SCRIPT:
                 path = await self.clone_local_script(codebase_url)
+                await self.save_context_for_codebase(path, codebase_url_type)
+
             case CodebaseClonerPathType.ARCHIVE:
                 path = await self.extract_archive(codebase_url)
+                await self.save_context_for_codebase(path, codebase_url_type)
+
             case _:
                 raise CodebaseUnknownTypeException(f"Unknown codebase type: {codebase_url_type}")
+
         return path

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Provider } from 'components/ui/provider.jsx'
+import { Provider } from 'components/ui/Provider.jsx'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App  from './App.jsx'

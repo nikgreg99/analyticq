@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class AnalyticQConfidence(Enum):
@@ -17,7 +17,7 @@ class AnalyticQConfidence(Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
-    CRITICAL = "CRIICAL"
+    CRITICAL = "CRITICAL"
     UNKNOWN = "UNKNOWN"
 
     @classmethod
@@ -72,7 +72,7 @@ class AnalyticQSASTIssueModel(BaseModel):
         metadata (Dict[str, Any]): Additional information about the issue. Defaults to None.
     """
     id: Optional[int] = None
-    scan_id: Optional[str] = ""
+    scan_id: int
     rule_id: str
     severity: AnalyticQSeverity = AnalyticQSeverity.UNKNOWN
     confidence: AnalyticQConfidence = AnalyticQConfidence.UNKNOWN
@@ -87,6 +87,13 @@ class AnalyticQSASTIssueModel(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @field_validator('severity', 'confidence', mode='before')
+    @classmethod
+    def convert_enum_to_string(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return v
 
 
 class AnalyticQSASTScanResultModel(BaseModel):

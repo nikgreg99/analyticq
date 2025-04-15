@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect} from "react";
 import {
     Heading,
     Text,
@@ -6,8 +6,28 @@ import {
     Button
   } from '@chakra-ui/react';
   import { Link as RouterLink } from 'react-router-dom';
+  import { FaHome } from "react-icons/fa";
+  import { updatePageMetadata } from 'components/utils/metadata';
 
+/**
+ * Renders a 404 Not Found page component.
+ * Updates page metadata with 404 information and displays a centered error message
+ * with a button to navigate back to the home page.
+ *
+ * @component
+ * @return {JSX.Element} A vertical stack containing 404 error message and home navigation button
+ */
   export const NotFoundPage = () => {
+
+    useEffect(() => {
+        updatePageMetadata(
+            "Page not found",
+            "Page not found. Try again",
+            "/404"
+        );
+    });
+
+
     return (
         <VStack spacing={6}
                 textAlign="center"
@@ -38,7 +58,8 @@ import {
                 py={2}
                 _hover={{ boxShadow: "1g"}}
             >
-                Go  Home
+                <FaHome/>
+                Go to Home Page
             </Button>
         </VStack>
     );

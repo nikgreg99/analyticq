@@ -171,7 +171,8 @@ export const GitRepoInput = ({
         console.log(selectedBranch, customBranch);
         if (selectedBranch[0] == "other" && customBranch) {
             console.log("Validating custom branch name");
-            validateBranchName(customBranch);
+            console.log("Validating branch name:", validateBranchName(customBranch));
+
         }
     }, [customBranch, selectedBranch, validateBranchName]);
 
@@ -184,7 +185,7 @@ export const GitRepoInput = ({
             borderRadius="md"
             boxShadow="sm"
         >
-            <FormControl isInvalid={!!urlError || !branchError}>
+            <FormControl isInvalid={!!urlError || !!branchError}>
                 <Flex alignItems="center" mb={2}>
                     <FormLabel
                         textColor="GrayText"
@@ -225,6 +226,7 @@ export const GitRepoInput = ({
                              value={selectedBranch}
                              onValueChange={(e) => handleBranchChange(e.value)}
                              border="black"
+                             defaultValue={["main"]}
                              >
                              <Select.HiddenSelect />
                              <Select.Control>
@@ -270,7 +272,7 @@ export const GitRepoInput = ({
                                      aria-describedby="branch-error"
                                      maxLength={MAX_BRANCH_NAME_LENGTH}
                                  />
-                                 <FormErrorMessage textColor="crimson" mt={2} fontSize="small">
+                                 <FormErrorMessage textColor="crimson" mt={4} fontSize="small">
                                      {branchError}
                                  </FormErrorMessage>
                                  <Box
