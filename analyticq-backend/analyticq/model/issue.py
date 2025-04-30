@@ -36,7 +36,7 @@ class AnalyticQSASTIssue(Base):
     __tablename__ = "analyticq_sast_issues"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-    scan_id: Mapped[int] = mapped_column(ForeignKey("analyticq_sast_scan_results.id"), index=True)
+    scan_id: Mapped[int] = mapped_column(ForeignKey("analyticq_sast_scan_results.id", ondelete="CASCADE"), index=True)
     # Rule Id can follow different convention, depending on the tool used for the analysis
     rule_id: Mapped[str] = mapped_column(String, nullable=False)
     severity: Mapped[AnalyticQSeverity] = mapped_column(Enum(AnalyticQSeverity), nullable=False)

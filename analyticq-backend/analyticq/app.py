@@ -7,6 +7,8 @@ import time
 from contextlib import asynccontextmanager
 from typing import List
 
+from .jinja import setup_jinja
+
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
@@ -14,7 +16,6 @@ from analyticq.celery_app import get_celery_app
 from analyticq.config.di import AnalyticQContainer
 from analyticq.engine.core import AnalyticQToolDiscoverer
 from analyticq.manager import AnalyticQDatabaseManager, DockerImageManager
-from analyticq.manager.tool_manager import AnalyticQSASTManager
 from analyticq.util import AnalyticQConst, PathUtil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -165,14 +166,15 @@ async def backend_context(app: FastAPI):
         celery_app = get_celery_app()
         app.state.celery = celery_app
 
+        logger.info("Init Jinja for templating engine...")
+        setup_jinja(app)
+
         logger.info("Checking root exsistence for scanning codebase")
         await create_AnalyticQ_root_structure()
 
         logger.info("Initializing AnalyticQ SAST Tool Registry...")
         AnalyticQToolDiscoverer.discover_and_register_tools()
 
-        analyticq_mangaer = AnalyticQSASTManager()
-        await analyticq_mangaer.scan_codebase("https://github.com/paulc4/microservices-demo")
         logger.info(f"Analyticq backend started in {time.time() - start_time:2f} seconds")
 
         yield
@@ -234,13 +236,16 @@ def set_app_routes(app: FastAPI) -> None :
         - tool_router: Handles tool-related endpoints
         - issue_router: Handles issue-related endpoints
     """
-    from analyticq.api import contexts, issues, scans, stats, tools
+    from analyticq.api import (analyze, contexts, issues, report, scans, stats,
+                               tools)
 
     app.include_router(stats.stats_router)
     app.include_router(contexts.context_router)
     app.include_router(scans.scan_router)
     app.include_router(tools.tool_router)
     app.include_router(issues.issue_router)
+    app.include_router(report.report_router)
+    app.include_router(analyze.analyze_router)
 
 
 def create_app(config_file: str = AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE,

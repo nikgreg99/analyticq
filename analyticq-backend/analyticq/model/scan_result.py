@@ -28,14 +28,15 @@ class AnalyticQSASTScanResult(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scan_id: Mapped[str] = mapped_column(String, index=True)
     tool_name: Mapped[str] = mapped_column(String, index=True, default="Unknown")
-    context_id: Mapped[Optional[int]] = mapped_column(ForeignKey("analyticq_scan_context.id"))
+    context_id: Mapped[Optional[int]] = mapped_column(ForeignKey("analyticq_scan_context.id", ondelete="CASCADE"))
     summary: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
     scan_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default={})
 
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
 
-    issues: Mapped[List["AnalyticQSASTIssue"]] = relationship("AnalyticQSASTIssue", back_populates="scan_result") # noqa
+    issues: Mapped[List["AnalyticQSASTIssue"]] = relationship("AnalyticQSASTIssue", back_populates="scan_result", cascade="all, delete-orphan",
+    passive_deletes=True) # noqa
     context: Mapped["AnalyticQContext"] = relationship("AnalyticQContext", back_populates="scans") # type: ignore # noqa
 
 

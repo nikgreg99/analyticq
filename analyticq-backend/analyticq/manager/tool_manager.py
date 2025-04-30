@@ -35,17 +35,21 @@ class AnalyticQSASTManager:
     async def save_scan_for_codebase(
             self,
             path: Path,
-            scan: AnalyticQSASTScanResultModel
+            scan: AnalyticQSASTScanResultModel,
+            original_path: Optional[str] = None
     ) -> None:
 
-        if not path or not path.exists():
-            logger.warning("Cannot save scan: Invalid or non-existent codebase path")
         try:
-            repo_name = path.name
-            logger.info(f"Scan saved for context repository: {repo_name}")
+            if original_path is not None:
+                repo_name = original_path
+            else:
+                # Remove any suffixes that are not part of the repository name
+                repo_name = path.name
+
             context = await self.context_service.get_context_by_repo_name(repo_name)
             context_id = context.id
             scan.context_id = context_id
+            logger.info(f"Scan saved for context repository: {repo_name}")
             await self.scan_service.create_scan(scan)
         except Exception as e:
             logger.error(f"Failed to save scan for codebase at {path}: {str(e)}")
@@ -55,11 +59,13 @@ class AnalyticQSASTManager:
             codebase_path: str,
             config_paths: Optional[Dict[str, str]] = None,
             timeout: Optional[int] = None,
-            branch="master"
+            branch="main",
+            original_path: Optional[str] = None
     ) -> Dict[str, Any]:
 
+        logger.info("Original path: %s", original_path)
         # Preprocess the codebase to gather file and language information
-        codebase_data = await self.codebase_preprocesseor.preprocess_codebase(codebase_url=codebase_path, branch="master")
+        codebase_data = await self.codebase_preprocesseor.preprocess_codebase(codebase_url=codebase_path, branch=branch, original_path=original_path)
 
         # Identify root folders for each language
         language_to_root_folders = self.identify_root_folders(codebase_data)
@@ -102,8 +108,7 @@ class AnalyticQSASTManager:
                             codebase_path=folder,
                             timeout=timeout
                         )
-                        print(result)
-                        await self.save_scan_for_codebase(Path(codebase_path), result)
+                        await self.save_scan_for_codebase(Path(codebase_path), result, original_path=original_path)
                         folder_results[folder] = result
 
                     language_results[tool_name] = {

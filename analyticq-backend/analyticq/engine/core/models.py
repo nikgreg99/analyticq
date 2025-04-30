@@ -34,6 +34,7 @@ class AnalyticQSeverity(Enum):
     Enumeration representing severity levels for AnalyticQ issues.
 
     Attributes:
+        INFO (str): INFO severity level
         HIGH (str): Critical severity level
         MEDIUM (str): Moderate severity level
         LOW (str): Minor severity level
@@ -44,6 +45,7 @@ class AnalyticQSeverity(Enum):
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     CRITICAL = "CRITICAL"
+    WARNING = "WARNING"  # Not all SAST tool support this severity lev
     UNKNOWN = "UNKNOWN"
 
     @classmethod

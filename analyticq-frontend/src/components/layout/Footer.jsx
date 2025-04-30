@@ -17,13 +17,20 @@ export const Footer = () => {
             as="footer"
             bg="blackAlpha.800"
             py={6}
+            role="contentinfo"
+            aria-label="Footer"
         >
             <Container maxW="1/3">
-                <Flex justify="center" align="center">
+                <Flex
+                    justify="center"
+                    align="center"
+                    direction="column"
+                >
                     <Text
                         color="whiteAlpha.800"
                         textAlign="center"
                         fontWeight="medium"
+                        aria-label="Copyright"
                     >
                         © {new Date().getFullYear()} AnalyticQ Frontend. All rights reserved.
                     </Text>

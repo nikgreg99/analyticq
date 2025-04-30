@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toaster } from "components/ui/toaster";
-import { getContextById, deleteContext } from "services/contextService";
+import { toaster } from "components/ui/Toaster";
+import { getContextById, deleteContextByRepoName } from "services/contextService";
 import {
     Box,
     Flex,
@@ -71,14 +71,14 @@ export const ContextDetailPage = ({ initialContextData = null }) => {
     const handleDeleteConfirm = async () => {
         try {
             setDeleteLoading(true);
-            await deleteContext(contextId);
-
+            const data = await deleteContextByRepoName(contextId);
+            console.log("Logging data delition", data.data)
             toaster.success({
-                title: "Update successful",
-                description: "File saved successfully to the server",
+                title: "Deletion successful",
+                description: `Context ${contextData.repo_name} has been deleted`,
             })
 
-            navigate("/");
+            navigate("/contexts");
         }
         catch (err) {
             console.error("Error deleting context:", err);
@@ -102,7 +102,6 @@ export const ContextDetailPage = ({ initialContextData = null }) => {
     const navigateToStats = () => {
         navigate(`/contexts/${contextId}/stats?repo=${encodeURIComponent(contextData.repo_name)}`);
     };
-
 
 
     if (loading) {
@@ -170,7 +169,7 @@ export const ContextDetailPage = ({ initialContextData = null }) => {
                     <DeleteConfirmationDialog
                         isOpenModal={isOpenModal}
                         setIsOpenModal={setIsOpenModal}
-                        repoName={contextData.repo_name}
+                        itemName={contextData.repo_name}
                         isLoading={deleteLoading}
                         onConfirm={handleDeleteConfirm}
                         cancelRef={cancelRef}

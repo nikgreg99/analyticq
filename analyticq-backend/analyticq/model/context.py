@@ -40,8 +40,8 @@ class AnalyticQContext(Base):
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), default=func.now())
 
 
-    scans: Mapped[List["AnalyticQSASTScanResult"]] = relationship("AnalyticQSASTScanResult", back_populates="context")  # type: ignore # noqa
-    stats: Mapped["AnalyticQStats"] = relationship("AnalyticQStats", back_populates="context") # type: ignore # noqa
+    scans: Mapped[List["AnalyticQSASTScanResult"]] = relationship("AnalyticQSASTScanResult", back_populates="context",cascade="all, delete-orphan",  passive_deletes=True)  # type: ignore # noqa
+    stats: Mapped["AnalyticQStats"] = relationship("AnalyticQStats", back_populates="context", cascade="all, delete-orphan",passive_deletes=True) # type: ignore # noqa
 
 
 @event.listens_for(AnalyticQContext, 'before_insert')

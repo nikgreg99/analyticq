@@ -11,7 +11,7 @@ class NjsScanParser(AnalyticQResultParser):
 
     def __init__(self):
         field_mapping = {
-            "ruele_id": "rule_id",
+            "rule_id": "rule_id",
             "message": "description",
             "path": "file_path",
             "start_line": "start_line",

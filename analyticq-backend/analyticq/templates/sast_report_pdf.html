@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} SAST Scan Report - {{ scan_id }}</title>
+    <style>
+        /* Base Print/PDF Settings */
+        @page {
+            margin: 1.5cm;
+            size: A4 portrait;
+        }
+
+        /* Core Typography */
+        body {
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            font-size: 10pt;
+            line-height: 1.4;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .report-header {
+            text-align: center;
+            padding-bottom: 0.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .report-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 0.3rem;
+        }
+
+        /* Section Styling */
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #222;
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.6rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: #f9f9f9;
+            padding: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .summary-item {
+            margin-bottom: 0.3rem;
+        }
+
+        /* Simple Issue List */
+        .issues-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .issues-table th {
+            background-color: #f5f5f5;
+            text-align: left;
+            padding: 0.4rem;
+            font-weight: 600;
+        }
+
+        .issues-table td {
+            padding: 0.4rem;
+            vertical-align: top;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .issues-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        /* Severity Tags */
+        .severity-tag {
+            display: inline-block;
+            padding: 0.2rem 0.4rem;
+            border-radius: 2px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-CRITICAL { background-color: #ffebee; color: #c62828; }
+        .severity-HIGH { background-color: #fff3e0; color: #e65100; }
+        .severity-MEDIUM { background-color: #fffde7; color: #f57f17; }
+        .severity-LOW { background-color: #e1f5fe; color: #0277bd; }
+        .severity-INFO { background-color: #e8f5e9; color: #2e7d32; }
+        .severity-UNKNOWN { background-color: #f5f5f5; color: #616161; }
+
+        /* Footer */
+        .report-footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #777;
+            padding-top: 0.5rem;
+            border-top: 1px solid #eee;
+            margin-top: 1rem;
+        }
+
+        /* Print Optimizations */
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .issues-table {
+                page-break-inside: auto;
+            }
+
+            .issues-table tr {
+                page-break-inside: avoid;
+            }
+
+            .report-footer {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="report-header">
+        <h1 class="report-title">{{ app_name }} Security Assessment</h1>
+        <div>{{ formatted_timestamp }}</div>
+    </header>
+
+    <div class="summary-box">
+        <div class="summary-item"><strong>Scan ID:</strong> {{ scan_id }}</div>
+        <div class="summary-item"><strong>Tool:</strong> {{ tool_name }}</div>
+        <div class="summary-item"><strong>Total Issues:</strong> {{ total_issues }}</div>
+        <div class="summary-item">
+            <strong>Severity Counts:</strong>
+            {% if issues_summary.CRITICAL > 0 %}Critical: {{ issues_summary.CRITICAL }}, {% endif %}
+            {% if issues_summary.HIGH > 0 %}High: {{ issues_summary.HIGH }}, {% endif %}
+            {% if issues_summary.MEDIUM > 0 %}Medium: {{ issues_summary.MEDIUM }}, {% endif %}
+            {% if issues_summary.LOW > 0 %}Low: {{ issues_summary.LOW }}, {% endif %}
+            {% if issues_summary.INFO > 0 %}Info: {{ issues_summary.INFO }}{% endif %}
+            {% if issues_summary.UNKNOWN > 0 %}Unknown: {{ issues_summary.UNKNOWN }}{% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">All Issues</h2>
+
+        {% if issues %}
+            <table class="issues-table">
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Issue</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td>
+                            <span class="severity-tag severity-{{ issue.severity }}">{{ issue.severity }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ issue.rule_id }}</strong>
+                            <div>{{ issue.message }}</div>
+                        </td>
+                        <td>
+                            {{ issue.path }} (Line: {{ issue.start_line }}{% if issue.end_line != issue.start_line and issue.end_line != 0 %}-{{ issue.end_line }}{% endif %})
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No security issues identified.</p>
+        {% endif %}
+    </div>
+
+    <footer class="report-footer">
+        <p>Generated by {{ app_name }} v{{ version }} | &copy; {{ current_year }} | Confidential</p>
+    </footer>
+</body>
+</html>

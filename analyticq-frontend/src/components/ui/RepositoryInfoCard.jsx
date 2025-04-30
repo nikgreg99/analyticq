@@ -3,11 +3,13 @@ import {
     Card,
     Stack,
     Flex,
-    Text ,
-    Heading
+    Text,
+    Heading,
 } from "@chakra-ui/react";
 import { formatDate } from "components/utils/time";
 import RepositoryTypeBadge from "components/ui/RepositoryTypeBadge";
+import { InfoRow } from "./InfoRow";
+
 
 /**
  * A card component that displays repository information.
@@ -27,19 +29,19 @@ import RepositoryTypeBadge from "components/ui/RepositoryTypeBadge";
  */
 const RepositoryInfoCard = ({ contextData }) => {
 
-
     return (
         <Card.Root mb={6} variant="elevated">
             <Card.Header>
                 <Heading size="md" color="whiteAlpha.800">Repository Information</Heading>
             </Card.Header>
             <Card.Body>
-                <Stack spacing={4}>
-                    <InfoRow label="Repository name" value={contextData.repo_name} />
+                <Stack spacing={4} as="dt">
+                    <InfoRow label="Repository name" value={contextData.repo_name ?? "N/A"} />
 
                     <Flex justify="space-between">
                         <Text color="whiteAlpha.800">Repository Type</Text>
-                        <RepositoryTypeBadge inputType={contextData.input_type} />
+                        <RepositoryTypeBadge inputType={contextData.input_type}
+                        />
                     </Flex>
 
                     {contextData.branch && (
@@ -60,13 +62,5 @@ const RepositoryInfoCard = ({ contextData }) => {
         </Card.Root>
     );
 };
-
-// Helper component for info rows
-const InfoRow = ({ label, value }) => (
-    <Flex justify="space-between">
-        <Text color="whiteAlpha.800">{label}</Text>
-        <Text color="whiteAlpha.800">{value}</Text>
-    </Flex>
-);
 
 export default RepositoryInfoCard;

@@ -19,9 +19,8 @@ class ESLintParser(AnalyticQResultParser):
             "column": "column",
             "end_column": "endColumn",
             "severity": "severity",
-            "node_type": "nodeType",
             "code": "source",
-            "issue_metadata": "metadata"
+            "issue_metadata": "issue_metadata"
         }
         super().__init__(tool_name="eslint", field_mapping=field_mapping)
 
@@ -51,8 +50,12 @@ class ESLintParser(AnalyticQResultParser):
             source_code = file_data.get("source", "")
 
             for message in file_data.get("messages", []):
+                rule_id = message.get("ruleId")
+                if not isinstance(rule_id, str):
+                    rule_id = str(rule_id) if rule_id is not None else "unknown"
+
                 transformed_issue = {
-                    "ruleId": message.get("ruleId", "unknown"),
+                    "ruleId": rule_id,
                     "filePath": file_path,
                     "message": message.get("message", "unknown"),
                     "severity": message.get("severity", 0),
@@ -60,14 +63,13 @@ class ESLintParser(AnalyticQResultParser):
                     "endLine": message.get("endLine", message.get("line", 0)),
                     "column": message.get("column", 0),
                     "endColumn": message.get("endColumn", message.get("column", 0)),
-                    "nodeType": message.get("nodeType", "unknown"),
                     "source": source_code
                 }
 
-                # Add any suggestions as metadata
-                if "suggestions" in message:
-                    transformed_issue["metadata"] = {
-                        "suggestions": message.get("suggestions", [])
+                suggestions = message.get("suggestions")
+                if isinstance(suggestions, list) and suggestions:
+                    transformed_issue["issue_metadata"] = {
+                        "suggestions": suggestions
                     }
 
                 transformed_issues.append(transformed_issue)

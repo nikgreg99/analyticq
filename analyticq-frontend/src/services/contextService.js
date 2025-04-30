@@ -79,4 +79,5 @@ export const getScansByRepoName = async (repoName) =>
  * @returns {Promise<void>} A promise that resolves when the context is deleted successfully.
  * @throws {Error} If the deletion operation fails.
  */
-export const deleteContext =async (repoName) => context_api.delete(`/${repoName}`)
+export const deleteContextByRepoName = async (repoName) =>
+    context_api.delete(`/${repoName}`).then((res) => res.data)

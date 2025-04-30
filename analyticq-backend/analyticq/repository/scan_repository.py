@@ -125,6 +125,33 @@ class AnalyticQScanResultRepository:
                 return AnalyticQSASTScanResultModel.model_validate(scan_result)
         return None
 
+    async def get_by_scan_id_str(self, scan_id: str) -> Optional[AnalyticQSASTScanResultModel]:
+        """
+        Retrieves a SAST scan result from the database by its scan ID.
+
+        Args:
+            scan_id (str): The unique identifier of the scan to retrieve.
+
+        Returns:
+            Optional[AnalyticQSASTScanResultModel]: The scan result model if found, None otherwise.
+                The returned model includes eagerly loaded issues.
+
+        Example:
+            scan_result = await scan_repository.get_by_scan_id("scan123")
+                print(f"Found scan with {len(scan_result.issues)} issues")
+        """
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            stmt = (
+                select(AnalyticQSASTScanResult)
+                .where(AnalyticQSASTScanResult.scan_id == scan_id)
+                .options(selectinload(AnalyticQSASTScanResult.issues))  # Eagerly load issues
+            )
+            result = await session.execute(stmt)
+            scan_result = result.scalars().first()
+            if scan_result:
+                return AnalyticQSASTScanResultModel.model_validate(scan_result)
+        return None
+
     async def get_scans_by_tool_name(self, tool_name: str) -> List[AnalyticQSASTScanResultModel]:
         """
         Asynchronously retrieves all SAST scan results for a specific tool from the database.
@@ -146,7 +173,7 @@ class AnalyticQScanResultRepository:
             scans = result.scalars().all()
             return [AnalyticQSASTScanResultModel.model_validate(scan) for scan in scans]
 
-    async def update_scan_by_id(self, scan_id: int, scan_data: AnalyticQSASTScanResultModel) -> AnalyticQSASTScanResultModel:
+    async def update_scan_by_id(self, id: int, scan_data: AnalyticQSASTScanResultModel) -> AnalyticQSASTScanResultModel:
         """
         Updates a scan result record in the database based on the provided scan_id.
         Args:
@@ -160,12 +187,12 @@ class AnalyticQScanResultRepository:
 
         async with AnalyticQDatabaseManager().get_db_session() as session:
             # First, retrieve the existing record
-            stmt = select(AnalyticQSASTScanResult).where(AnalyticQSASTScanResult.id == scan_id)
+            stmt = select(AnalyticQSASTScanResult).where(AnalyticQSASTScanResult.id == id)
             result = await session.execute(stmt)
             existing_scan = result.scalar_one_or_none()
 
             if not existing_scan:
-                raise ValueError(f"Scan with scan_id {scan_id} not found")
+                raise ValueError(f"Scan with scan_id {id} not found")
 
             data_dict = scan_data.model_dump(exclude={"issues", "context", "id"})
 
@@ -176,13 +203,13 @@ class AnalyticQScanResultRepository:
             # Handle issues update if needed
             if hasattr(scan_data, 'issues') and scan_data.issues:
                 # First delete existing issues
-                delete_stmt = delete(AnalyticQSASTIssue).where(AnalyticQSASTIssue.scan_id == scan_id)
+                delete_stmt = delete(AnalyticQSASTIssue).where(AnalyticQSASTIssue.scan_id == id)
                 await session.execute(delete_stmt)
 
                 # Then add the new ones
                 for issue_data in scan_data.issues:
                     issue_dict = issue_data.model_dump(exclude={"scan_result"})
-                    new_issue = AnalyticQSASTIssue(**issue_dict, scan_id=scan_id)
+                    new_issue = AnalyticQSASTIssue(**issue_dict, scan_id=id)
                     session.add(new_issue)
 
             await session.flush()
@@ -191,7 +218,7 @@ class AnalyticQScanResultRepository:
             result = await session.execute(
                 select(AnalyticQSASTScanResult)
                 .options(selectinload(AnalyticQSASTScanResult.issues))
-                .where(AnalyticQSASTScanResult.scan_id == scan_id)
+                .where(AnalyticQSASTScanResult.scan_id == id)
             )
             updated_scan_result = result.scalar_one()
             return AnalyticQSASTScanResultModel.model_validate(updated_scan_result)

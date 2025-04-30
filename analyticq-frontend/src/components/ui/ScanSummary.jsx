@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
     Box,
     Flex,
@@ -7,25 +7,48 @@ import {
     Badge,
     Grid,
     Stat,
-
+    VisuallyHidden,
 } from "@chakra-ui/react";
 import { SeverityCounter } from "./SeverityIssueCounter";
 import { getIssueCounts } from "components/utils/issues";
+import { MdOutlineInfo } from "react-icons/md";
+import { Tooltip } from "./Tooltip";
+
+// Configuration constants
+const SEVERITY_WEIGHTS = {
+    critical: 10,
+    high: 5,
+    medium: 2,
+    low: 1,
+    info: 0,
+    unknown: 0,
+};
+
+const HEALTH_COLOR_THRESHOLDS = [
+    { min: 90, color: "green.500", label: "Good" },
+    { min: 70, color: "yellow.500", label: "Fair" },
+    { min: 0, color: "red.500", label: "Poor" },
+];
+
+const SEVERITY_LEVELS = [
+    { label: "Critical", key: "critical" },
+    { label: "High", key: "high", },
+    { label: "Medium", key: "medium" },
+    { label: "Low", key: "low" },
+    { label: "Info", key: "info" },
+    { label: "Unknown", key: "unknown" },
+];
+
+const MAX_SCORE_IMPACT = 100; // Maximum score impact from issues
 
 /**
  * Renders a summary component for scan results displaying health score and issue distribution
+ * with enhanced accessibility features
  * @component
  * @param {Object} props - Component props
  * @param {Object} props.scanData - Data containing scan results with issue information
  * @param {Object} props.scanData.issues - Array or collection of issues found in scan
- * @returns {JSX.Element} A Box component containing scan summary information including:
- * - Overall health score (0-100)
- * - Total number of issues detected
- * - Distribution of issues by severity level (Critical, High, Medium, Low, Info, Unknown)
- *
- * The component uses a grid layout that adjusts responsively between mobile and desktop views.
- * Health score is calculated based on weighted severity of issues, with color coding for quick assessment.
- * Issues are displayed using severity counters with appropriate color schemes for each severity level.
+ * @returns {JSX.Element} An accessible Box component containing scan summary information
  */
 export const ScanSummary = ({ scanData }) => {
 
@@ -33,58 +56,51 @@ export const ScanSummary = ({ scanData }) => {
     const totalIssues = Object.values(issueCounts).reduce((sum, count) => sum + count, 0);
     const hasCritical = issueCounts.critical > 0;
 
-    const severityLevels = [
-        { label: "Critical", key: "critical", colorScheme: "red" },
-        { label: "High", key: "high", colorScheme: "orange" },
-        { label: "Medium", key: "medium", colorScheme: "yellow" },
-        { label: "Low", key: "low", colorScheme: "green" },
-        { label: "Info", key: "info", colorScheme: "blue" },
-        { label: "Unknown", key: "unknown", colorScheme: "gray" },
-    ];
-
-    /**
-     * Calculates a health score based on the severity and number of issues.
-     * The score ranges from 0 to 100, where:
-     * - 100 represents a perfect score (no issues)
-     * - Issues reduce the score based on their severity:
-     *   - Critical: -10 points per issue
-     *   - High: -5 points per issue
-     *   - Medium: -2 points per issue
-     *   - Low: -0.5 points per issue
-     * The final score is weighted by the total number of issues and cannot go below 0.
-     * @returns {number} The calculated health score rounded to the nearest integer
-     */
-    const calculateHealthScore = () => {
+    const healthScore = useMemo(() => {
         if (totalIssues === 0) return 100;
 
-        const weighted =
-            issueCounts.critical * 10 +
-            issueCounts.high * 5 +
-            issueCounts.medium * 2 +
-            issueCounts.low * 0.5;
+        const totalPenalty = Object.entries(SEVERITY_WEIGHTS).reduce(
+            (sum, [key, weight]) => sum + (issueCounts[key] * weight),
+            0
+        );
 
-        const score = Math.max(0, 100 - (weighted / totalIssues) * 20);
+        // Cap the penalty at MAX_SCORE_IMPACT to ensure the score doesn't go negative
+        const cappedPenalty = Math.min(totalPenalty, MAX_SCORE_IMPACT);
+
+        // Calculate score as percentage of remaining "health" after deducting penalties
+        const score = Math.max(0, 100 - cappedPenalty);
+
         return Math.round(score);
-    }
 
-    const healthScore = calculateHealthScore();
+    }, [issueCounts, totalIssues]);
 
     /**
-     * Determines the color for the health score display based on the score value
-     * @returns {string} The Chakra UI color string - "green.500" if score >= 90, "red.500" otherwise
+     * Determines the color and label for the health score display based on the score value
+     * @returns {Object} The Chakra UI color string and accessibility label
      */
-    const getHealthScoreColor = () => {
-        if (healthScore >= 90) return "green.500";
-        return "red.500";
+    const getHealthScoreInfo = () => {
+        const threshold = HEALTH_COLOR_THRESHOLDS.find(
+            ({ min }) => healthScore >= min
+        ) || HEALTH_COLOR_THRESHOLDS[HEALTH_COLOR_THRESHOLDS.length - 1];
+
+        return {
+            color: threshold.color,
+            label: threshold.label
+        };
     }
+
+    const healthScoreInfo = getHealthScoreInfo();
 
     return (
         <Box
+            mt={8}
             mb={8}
             p={6}
             borderWidth="1px"
             borderRadius="lg"
             boxShadow="sm"
+            role="region"
+            aria-label="Scan Results Summary"
         >
             <Flex
                 justify="space-between"
@@ -92,16 +108,17 @@ export const ScanSummary = ({ scanData }) => {
                 color="blackAlpha.800"
                 mb={6}
             >
-                <Heading size="md">
+                <Heading size="md" color="blackAlpha.800" id="scan-summary-heading">
                     Scan Summary
                 </Heading>
                 {totalIssues > 0 && (
                     <Badge
-                        colorPalette={hasCritical ? 'red' : 'blue'}
+                        colorScheme={hasCritical ? 'red' : 'blue'}
                         fontSize="sm"
                         px={3}
                         py={1}
                         borderRadius="full"
+                        aria-live="polite"
                     >
                         {totalIssues} {totalIssues === 1 ? 'Issue' : 'Issues'} Detected
                     </Badge>
@@ -109,32 +126,54 @@ export const ScanSummary = ({ scanData }) => {
             </Flex>
 
             <Grid
-                templateColumns={{ base: "1fr", md: "1fr 2fr" }}
+                templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
                 gap={6}
                 mb={6}
+                aria-labelledby="scan-summary-heading"
             >
                 <Stat.Root
                     p={4}
                     borderRadius="md"
                     boxShadow="sm"
                     borderWidth="1px"
+                    role="status"
+                    aria-label="Health Score Status"
                 >
-                    <Stat.Label fontSize="sm" color="blackAlpha.800">Health Score</Stat.Label>
+                    <Flex align="center">
+                        <Stat.Label fontSize="sm" color="blackAlpha.800" id="health-score-label">Health Score</Stat.Label>
+                        <Tooltip
+                            content="The health score is calculated based on the severity of issues found in your codebase. A higher score indicates a healthier codebase."
+                            placement="top"
+                            showArrow
+                            aria-describedby="health-score-label"
+                        >
+                            <Box as="span" tabIndex={0} aria-label="Health score information" role="button">
+                                <MdOutlineInfo color="black" focusable="false" aria-hidden="true" />
+                            </Box>
+                        </Tooltip>
+                    </Flex>
                     <Stat.ValueText
                         fontSize="3xl"
-                        color={getHealthScoreColor()}
+                        color={healthScoreInfo.color}
                         fontWeight="bold"
+                        aria-describedby="health-score-description"
                     >
                         {healthScore}/100
+                        <VisuallyHidden> - {healthScoreInfo.label} health score</VisuallyHidden>
                     </Stat.ValueText>
                     <Stat.HelpText
                         fontSize="small"
                         mt={1}
                         color="gray.600"
-                    >Based on issue severity distribution</Stat.HelpText>
+                        id="health-score-description"
+                    >
+                        {hasCritical
+                            ? "Critical issues significantly impact score"
+                            : "Based on issue severity distribution"}
+                    </Stat.HelpText>
                 </Stat.Root>
 
-                <Box>
+                <Box role="region" aria-label="Issues by Severity">
                     <Text
                         fontSize="sm"
                         mb={2}
@@ -142,6 +181,7 @@ export const ScanSummary = ({ scanData }) => {
                         color="blackAlpha.800"
                         textAlign="center"
                         marginBottom={4}
+                        id="severity-heading"
                     >
                         Issues by Severity
                     </Text>
@@ -150,22 +190,33 @@ export const ScanSummary = ({ scanData }) => {
                         gap={3}
                         align="center"
                         justify={{ base: "center", sm: "flex-start" }}
+                        aria-labelledby="severity-heading"
                     >
-                        {severityLevels.map(({ label, key, colorScheme }) => (
-                            issueCounts[key] > 0 && (
-                                <SeverityCounter
-                                    key={label}
-                                    label={label}
-                                    count={issueCounts[key]}
-                                    colorScheme={colorScheme}
-                                    hasCritical={hasCritical}
-                                />
+                        {totalIssues === 0 ? (
+                            <Text
+                                color="blackAlpha.800"
+                                textAlign="center"
+                                role="status"
+                                aria-live="polite"
+                            >
+                                No Issues were detected
+                            </Text>
+                        ) : (
+                            SEVERITY_LEVELS.map(({ label, key}) =>
+                                issueCounts[key] > 0 && (
+                                    <SeverityCounter
+                                        key={label}
+                                        label={label}
+                                        count={issueCounts[key]}
+                                        hasCritical={hasCritical}
+                                        aria-label={`${issueCounts[key]} ${label} ${issueCounts[key] === 1 ? 'issue' : 'issues'}`}
+                                    />
+                                )
                             )
-                        ))}
+                        )}
                     </Flex>
                 </Box>
             </Grid>
         </Box>
-    )
-
-}
+    );
+};

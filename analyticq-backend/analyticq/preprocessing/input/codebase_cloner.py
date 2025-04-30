@@ -193,12 +193,13 @@ class CodebaseCloner:
             - For git repositories (remote or local), branch and last commit hash information is included
             - Context creation is skipped if an identical context already exists
         """
-        if not path or not path.exists():
-            logger.warning("Cannot save context: Invalid or non-existent codebase path")
-            return
         try:
             input_type = self.map_to_codebase_type(codebase_type)
-            repo_name = path.name
+
+            if isinstance(path, str):
+                repo_name = path
+            else:
+                repo_name = path.name
 
             context_data = {
                 "repo_name": repo_name,
@@ -518,7 +519,7 @@ class CodebaseCloner:
 
         return dest_path
 
-    async def clone(self, codebase_url: str, **kwargs) -> Path:
+    async def clone(self, codebase_url: str, originaL_path: Optional[str] = None, **kwargs) -> Path:
         """
         Clone a codebase from a given URL.
 
@@ -567,8 +568,9 @@ class CodebaseCloner:
                 await self.save_context_for_codebase(path, codebase_url_type)
 
             case CodebaseClonerPathType.ARCHIVE:
+                logger.info("archive path: %s", originaL_path)
                 path = await self.extract_archive(codebase_url)
-                await self.save_context_for_codebase(path, codebase_url_type)
+                await self.save_context_for_codebase(path=originaL_path, codebase_type=codebase_url_type)
 
             case _:
                 raise CodebaseUnknownTypeException(f"Unknown codebase type: {codebase_url_type}")

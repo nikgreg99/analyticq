@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
     ButtonGroup,
+    Flex,
     IconButton,
-    Pagination }
-from "@chakra-ui/react";
+    Pagination,
+    VStack,
+    useBreakpointValue,
+    Text
+}
+    from "@chakra-ui/react";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { Tooltip } from "./Tooltip";
+import { Box } from "lucide-react";
 
 /**
  * A pagination control component that allows navigation through paginated content.
@@ -17,38 +24,102 @@ import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
  * @param {Function} props.onPageChange - Callback function triggered when page is changed
  * @returns {JSX.Element} A pagination control component with previous/next buttons and page numbers
  */
-const PaginationControls = ({ total, pageSize, currentPage, onPageChange }) => {
+const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblingCount = 1, showTooltip = true, showPageInfo = true }) => {
+
+    const totalPages = useMemo(() => Math.ceil(total / pageSize), [total, pageSize]);
+
+    const pageInfoText = `Page ${currentPage} of ${totalPages}`;
+
+    const compactMode = useBreakpointValue({ base: true, md: false });
+
+    if (totalPages <= 1 || total === 0) return null;
+
     return (
-        <Pagination.Root
-            alignSelf="center"
-            count={total}
-            pageSize={pageSize}
-            defaultPage={currentPage}
-            onPageChange={(e) => onPageChange(e.page)}
+        <VStack
+            align="center"
+            width="auto"
         >
-            <ButtonGroup>
-                <Pagination.PrevTrigger asChild>
-                    <IconButton>
-                        <LuChevronLeft/>
-                    </IconButton>
-                </Pagination.PrevTrigger>
+            <Flex
+                alignSelf="center"
+                justifyContent="center"
+                aria-label="Pagination Navigation"
+            >
+                <Pagination.Root
+                    alignSelf="center"
+                    count={total}
+                    pageSize={pageSize}
+                    defaultPage={currentPage}
+                    onPageChange={(e) => onPageChange(e.page)}
+                    siblingCount={compactMode ? 0 : siblingCount}
+                >
+                    <ButtonGroup
+                        attached
+                        variant="solid"
+                    >
+                        <Pagination.PrevTrigger asChild>
+                            {showTooltip ? (
+                                <Tooltip content="Previous Page">
+                                    <IconButton
+                                        aria-label="Previous page"
+                                        disabled={currentPage === 1}
+                                    >
+                                        <LuChevronLeft />
+                                    </IconButton>
+                                </Tooltip>
+                            ) : (
+                                <IconButton
+                                    aria-label="Previous page"
+                                    disabled={currentPage === 1}
+                                >
+                                    <LuChevronLeft />
+                                </IconButton>
+                            )}
+                        </Pagination.PrevTrigger>
 
-                <Pagination.Items
-                    render={(page) => (
-                        <IconButton>
-                            {page.value}
-                        </IconButton>
-                    )}
-                />
+                        <Pagination.Items
+                            render={(page) => (
+                                <IconButton>
+                                    {page.value}
+                                </IconButton>
+                            )}
+                        />
 
-                <Pagination.NextTrigger asChild>
-                    <IconButton>
-                        <LuChevronRight/>
-                    </IconButton>
-                </Pagination.NextTrigger>
-            </ButtonGroup>
-        </Pagination.Root>
+                        <Pagination.NextTrigger asChild>
+                            {showTooltip ? (
+                                <Tooltip content="Next Page">
+                                    <IconButton
+                                        aria-label="Next page"
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        <LuChevronRight />
+                                    </IconButton>
+                                </Tooltip>
+                            ) : (
+                                <IconButton
+                                    aria-label="Next page"
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <LuChevronRight />
+                                </IconButton>
+                            )}
+                        </Pagination.NextTrigger>
+                    </ButtonGroup>
+                </Pagination.Root>
+            </Flex>
+            {showPageInfo && (
+                <Text
+                    fontSize="sm"
+                    color="gray.300"
+                    textAlign="center"
+                    mt={2}
+                >
+                    {pageInfoText}
+                </Text>
+            )}
+        </VStack>
     );
 };
+
+PaginationControls.displayName = "PaginationControls";
 
 export default PaginationControls;

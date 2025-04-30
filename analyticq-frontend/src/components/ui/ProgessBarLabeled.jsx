@@ -16,6 +16,7 @@ import {
  */
 export const ProgessBarLabeled = ({ label, percentage, colorScheme = "" }) => {
     <Box
+        as="section"
         position="relative"
         mb={4}
     >
@@ -26,6 +27,7 @@ export const ProgessBarLabeled = ({ label, percentage, colorScheme = "" }) => {
             flex="1"
             mr={2}
             colorPalette={colorScheme ? colorScheme : null}
+            aria-label={`${label} progress: ${percentage}%`}
         >
             <HStack gap={5}>
                 <Progress.Label>{label}</Progress.Label>

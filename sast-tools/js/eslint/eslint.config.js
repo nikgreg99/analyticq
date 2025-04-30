@@ -1,22 +1,33 @@
+// eslint.config.cjs
 module.exports = [
     {
-        "root": true,
-        files: ["/**/*.js"],
-        "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
-        "ignores": ["node_modules/**"], // Ignore node_modules
-        "env": {
-            "es6": true,
-            "browser": true,
-            "node": true
-          },
-        "rules": {
-            "semi": "error",
-            "prefer-const": "error",
-        },
-        "overrides": [
-            {
-              "files": ["**/*.js"],
-            }
-        ]
+      // Basic linting for all JavaScript files
+      files: ["**/*.{js,mjs,cjs}"],
+      languageOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module"
+      },
+      rules: {
+        // Essential rules that most projects would want
+        "semi": ["error", "always"],
+        "prefer-const": "error",
+        "no-unused-vars": "warn",
+        "no-console": "warn",
+        "no-eval": "error"
+      }
     },
-];
+    {
+      // CommonJS specific settings
+      files: ["**/*.cjs"],
+      languageOptions: {
+        sourceType: "commonjs"
+      }
+    },
+    {
+      // Module specific settings
+      files: ["**/*.mjs"],
+      languageOptions: {
+        sourceType: "module"
+      }
+    }
+  ];

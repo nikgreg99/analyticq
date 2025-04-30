@@ -1,16 +1,18 @@
 import React from "react";
 import {
-    Box,
     VStack,
     HStack,
     Heading,
     Text,
     Badge,
     IconButton,
-} from  "@chakra-ui/react";
+    Flex,
+} from "@chakra-ui/react";
 import { MdDelete } from "react-icons/md";
 import { FaDeleteLeft } from "react-icons/fa6";
 import { formatBytes } from "components/utils/files";
+import { Toaster, toaster } from "./Toaster";
+import { Tooltip } from "./Tooltip";
 
 /**
  * A component that displays a list of files with their names and sizes.
@@ -39,7 +41,19 @@ export const FileList = ({
 
     if (!files || files.length === 0) return null;
 
-    const sortedFiles = [...files].sort((a,b) => a.name.localeCompare(b.name));
+    const sortedFiles = [...files].sort((a, b) => a.name.localeCompare(b.name));
+
+
+    const confirmDelete = (file) => {
+        if (onDeleteFile) {
+            toaster.create({
+                title: `Deleted ${file.name}`,
+                type: "success",
+                duration: 2500,
+            })
+        }
+        onDeleteFile(file)
+    }
 
     return (
         <VStack
@@ -53,53 +67,89 @@ export const FileList = ({
                 alignItems="center"
                 mb="2"
             >
-                 <Heading
+                <Heading
                     size="sm"
                     display="flex"
                     alignItems="center"
                     color="GrayText"
                 >
                     Selected files
-                <Badge ml={2} colorScheme="blue">{files.length}</Badge>
-            </Heading>
-            {onDeleteAllFiles && (
-                <IconButton
-                    bg="blackAlpha.900"
-                    color="whiteAlpha.900"
-                    variant="solid"
-                    size="xs"
-                    onClick={onDeleteAllFiles}
-                >
-                    <MdDelete/>
-                    Delete All
-                </IconButton>
-            )
-            }</HStack>
+                    <Badge ml={2} colorScheme="blue">{files.length}</Badge>
+                </Heading>
+                {onDeleteAllFiles && (
+                    <Tooltip
+                        content="Delete all files   "
+                        aria-label="Delete all files"
+                        showArrow
+                    >
+                        <IconButton
+                            aria-label="Delete all files"
+                            bg="red.500"
+                            color="whiteAlpha.900"
+                            variant="solid"
+                            size="xs"
+                            onClick={onDeleteAllFiles}
+                            _hover={{ bg: "red.100" }}
+                            _active={{ bg: "red.200" }}
+                        >
+                            <MdDelete color="black" />
+                            Delete All
+                        </IconButton>
+                    </Tooltip>
+                )
+                }</HStack>
             {sortedFiles.map((file) => (
-                <Box
+                <Flex
                     key={file.name} // Use file name as key if unique
                     color="gray.600"
-                    display="flex"
                     justifyContent="space-between"
                     role="listitem"
+                    p={2}
+                    transition="all 0.2s"
                 >
-                    <Box flex="1" display="flex" justifyContent="space-between" alignItems="center">
+                    <Flex flex="1" justifyContent="space-between" alignItems="center">
                         <Text color="GrayText">{file.name}</Text>
-                        <Text color="GrayText">{formatBytes(file.size)}</Text>
-                    </Box>
+                        <HStack>
+                            <Tooltip
+                                content={`Size: ${formatBytes(file.size)}`}
+                                showArrow
+                                 aria-label="File size"
+                            >
+                                <Text
+                                    color="gray.500"
+                                    fontSize="sm"
+                                >
+                                    {formatBytes(file.size)}
+                                </Text>
+                            </Tooltip>
+                        </HStack>
+                    </Flex>
                     {onDeleteFile && (
-                        <IconButton
-                            bg="transparent"
-                            marginLeft="1em"
-                            aria-label={`Delete file ${file.name}`}
-                            size="xs"
-                            onClick={() => onDeleteFile(file)}
+                        <Tooltip
+                            aria-label={`Delete ${file.name}`}
+                            content={`Delete ${file.name}`}
+                            showArrow
                         >
-                            <FaDeleteLeft size={12}/>
-                        </IconButton>
-                    )}
-                </Box>
+                            <IconButton
+                                bg="transparent"
+                                marginLeft="1em"
+                                aria-label={`Delete file ${file.name}`}
+                                size="xs"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmDelete(file);
+                                }}
+                                _hover={{ bg: "red.100" }}
+                                _active={{ bg: "red.200" }}
+                            >
+                                <FaDeleteLeft size={12} />
+                            </IconButton>
+                        </Tooltip>
+                    )
+                    }
+                    <Toaster />
+                </Flex >
             ))}
-    </VStack>
+        </VStack >
     );
 };

@@ -24,7 +24,7 @@ const stats_api = axios.create({
  * @returns {Promise<Object>} A promise that resolves with the statistics data
  * @throws {Error} If the API request fails
  */
-export const getStats =(statsId) =>
+export const getStats = async (statsId) =>
     stats_api.get(`/${statsId}`).then((res) => res.data);
 
 
@@ -33,5 +33,5 @@ export const getStats =(statsId) =>
  * @param {string|number} statsId - The ID of the statistics entry to delete.
  * @returns {Promise} A promise that resolves when the deletion is complete.
  */
-export const deleteStats = (statsId) =>
+export const deleteStats = async (statsId) =>
     stats_api.delete(`/${statsId}`);

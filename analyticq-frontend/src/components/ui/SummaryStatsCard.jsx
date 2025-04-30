@@ -20,27 +20,42 @@ import {
  * @param {string} [props.colorScheme="gray"] - The color scheme for the card background
  * @returns {JSX.Element} A card displaying summary statistics
  */
-export const SummaryStatsCard = ({ title, value, icon, colorScheme}) => {
-    return (<Card.Root
-        bg={`${colorScheme}.500`}
-        borderRadius="lg"
-        boxShadow="md"
-    >
-        <Card.Body>
-            <Flex align="center">
-                <HStack
-                    p={2}
-                    borderRadius="md"
-                    mr={4}
-                >
-                    <Icon as={icon} boxSize={6}  color="blackAlpha.800"  />
-                    <Box ml={2}>
-                        <Text fontSize="sm"  fontWeight="bold" color="blackAlpha.800">{title}</Text>
-                        <Text fontSize="sm" color="blackAlpha.800">{value}</Text>
-                    </Box>
-                </HStack>
-            </Flex>
-        </Card.Body>
-    </Card.Root>
+export const SummaryStatsCard = ({ title, value, icon, colorScheme }) => {
+    return (
+        <Card.Root
+            bg={`${colorScheme}.500`}
+            borderRadius="lg"
+            boxShadow="md"
+            role='region'
+            aria-labelledby={`${title}-label`}
+            aria-describedby={`${title}-value`}
+        >
+            <Card.Body>
+                <Flex align="center">
+                    <HStack
+                        p={2}
+                        borderRadius="md"
+                        mr={4}
+                    >
+                        <Icon as={icon} boxSize={6} color="blackAlpha.800" aria-hidden="true" />
+                        <Box ml={2}>
+                            <Text
+                                id={`${title}-label`}
+                                fontSize="sm"
+                                fontWeight="bold"
+                                color="blackAlpha.800"
+                            >{title}</Text>
+                            <Text
+                                id={`${title}-value`}
+                                fontSize="sm"
+                                fontWeight="bold"
+                                color="blackAlpha.800"
+                            >
+                                {value}</Text>
+                        </Box>
+                    </HStack>
+                </Flex>
+            </Card.Body>
+        </Card.Root>
     )
 };

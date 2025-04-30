@@ -7,6 +7,19 @@ import {
 } from '@chakra-ui/react';
 import { updatePageMetadata } from 'components/utils/metadata';
 
+/**
+ * Renders the About page of the AnalyticQ SAST Analysis Tool.
+ * This component displays information about the master's thesis project and its purpose.
+ * Uses Chakra UI components for layout and styling.
+ *
+ * @component
+ * @example
+ * ```jsx
+ * <AboutPage />
+ * ```
+ *
+ * @returns {JSX.Element} A container with project information including title, author, and description
+ */
 export const AboutPage = () => {
 
   useEffect(() => {
@@ -18,17 +31,27 @@ export const AboutPage = () => {
   },[]);
 
   return (
-    <Container maxW="container.md" py={16}>
+    <Container
+      maxW="container.md"
+      py={16}
+      as="main"
+      role='main'
+    >
       <VStack
+        as="section"
         spacing={8}
         p={10}
         borderRadius="2xl"
-        align="center">
+        align="center"
+        aria-labelledby="about-heading"
+      >
         <Heading
+          id="about-heading"
           as="h1"
           size="xl"
           ml={2}
           color="blackAlpha.800"
+          tabIndex={-1}
         >
           AnalyticQ SAST Analysis Tool
         </Heading>

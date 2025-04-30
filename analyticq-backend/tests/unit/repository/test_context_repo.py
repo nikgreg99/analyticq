@@ -66,7 +66,7 @@ async def test_get_all_contexts(context_repo):
 
 
 @pytest.mark.asyncio
-async def test_get_all_contexts_empty(context_repo):
+async def test_get_all_contexts_empty(context_repo, setup_db):
 
     all_contexts = await context_repo.get_all_contexts()
 

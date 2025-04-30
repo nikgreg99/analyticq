@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from analyticq.report.report_manager import ReportManager
 from analyticq.repository.scan_repository import (
     AnalyticQSASTScanResultModel, AnalyticQScanResultRepository)
 from analyticq.schemas.scan_dto import ScanCreateRequest, ScanUpdateRequest
@@ -115,7 +116,7 @@ class AnalyticQScanService:
                 detail=f"Error creating scan {str(e)}"
             )
 
-    async def get_scan_by_id(self, id: str) -> AnalyticQSASTScanResultModel:
+    async def get_scan_by_id(self, id: int) -> AnalyticQSASTScanResultModel:
         """
         Retrieves a specific SAST scan result by its ID.
 
@@ -144,12 +145,12 @@ class AnalyticQScanService:
                 detail=f"Error getting scans scan {str(e)}"
             )
 
-    async def update_scan(self, scan_id: str, updated_data: ScanUpdateRequest) -> AnalyticQSASTScanResultModel:
+    async def update_scan(self, id: int, updated_data: ScanUpdateRequest) -> AnalyticQSASTScanResultModel:
         """
         Updates a scan with the given ID using the provided data.
 
         Args:
-            scan_id (str): The ID of the scan to update
+            scan_id (int): The ID of the scan to update
             updated_data (ScanUpdateRequest): The data to update the scan with
 
         Returns:
@@ -159,11 +160,11 @@ class AnalyticQScanService:
             HTTPException: If scan is not found (404) or if there's an error updating the scan (500)
         """
         try:
-            scan = await self.scan_repo.update_scan_by_id(scan_id, **updated_data.model_dump(exclude_unset=True))
+            scan = await self.scan_repo.update_scan_by_id(id, **updated_data.model_dump(exclude_unset=True))
             if not scan:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Scan with ID {scan_id} not found "
+                    detail=f"Scan with ID {id} not found "
                 )
             return scan
         except HTTPException:
@@ -175,7 +176,7 @@ class AnalyticQScanService:
                 detail=f"Invalid input data: {str(e)}"
             )
         except Exception as e:
-            logger.error(f"Error getting scan {scan_id}: {str(e)}")
+            logger.error(f"Error getting scan {id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error updating scan: {str(e)}"
@@ -232,4 +233,35 @@ class AnalyticQScanService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error deleting spam : {str(e)}"
+            )
+
+    async def get_scan_report(self, scan_id: str, format_type: str):
+        """
+        Retrieves and generates a scan report in the specified format.
+
+        Args:
+            scan_id (str): The unique identifier of the scan to generate the report for
+            format_type (str): The desired format type for the report
+
+        Returns:
+            The generated report in the specified format
+
+        Raises:
+            HTTPException: If scan is not found (404) or if there's an error generating the report (500)
+        """
+        try:
+            scan = await self.scan_repo.get_by_scan_id_str(scan_id)
+            if not scan:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Scan with ID {scan_id} not found."
+                )
+            return ReportManager.generate_report(scan_result=scan, format_type=format_type)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting report in the format requested {format_type}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"EError getting report in the format requested {format_type}: {str(e)}"
             )

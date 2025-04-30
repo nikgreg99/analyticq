@@ -7,7 +7,7 @@ import {
   Container
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
-import SearchBar from 'components/ui/HeaderSearchBar';
+import HeaderSearchBar from 'components/ui/HeaderSearchBar';
 
 /**
  * Header component that displays the main navigation bar of the application.
@@ -33,12 +33,11 @@ export const Header = () => {
     { label: 'Analyse', href: '/' },
     { label: 'Contexts', href: '/contexts' },
     { label: 'Tools', href: '/tools' },
-    { label: 'Languages', href: '/language-supported' },
     { label: 'About', href: '/about' },
   ];
 
   return (
-    <Box as="header" bg="blackAlpha.800" py={6} >
+    <Box as="header" bg="blackAlpha.800" py={6} role='banner' >
       <Container maxW="container.xl">
         <Flex
           align="center"
@@ -72,6 +71,7 @@ export const Header = () => {
                _focus={{
                   border: "none"
                }}
+                aria-label="Go to homepage"
               >
               AnalyticQ SAST Scanner
             </Link>
@@ -104,7 +104,7 @@ export const Header = () => {
           width={{ base: "100%", md: "300px" }}
           mt={{ base: 2, md: 0 }}
         >
-          <SearchBar />
+          <HeaderSearchBar  />
         </Box>
       </Flex>
     </Container>

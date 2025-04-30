@@ -172,6 +172,28 @@ class AnalyticQResultParser(ABC):
             return end_line if end_line else 0
 
     def _process_metadata(self, raw_issue: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Processes and extracts metadata from a raw issue dictionary based on configured field mapping.
+
+        This method traverses the raw issue dictionary using dot notation specified in the field mapping
+        to locate and extract metadata. It handles different data types (dict, list, simple values)
+        and processes them accordingly.
+
+        Args:
+            raw_issue (Dict[str, Any]): The raw issue dictionary containing metadata information.
+
+        Returns:
+            Dict[str, Any]: Processed metadata dictionary. Returns:
+                - Copy of all fields if metadata is a dictionary
+                - Dictionary with "items" key if metadata is a list
+                - Dictionary with "value" key if metadata is a simple value
+                - Empty dictionary if metadata field is not found or on error
+
+        Example:
+            If field_mapping["issue_metadata"] = "metadata.fields"
+            raw_issue = {"metadata": {"fields": {"key1": "value1", "key2": "value2"}}}
+            Returns: {"key1": "value1", "key2": "value2"}
+        """
 
         metadata_field = self.field_mapping.get("issue_metadata")
         if not metadata_field:
@@ -223,6 +245,8 @@ class AnalyticQResultParser(ABC):
 
             summary = self._generate_summary(issues)
             metadata = self._generate_metadata()
+
+            print(issues)
 
             return AnalyticQSASTScanResultModel(
                 scan_id=new_scan_id,

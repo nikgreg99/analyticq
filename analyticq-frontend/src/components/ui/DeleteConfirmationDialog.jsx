@@ -1,38 +1,71 @@
 import React from "react";
 import {
+    Box,
     Button,
     CloseButton,
     Dialog,
-    Portal
+    Portal,
+    Text
 } from "@chakra-ui/react";
 import { LuTrash2 } from "react-icons/lu";
 
+
 /**
- * A dialog component that confirms deletion of a repository context
+ * A reusable dialog component for confirming deletion actions.
+ *
+ * @component
  * @param {Object} props - The component props
- * @param {boolean} props.isOpenModal - Controls visibility of the dialog
- * @param {Function} props.setIsOpenModal - Callback to update modal's open state
- * @param {string} props.repoName - Name of the repository to be deleted
- * @param {boolean} props.isLoading - Loading state for the delete operation
- * @param {Function} props.onConfirm - Callback function triggered when deletion is confirmed
+ * @param {boolean} props.isOpenModal - Controls the visibility of the dialog
+ * @param {function} props.setIsOpenModal - Function to update the dialog's visibility state
+ * @param {string} props.itemName - Name or ID of the item to be deleted
+ * @param {('context'|'scan' | 'issue')} [props.itemType='context'] - Type of item being deleted, affects dialog content
+ * @param {boolean} props.isLoading - Loading state for delete action
+ * @param {function} props.onConfirm - Callback function executed when deletion is confirmed
  * @param {React.RefObject} props.cancelRef - React ref for the cancel button
- * @returns {JSX.Element} A confirmation dialog for repository deletion
+ *
+ * @returns {JSX.Element} A modal dialog with delete confirmation message and actions
  */
 const DeleteConfirmationDialog = ({
     isOpenModal,
     setIsOpenModal,
-    repoName,
+    itemName,
+    itemType = "context",
     isLoading,
     onConfirm,
     cancelRef
-}) => (
+}) => {
 
-    <Dialog.Root
+    const dialogConfig = {
+        context: {
+            title: `Deleting ${itemName} codebase?`,
+            description: `Are you sure you want to delete "${itemName}"? This action cannot be undone.
+                All associated scans and analysis data will also be removed.`,
+            buttonText: "Delete Context"
+        },
+        scan: {
+            title: `Deleting SAST scan?`,
+            description: `Are you sure you want to delete this scan with ID "${itemName}"? This action cannot be undone.
+                All findings and analysis data related to this scan will be permanently removed.`,
+            buttonText: "Delete Scan"
+        },
+        issue: {
+            title: `Deleting security issue?`,
+            description: `Are you sure you want to delete this issue with ID "${itemName}"? This action cannot be undone.
+                All related data for this security finding will be permanently removed.`,
+            buttonText: "Delete Issue"
+        }
+    }
+
+    const config = dialogConfig[itemType];
+
+    return (<Dialog.Root
         role="alertdialog"
         lazyMount
         open={isOpenModal}
         onOpenChange={(e) => setIsOpenModal(e.open)}
         motionPreset="slide-in-bottom"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
     >
         <Dialog.Trigger asChild>
             <Button
@@ -44,24 +77,44 @@ const DeleteConfirmationDialog = ({
                 loadingText="Deleting..."
             >
                 <LuTrash2 />
-                Delete Context
+                {config.buttonText}
             </Button>
         </Dialog.Trigger>
         <Portal>
             <Dialog.Positioner>
                 <Dialog.Content>
-                    <Dialog.Header>
-                        <Dialog.Title>Deleting {repoName} codebase...</Dialog.Title>
+                    <Dialog.Header
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        pb={2}
+                    >
+                        <Dialog.Title
+                            display="flex"
+                            id="delete-dialog-title"
+                            fontWeight="semibold"
+                            fontSize="lg"
+                        >
+                            {config.title}
+                        </Dialog.Title>
                     </Dialog.Header>
-                    <Dialog.Body>
-                        Are you sure you want to delete "{repoName}"? This action cannot be undone.
-                        All associated scans and analysis data will also be removed.
+                    <Dialog.Body id="delete-dialog-description">
+                        <Box
+                            display="flex"
+                            alignItems="center"
+                            mb={3}
+                        >
+                            <Text>
+                                {config.description}
+                            </Text>
+                        </Box>
                     </Dialog.Body>
                     <Dialog.Footer>
                         <Dialog.ActionTrigger asChild>
                             <Button
                                 variant="solid"
                                 colorPalette="green"
+                                disabled={isLoading}
                             >
                                 Cancel
                             </Button>
@@ -69,20 +122,27 @@ const DeleteConfirmationDialog = ({
                         <Button
                             variant="solid"
                             colorPalette="red"
+                            loading={isLoading}
+                            loadingText="Deleting..."
                             ref={cancelRef}
                             onClick={onConfirm}
+                            mr={3}
                         >
                             <LuTrash2 />
                             Delete
                         </Button>
                     </Dialog.Footer>
                     <Dialog.CloseTrigger asChild>
-                        <CloseButton size="sm" />
+                        <CloseButton
+                            size="sm"
+                            aria-label="Close delete confirmation"
+                        />
                     </Dialog.CloseTrigger>
                 </Dialog.Content>
             </Dialog.Positioner>
         </Portal>
     </Dialog.Root>
-);
+    );
+};
 
 export default DeleteConfirmationDialog;

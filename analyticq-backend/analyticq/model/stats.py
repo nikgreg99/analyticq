@@ -24,7 +24,7 @@ class AnalyticQStats(Base):
     __tablename__ = "analyticq_stats"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
-    context_id: Mapped[int] = mapped_column(Integer, ForeignKey("analyticq_scan_context.id"), nullable=True)
+    context_id: Mapped[int] = mapped_column(Integer, ForeignKey("analyticq_scan_context.id", ondelete="CASCADE"), nullable=True)
     total_files_scanned: Mapped[int] = mapped_column(Integer, nullable=False)
     total_size_scanned : Mapped[int] = mapped_column(Integer, nullable=False)
     excluded_directories: Mapped[list] = mapped_column(JSON, nullable=False, default=[])

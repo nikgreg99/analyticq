@@ -7,10 +7,11 @@ from analyticq.manager.db_manager import AnalyticQDatabaseManager
 from analyticq.repository.context_repository import \
     AnalyticQContextRepository  # noqa
 from analyticq.repository.scan_repository import (
-    AnalyticQSASTIssue, AnalyticQSASTIssueModel, AnalyticQSASTScanResult,
-    AnalyticQSASTScanResultModel, AnalyticQScanResultRepository)
+    AnalyticQSASTIssue, AnalyticQSASTScanResult, AnalyticQSASTScanResultModel,
+    AnalyticQScanResultRepository)
 from analyticq.repository.stats_repository import \
     AnalyticQStatsRepository  # noqa
+from analyticq.validator.issue import AnalyticQSASTIssueModel
 from sqlalchemy import insert, select, text
 
 BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
@@ -145,10 +146,10 @@ async def test_update_scan_result_by_scan_id(scan_repo):
     await scan_repo.add_scan(scan_result)
 
     # Update the scan result
-    await scan_repo.update_by_scan_id(scan_result.scan_id, updated_scan_result)
+    await scan_repo.update_scan_by_id(scan_result.id, updated_scan_result)
 
     # Verify the update
-    updated_scan_result = await scan_repo.get_by_scan_id('scan_123')
+    updated_scan_result = await scan_repo.get_by_scan_id(1)
     assert updated_scan_result.summary == {"new_key": "new_value"}
 
 

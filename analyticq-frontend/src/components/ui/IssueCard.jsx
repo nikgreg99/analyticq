@@ -1,9 +1,10 @@
 import React from 'react';
-import { Box, Badge, Text, Flex, IconButton } from '@chakra-ui/react';
-import { Tooltip } from './tooltip';
+import { Box, Badge, Text, Flex, IconButton, HStack, Tag } from '@chakra-ui/react';
+import { Tooltip } from './Tooltip';
 import { useNavigate } from 'react-router-dom';
-import { FaForward } from "react-icons/fa";
+import { FaForward, FaClock } from "react-icons/fa";
 import { SEVERITY_COLOR } from 'components/utils/issues';
+import { formatDate } from 'components/utils/time';
 
 /**
  * A component that displays an issue card with severity, rule ID, file path, and message.
@@ -19,21 +20,32 @@ import { SEVERITY_COLOR } from 'components/utils/issues';
  *
  * @returns {JSX.Element} A card component displaying the issue information
  */
-export const IssueCard = ({ issue }) => {
+export const IssueCard = ({ issue, showCreationDate = true }) => {
 
   const navigate = useNavigate();
 
+  const handleNavigate = () => {
+    navigate(`/issues/${issue.id}`);
+  };
+
   return (
     <Box
+      as="button"
+      onClick={handleNavigate}
       p={3}
       borderWidth="1px"
       borderRadius="md"
       borderColor="gray.200"
       _hover={{ boxShadow: "sm", bg: "gray.50" }}
+      _focus={{ boxShadow: 'outline' }}
+      transition="background 0.2s"
     >
-      <Flex justifyContent="space-between" alignItems="center">
+      <Flex justifyContent="space-between" alignItems="center" gap={2}>
         <Flex alignItems="center" gap={2}>
-          <Tooltip content={`Severity: ${issue.severity}`}>
+          <Tooltip
+            content={`Severity: ${issue.severity}`}
+            showArrow
+          >
             <Badge colorPalette={SEVERITY_COLOR[issue.severity]}>
               {issue.severity.charAt(0).toUpperCase()}
             </Badge>
@@ -43,6 +55,7 @@ export const IssueCard = ({ issue }) => {
             fontWeight="medium"
             fontSize="sm"
             color="blackAlpha.800"
+            noOfLines={1}
           >
             {issue.rule_id}
           </Text>
@@ -51,13 +64,19 @@ export const IssueCard = ({ issue }) => {
         <Text color="gray.500" fontSize="xs">
           {issue.path}:{issue.start_line}
         </Text>
-        <Tooltip content="View Details">
+        <Tooltip
+          content="View Details"
+          showArrow
+          >
           <IconButton
             size="sm"
             aria-label="View details"
             cursor="pointer"
             variant="subtle"
-            onClick={() => navigate(`/issues/${issue.id}`)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent bubble so both card and button don't trigger
+              handleNavigate();
+            }}
           >
             <FaForward />
           </IconButton>
@@ -72,6 +91,14 @@ export const IssueCard = ({ issue }) => {
       >
         {issue.message}
       </Text>
+      {showCreationDate && (
+        <HStack mt={2}>
+          <FaClock size={12} color="blue" />
+          <Tag.Root colorPalette="blue">
+            <Tag.Label>Created: {formatDate(issue.created_at)}</Tag.Label>
+          </Tag.Root>
+        </HStack>
+      )}
     </Box>
   );
 };

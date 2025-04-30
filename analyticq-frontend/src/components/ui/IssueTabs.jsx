@@ -16,10 +16,10 @@ import {
     createListCollection
 } from "@chakra-ui/react";
 import { IssueCard } from "./IssueCard";
-import { Tooltip } from "./tooltip";
+import { Tooltip } from "./Tooltip";
 import { filterIssues, sortIssues } from "components/utils/issues";
 import { IoIosSearch } from "react-icons/io";
-import { FaChevronUp, FaChevronDown } from "react-icons/fa6";
+import { FaChevronUp, FaChevronDown, FaClock } from "react-icons/fa6";
 import EmptyState from "components/layout/EmptyState";
 import PaginationControls from "./PaginationControls";
 
@@ -51,7 +51,7 @@ import PaginationControls from "./PaginationControls";
 export const IssueTabs = ({ scanData = { issues: [] } }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterOpen, setFilterOpen] = useState(false);
-    const [sortOrder, setSortOrder] = useState([]);
+    const [sortOrder, setSortOrder] = useState(['severity']);
     const [activeTab, setActiveTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState([10]);
@@ -79,7 +79,8 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
         "HIGH": { displayName: "High", color: "orange", order: 2 },
         "MEDIUM": { displayName: "Medium", color: "yellow", order: 3 },
         "LOW": { displayName: "Low", color: "green", order: 4 },
-        "INFO": { displayName: "Info", color: "blue", order: 5 }
+        "INFO": { displayName: "Info", color: "blue", order: 5 },
+        "WARNING": { displayName: "Warning", color: "teal", order: 6 }
     };
 
     const getIssueCounts = () => {
@@ -105,16 +106,16 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
         if (!issues) return null;
 
         const filteredIssues = filterIssues(issues, searchTerm);
-        const sortedIssues = sortIssues(filteredIssues, sortOrder, severityConfig);
+        const sortedIssues = sortIssues(filteredIssues, sortOrder[0], severityConfig);
 
         if (!sortedIssues || sortedIssues.length === 0) {
             return (
-                <>
+                <Flex>
                     <EmptyState
                         title="No issues found"
-                        message="No issues found fot the following scan"
+                        message="No issues found for the following scan"
                     />
-                </>
+                </Flex>
 
             );
         }
@@ -125,78 +126,93 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
         const endIndex = Math.min(startIndex + pageSize[0], totalItems);
         const currentPageData = sortedIssues.slice(startIndex, endIndex);
 
-        const shouldShowPagination =  totalItems >= 5;
+        const shouldShowPagination = totalItems >= 5;
+        const showDateInfo = sortOrder[0] === 'newest' || sortOrder[0] === 'oldest';
 
         return (
             <>
-            <VStack
-                spacing={4}
-                align="stretch"
-                mt={4}
-            >
-                {currentPageData.map((issue) => (
-                    <IssueCard key={issue.id} issue={issue} />
-                ))}
-
-            </VStack>
-             {shouldShowPagination > 0 && (
-                <Flex
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mt={6}
-                    borderTopWidth="1px"
-                    pt={4}
-                >
-
-                    <Select.Root
-                        collection={pageSizeOptions}
-                        value={pageSize}
-                        onValueChange={(e) => {
-                            setPageSize(e.value);
-                            setCurrentPage(1); // Reset to first page when changing page size
-                        }}
-                        size="sm"
-                        width="150px"
+                {showDateInfo && (
+                    <Box
+                        mb={4}
+                        p={2}
                     >
-                        <Select.Control>
-                            <Select.Trigger>
-                                <Select.ValueText
-                                    placeholder="Items per page"
-                                    aria-label="Select items per page"
-                                    color="blackAlpha.900"
-                                />
-                            </Select.Trigger>
-                            <Select.IndicatorGroup>
-                                <Select.Indicator />
-                            </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Portal>
-                            <Select.Positioner>
-                                <Select.Content>
-                                    {pageSizeOptions.items.map((option) => (
-                                        <Select.Item
-                                            item={option}
-                                            key={option.value}
-                                        >
-                                            {option.label}
-                                            <Select.ItemIndicator />
-                                        </Select.Item>
-                                    ))}
-                                </Select.Content>
-                            </Select.Positioner>
-                        </Portal>
-                    </Select.Root>
+                        <Flex align="center">
+                            <FaClock style={{ marginRight: '8px', color:'black' }} />
+                            <Text fontSize="sm" color="blackAlpha.800">
+                                Issues sorted by {sortOrder[0] === 'newest' ? 'newest' : 'oldest'} first.
 
-                    {totalPages > 1 && (
-                        <PaginationControls
-                            total={totalItems}
-                            pageSize={pageSize[0]}
-                            currentPage={currentPage}
-                            onPageChange={(page) => setCurrentPage(page)}
-                        />
-                    )}
-                </Flex>
-            )}
+                            </Text>
+                        </Flex>
+                    </Box>
+                )}
+                <VStack
+                    spacing={4}
+                    align="stretch"
+                    mt={4}
+                >
+                    {currentPageData.map((issue) => (
+                        <IssueCard key={issue.id} issue={issue} />
+                    ))}
+
+                </VStack>
+                {shouldShowPagination > 0 && (
+                    <Flex
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mt={6}
+                        borderTopWidth="1px"
+                        pt={4}
+                    >
+
+                        <Select.Root
+                            collection={pageSizeOptions}
+                            value={pageSize}
+                            onValueChange={(e) => {
+                                setPageSize(e.value);
+                                setCurrentPage(1); // Reset to first page when changing page size
+                            }}
+                            size="sm"
+                            width="150px"
+                        >
+                            <Select.Control>
+                                <Select.Trigger>
+                                    <Select.ValueText
+                                        placeholder="Items per page"
+                                        aria-label="Select items per page"
+                                        color="blackAlpha.900"
+                                    />
+                                </Select.Trigger>
+                                <Select.IndicatorGroup>
+                                    <Select.Indicator />
+                                </Select.IndicatorGroup>
+                            </Select.Control>
+                            <Portal>
+                                <Select.Positioner>
+                                    <Select.Content>
+                                        {pageSizeOptions.items.map((option) => (
+                                            <Select.Item
+                                                item={option}
+                                                key={option.value}
+                                            >
+                                                {option.label}
+                                                <Select.ItemIndicator />
+                                            </Select.Item>
+                                        ))}
+                                    </Select.Content>
+                                </Select.Positioner>
+                            </Portal>
+                        </Select.Root>
+
+                        {totalPages > 1 && (
+                            <PaginationControls
+                                total={totalItems}
+                                pageSize={pageSize[0]}
+                                currentPage={currentPage}
+                                onPageChange={(page) => setCurrentPage(page)}
+                            />
+                        )}
+                    </Flex>
+                )}
             </>
         );
     };
@@ -259,7 +275,7 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
                         <IconButton
                             size="sm"
                             onClick={() => setFilterOpen(!filterOpen)}
-                            aria-label="Toggle filters"
+                            aria-label={`${filterOpen ? 'Collapse' : 'Expand'} filters`}
                             aria-expanded={filterOpen}
                             variant="subtle"
                         >
@@ -286,7 +302,7 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
                             <InputGroup
                                 maxW={{ base: "100%", md: "300px" }}
                                 flex="1"
-                                endElement={<IoIosSearch />}
+                                endElement={<IoIosSearch style={{ position: 'absolute', right: '8px', top: '10px' }} />}
                             >
                                 <Input
                                     placeholder="Search issues..."
@@ -344,10 +360,14 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
                             defaultValue="all"
                             mt={4}
                         >
-                            <Tabs.List overflowX="auto" whiteSpace="nowrap">
+                            <Tabs.List
+                                overflowX="auto"
+                                whiteSpace="nowrap"
+                                px={4}
+                            >
                                 {tabsConfig.map((tab) => (
                                     <Tabs.Trigger key={tab.id} value={tab.id}>
-                                        {tab.label}{" "}
+                                        {tab.label}
                                         <Badge ml={2} colorScheme={tab.color}>
                                             {tab.count}
                                         </Badge>

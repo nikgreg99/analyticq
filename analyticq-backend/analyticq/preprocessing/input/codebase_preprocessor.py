@@ -58,17 +58,16 @@ class CodebasePreprocessor:
             path: Path,
             **stats: Dict[str, str]
     ) -> None:
-        if not path or not path.exists():
-            logger.warning("Cannot save context: Invalid or non-existent codebase path")
-            return None
         try:
-            repo_name = path.name
-            logger.info(f"Context saved for repository: {repo_name}")
+            if isinstance(path, str):
+                repo_name = path
+            else:
+                repo_name = path.name
+            logger.info(f"Stats saved for repository: {repo_name}")
             context = await self.context_service.get_context_by_repo_name(repo_name)
             context_id = context.id
             stats['context_id'] = context_id
             new_stats = AnalyticQStatsModel(**stats)
-            # new_stats.id = 2
             await self.stats_service.create_stats(new_stats)
         except Exception as e:
             logger.error(f"Failed to save context for codebase at {path}: {str(e)}")
@@ -78,7 +77,8 @@ class CodebasePreprocessor:
             codebase_url: str,
             branch: Optional[str] = None,
             tag: Optional[str] = None,
-            ssh_key_path: Optional[str] = None) -> Dict:
+            ssh_key_path: Optional[str] = None,
+            original_path: Optional[str] = None) -> Dict:
         """
         Preprocesses a codebase by cloning it and scanning its contents for language information.
 
@@ -100,9 +100,12 @@ class CodebasePreprocessor:
             "ssh_key_path": ssh_key_path
         }
         try:
-            repo_path = await self.cloner.clone(codebase_url, **codebase_info)
+            logger.info("ORIGINAL PATH in preprocess codebase: %s", original_path)
+            repo_path = await self.cloner.clone(codebase_url, original_path, **codebase_info)
             await self.language_scanner.scan_codebase(repo_path)
             stats = self.language_scanner.generate_codebase_report()
+            if original_path is not None:
+                repo_path = original_path
             await self.save_stats_for_codebase(repo_path, **stats)
             return self.language_scanner.generate_codebase_report()
         except Exception as e:

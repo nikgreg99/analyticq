@@ -5,7 +5,7 @@ import { getScanById } from "services/scanService";
 import LoadingSpinner from "components/ui/LoadingSpinner";
 import ErrorDisplay from "components/layout/ErrorDisplay";
 import BackButton from "components/ui/BackButton";
-import { HeaderScan } from "components/ui/ScanHeader";
+import { ScanHeader } from "components/ui/ScanHeader";
 import { ScanSummary } from "components/ui/ScanSummary";
 import { IssueTabs } from "components/ui/IssueTabs";
 import { updatePageMetadata } from "components/utils/metadata";
@@ -43,28 +43,28 @@ export const ScanDetailsPage = ({ initialScanData = null }) => {
     const [scanData, setScanData] = useState([]);
     const [loading, setLoading] = useState(!initialScanData);
     const [error, setError] = useState(null);
-    const {contextId, scanId } = useParams();
+    const { contextId, scanId } = useParams();
     const navigate = useNavigate();
 
 
-     // Update metadata when product data changes
-        useEffect(() => {
-            // Set initial loading metadata
-            updatePageMetadata(
-                'Context stats...',
-                'Loading stats information...',
-                `/contexts/${contextId}/stats`
-            );
+    // Update metadata when product data changes
+    useEffect(() => {
+        // Set initial loading metadata
+        updatePageMetadata(
+            'Context stats...',
+            'Loading stats information...',
+            `/contexts/${contextId}/stats`
+        );
 
-            // Update with product data once loaded
-            if (scanData) {
-                updatePageMetadata(
-                    `Scan ${scanId}`,
-                    scanId,
-                    `/contexts/${contextId}/scan/${scanId}`
-                );
-            }
-        }, [scanData,  contextId, scanId]);
+        // Update with product data once loaded
+        if (scanData) {
+            updatePageMetadata(
+                `Scan ${scanId}`,
+                scanId,
+                `/contexts/${contextId}/scan/${scanId}`
+            );
+        }
+    }, [scanData, contextId, scanId]);
 
 
     // Fetch scan details from the API
@@ -116,7 +116,7 @@ export const ScanDetailsPage = ({ initialScanData = null }) => {
             mx="auto"
             maxWidth="1200px"
         >
-            <HeaderScan scanData={scanData} />
+            <ScanHeader scanData={scanData} />
             <ScanSummary scanData={scanData} />
             <IssueTabs scanData={scanData} />
         </Box>

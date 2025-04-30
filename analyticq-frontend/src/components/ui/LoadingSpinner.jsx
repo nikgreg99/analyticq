@@ -14,10 +14,18 @@ import {
  * )
  */
 const LoadingSpinner = () => (
-    <Flex justify="center" align="center" minH="200px">
+    <Flex
+        justify="center"
+        align="center"
+        minH="200px"
+        role="status"
+        aria-live="polite"
+    >
         <Spinner
             size="xl"
             color="colorPalette.600"
+            aria-label="Loading content"
+            data-testid="loading-spinner"
         />
     </Flex>
 );

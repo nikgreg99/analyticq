@@ -15,7 +15,7 @@ import {
     createListCollection,
     Flex
 } from "@chakra-ui/react"
-import { Tooltip } from "./tooltip";
+import { Tooltip } from "./Tooltip";
 import { formatDate } from "components/utils/time";
 import PaginationControls from "./PaginationControls";
 
@@ -42,6 +42,9 @@ import PaginationControls from "./PaginationControls";
  */
 export const ScanResultList = ({ repoName }) => {
     const [scansData, setScanData] = useState([]);
+    const [filters, setFilters] = useState({
+        toolName: ['all']
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -128,7 +131,7 @@ export const ScanResultList = ({ repoName }) => {
                                 fontSize="xs"
                                 fontWeight="medium"
                             >
-                                {label}: {count}
+                                {label} :{count}
                             </Badge>
                         </Tooltip>
                     ) : null;
@@ -137,12 +140,28 @@ export const ScanResultList = ({ repoName }) => {
         )
     }
 
-    const totalItems = scansData.length;
+    const filteredData = scansData.filter(scan => {
+        if (filters.toolName[0] === 'all') return true;
+        return scan.tool_name === filters.toolName[0];
+    });
+
+    const totalItems = filteredData.length;
     const totalPages = Math.ceil(totalItems / pageSize[0]);
     const startIndex = (currentPage - 1) * pageSize[0];
     const endIndex = Math.min(startIndex + pageSize[0], totalItems);
-    const currentPageData = scansData.slice(startIndex, endIndex);
+    const currentPageData = filteredData.slice(startIndex, endIndex);
 
+    const createToolNameCollection = (scansData) => {
+        const uniqueTools = [...new Set(scansData.map(scan => scan.tool_name))];
+        return createListCollection({
+            items: [
+                { label: "All Tools", value: 'all' },
+                ...uniqueTools.map(tool => ({ label: tool, value: tool }))
+            ]
+        });
+    };
+
+    const toolNameCollection = createToolNameCollection(scansData);
 
     if (loading) {
         return <LoadingSpinner />
@@ -157,7 +176,42 @@ export const ScanResultList = ({ repoName }) => {
             <Card.Header
                 borderBottomWidth="1px"
                 pb={3}>
+                <HStack mt={4} gap={3} flexWrap="wrap">
                 <Heading size="md">Scan Results: {repoName}</Heading>
+                    <Select.Root
+                        size="sm"
+                        placeholder="Filter by tool name"
+                        collection={toolNameCollection}
+                        defaultValue={['all']}
+                        value={filters.toolName}
+                        onValueChange={(e) => setFilters({ ...filters, toolName: e.value })}
+                        width="30%"
+                        ml="auto"
+                    >
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                            <Select.Trigger>
+                                <Select.ValueText placeholder="Filter by tool" />
+                            </Select.Trigger>
+                            <Select.IndicatorGroup>
+                                <Select.Indicator />
+                                <Select.ClearTrigger />
+                            </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Portal>
+                            <Select.Positioner>
+                                <Select.Content>
+                                    {toolNameCollection.items.map((tool) => (
+                                        <Select.Item item={tool} key={tool.value}>
+                                            {tool.label}
+                                            <Select.ItemIndicator />
+                                        </Select.Item>
+                                    ))}
+                                </Select.Content>
+                            </Select.Positioner>
+                        </Portal>
+                    </Select.Root>
+                </HStack>
             </Card.Header>
             <Card.Body>
                 {error ? (
@@ -228,7 +282,7 @@ export const ScanResultList = ({ repoName }) => {
                                 onValueChange={(e) => handlePageSizeChange(e.value)}
                                 collection={currentItemPerPageList}
                                 variant="subtle"
-                                width="auto"
+                                width="auto%"
                             >
                                 <Select.HiddenSelect />
                                 <Select.Label>Rows Per Page</Select.Label>
@@ -255,7 +309,6 @@ export const ScanResultList = ({ repoName }) => {
                             </Select.Root>
                         </Flex>
 
-
                         <PaginationControls
                             total={totalItems}
                             pageSize={pageSize[0]}
@@ -268,5 +321,6 @@ export const ScanResultList = ({ repoName }) => {
             )}
         </Card.Root >
     )
-
 }
+
+ScanResultList.displayName = "ScanResultList";

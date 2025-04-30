@@ -31,11 +31,16 @@ import {
     return (
         <VStack spacing={6}
                 textAlign="center"
-                py={20}>
+                py={20}
+                role="main"
+                aria-labelledby="404 Not Found Page"
+        >
             <Heading
+                as="p"
                 size="3xl"
                 color="gray.500"
                 fontWeight="bold"
+                aria-hidden="true"
             >
                 404
             </Heading>
@@ -52,11 +57,13 @@ import {
                 marginTop="3em"
                 as={RouterLink}
                 to="/"
-                colorScheme="blue"
+                colorPalette="black"
+                variant="subtle"
                 size="sm"
                 px={2}
                 py={2}
                 _hover={{ boxShadow: "1g"}}
+                aria-label="Go to Home Page"
             >
                 <FaHome/>
                 Go to Home Page

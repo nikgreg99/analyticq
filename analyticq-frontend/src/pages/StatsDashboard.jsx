@@ -144,14 +144,17 @@ export const StatsDashboard = ({ initStatsData = null }) => {
             maxW="7xl"
             mx="auto"
             minH="100vh"
+            role="main"
+            aria-labelledby="stats-dashboard-title"
         >
             <Heading
                 as="h1"
+                id="stats-dashboard-title"
                 size="xl"
                 mb={8}
                 textAlign="center"
                 color="blackAlpha.800"
-
+                aria-live="polite"
             >
                 Codebase Statistics: {repoName}
             </Heading>
@@ -160,6 +163,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
                 spacing={6}
                 mb={8}
                 color="blackAlpha.800"
+                aria-live="polite"
             >
                 <SummaryStatsCard
                     title="Total files"
@@ -217,6 +221,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
                 columns={{ base: 1, md: 2, lg: 3 }}
                 spacing={6}
                 mb={8}
+                aria-live="polite"
             >
                 {Object.entries(statsData.language_statistics)
                     .sort((a, b) => b[1].file_count - a[1].file_count)
@@ -234,7 +239,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
 
 
             {/* Exclusion Summary */}
-            <Heading textAlign="center" color="blackAlpha.800">
+            <Heading textAlign="center" color="blackAlpha.800"  id="exclusion-summary">
                 Exclusion Summary
             </Heading>
             <ExclusionSummary

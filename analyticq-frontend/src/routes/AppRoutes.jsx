@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { MainLayout } from "components/layout/MainLayout";
 import { ToolsPage } from "pages/Tools";
-import { LanguagesPage } from "pages/Languages";
 import { HomePage } from "pages/Home";
 import { AboutPage } from "pages/About";
 import { ContextsPage } from "pages/Contexts";
@@ -56,7 +55,6 @@ export const AppRoutes = () => {
                         element={<IssueDetailPage/>}
                     />
                     <Route path="/tools" element={ <ToolsPage/> } />
-                    <Route path="/language-supported" element={<LanguagesPage/>}/>
                     <Route path="/about" element={<AboutPage />} />
                     {/* Catch-all route for 404 */}
                     <Route path="/404" element={<NotFoundPage />} />

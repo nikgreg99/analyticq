@@ -1,9 +1,8 @@
 import React from "react";
 import {
-    Box,
-    Heading,
     Alert,
-    HStack
+    HStack,
+    Flex
 } from "@chakra-ui/react";
 
 /**
@@ -17,15 +16,23 @@ import {
  * @returns {ReactElement} A box containing the error display
  */
 const ErrorDisplay = ({ title, error, backButton }) => (
-    <Box p={6}>
-        <Heading
-            size="lg"
+    <Flex
+        justify="center"
+        align="center"
+
+    >
+        <Alert.Root
+            role="alert"
+            aria-live="assertive"
+            aria-labelledby="error-title"
+            status="error"
             mb={4}
-            textAlign="center" c
-            color="blackAlpha.800">
-                {title}
-        </Heading>
-        <Alert.Root status="error" mb={4}>
+        >
+            <Alert.Content>
+                <Alert.Indicator />
+                <Alert.Title>{title}</Alert.Title>
+                <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
             {error}
         </Alert.Root>
         {backButton && (
@@ -33,7 +40,7 @@ const ErrorDisplay = ({ title, error, backButton }) => (
                 {backButton}
             </HStack>
         )}
-    </Box>
+    </Flex>
 )
 
 export default ErrorDisplay;

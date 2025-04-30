@@ -12,6 +12,7 @@ import {
     Select,
     Portal,
     Spinner,
+    Box,
     createListCollection
 } from "@chakra-ui/react";
 import LoadingSpinner from "components/ui/LoadingSpinner";
@@ -56,13 +57,13 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
     const [filterByTool, setFilterByTool] = useState(['all']);
     const navigate = useNavigate();
 
-     useEffect(() => {
-            updatePageMetadata(
-                "Tool Explorer",
-                'SAST Tool Explorer',
-                '/tools'
-            )
-        }, []);
+    useEffect(() => {
+        updatePageMetadata(
+            "Tool Explorer",
+            'SAST Tool Explorer',
+            '/tools'
+        )
+    }, []);
 
     const handleClickBack = () => {
         navigate(-1);
@@ -185,57 +186,73 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
     return (
         <Container
             maxW="max-content"
-            py={10}
-
+            py={8}
+            px={{ base: 4, md: 8 }}
         >
-            <Heading
-                mb={6}
-                textAlign="center"
-                size="2xl"
-                color="blackAlpha.800"
+            <Flex
+                direction="column"
+                align="center"
+                mb={10}
             >
-                Programming Language Explorer
-            </Heading>
+                <Heading
+                    mb={6}
+                    textAlign="center"
+                    size="2xl"
+                    color="blackAlpha.800"
+                >
+                    SAST Tools Explorer
+                </Heading>
 
-            <Text
-                textAlign="center"
-                fontSize="lg"
-                color="blackAlpha.800"
-            >
-                Discover programming languages and their associated SAST tools
-            </Text>
+                <Text
+                    textAlign="center"
+                    fontSize="lg"
+                    color="blackAlpha.800"
+                >
+                    Discover programming languages and their associated SAST tools
+                </Text>
+            </Flex>
+
 
             <Stack
                 direction={{ base: 'column', md: 'row' }}
                 spacing={4}
-                mb={5}
-                mt={3}
+                mb={8}
+                w="100%"
+                mx="auto"
+                maxW="800px"
             >
                 <InputGroup
                     size="lg"
                     flex={1}
                     endElement={<IoIosSearch />}
+                    aria-labelledby="search-languages"
                 >
                     <Input
+                        id="search-languages"
                         placeholder="Search language..."
                         value={searchTerm}
                         color="blackAlpha.800"
                         onChange={(e) => setSearchTerm(e.target.value)}
                         borderRadius="lg"
+                        pr="4.5rem"
+                        focusBorderColor="blue.500"
+                        aria-label="Search for a programming language"
                     >
                     </Input>
                 </InputGroup>
 
                 <InputGroup
-                    size="lg"
+                   flex={1}
                     maxW={{ base: 'full', md: '250px' }}
                 >
                     <Select.Root
-                        pl={10}
                         value={filterByTool}
                         onValueChange={(e) => setFilterByTool(e.value)}
                         borderRadius="lg"
                         collection={toolOptions}
+                        focusBorderColor="blue.500"
+                        minW={{ base: '100%', md: '250px' }}
+                        aria-label="tool-filter"
                     >
                         <Select.HiddenSelect />
                         <Select.Control>
@@ -268,19 +285,22 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
 
             {filteredLanguages.length === 0 ? (
                 <Flex
+                    minHeight="300px"
                     direction="column"
                     justify="center"
                     align="center"
                     minH="auto"
+                    p={8}
                 >
-                    <Heading size="md" color="blackAlpha.800">No Languages found</Heading>
+                    <Heading size="md" color="blackAlpha.800" mb={3}>No Languages found</Heading>
                     <Text color="crimson" fontSize="xs" mt={2}>Try adjusting your search or filters</Text>
                 </Flex>) : (
-                <>
-                    <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6}>
+                <Box>
+                    <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6} mb={8}>
                         {
                             filteredLanguages.map(language => (
                                 <LanguageToolTile
+                                    key={language.name}
                                     language={language}
                                 />
                             ))}
@@ -289,7 +309,7 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
                     <Text mt={6} color="gray.500" textAlign="center">
                         Showing {filteredLanguages.length} of {languages.length} languages
                     </Text>
-                </>
+                </Box>
             )}
 
         </Container >

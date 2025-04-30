@@ -9,7 +9,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { Tooltip } from "./tooltip";
+import { Tooltip } from "./Tooltip";
 
 /**
  * A component that displays the distribution of programming languages in a project.

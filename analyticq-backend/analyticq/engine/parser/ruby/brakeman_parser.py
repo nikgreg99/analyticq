@@ -53,7 +53,13 @@ class BrakemanParser(AnalyticQResultParser):
 
             transformed_issue = {
                 "warning_code": str(warning.get("warning_code")),
-                "warning_type": warning.get("warning_type", "unknown"),
+                "warning_type": warning.get("warning_type", "Unknown"),
+                "code": warning.get("code", ""),
+                "file": warning.get("file", ""),
+                "message": warning.get("message", ""),
+                "line": warning.get("line", ""),
+                "confidence": warning.get("confidence", ""),
+                "severity": warning.get("severity", ""),
                 "metadata": {
                     "user_input": warning.get("user_input", ""),
                     "link": warning.get("link", ""),
@@ -73,10 +79,9 @@ class BrakemanParser(AnalyticQResultParser):
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
+            scan_info = raw_result.get("scan_info", [])
             transformed_results = self.transform_output(raw_result)
             scan_result = super().parse_scan_result(transformed_results)
-
-            scan_info = raw_result.get("scan_info", [])
 
             if scan_info:
                 scan_result.scan_metadata.update({

@@ -6,6 +6,7 @@ export const SEVERITY_COLOR = {
   MEDIUM: 'orange',
   LOW: 'yellow',
   INFO: 'blue',
+  WARNING: "teal",
   UNKNOWN: 'gray',
 };
 
@@ -28,20 +29,38 @@ export const  CONFIDENCE_COLOR = {
  */
 export const getIssueCounts = (scanData) => {
 
-  if (!scanData || !scanData.issues) return { high: 0, medium: 0, low: 0, info: 0, critical: 0, unknown: 0 };
+  if (!scanData || !scanData.issues) return { high: 0, medium: 0, low: 0, info: 0, critical: 0, warning:0, unknown: 0 };
 
   return scanData.issues.reduce((counts, issue) => {
     const severity = issue.severity || "UNKNOWN";
-    if (severity === "CRITICAL") counts.critical++;
-    else if (severity === "HIGH") counts.high++;
-    else if (severity === "MEDIUM") counts.medium++;
-    else if (severity === "LOW") counts.low++;
-    else if (severity === "INFO") counts.info++;
-    else counts.unknown++;
+    switch (severity.toUpperCase()) {
+      case "CRITICAL":
+        counts.critical++;
+        break;
+      case "HIGH":
+        counts.high++;
+        break;
+      case "MEDIUM":
+        counts.medium++;
+        break;
+      case "LOW":
+        counts.low++;
+        break;
+      case "INFO":
+        counts.info++;
+        break;
+      case "WARNING":
+        counts.warning++;
+        break;
+      default:
+        counts.unknown++;
+        break;
+    }
     return counts;
-  }, { critical: 0, high: 0, medium: 0, low: 0, info: 0, unknown: 0 });
+  }, { critical: 0, high: 0, medium: 0, low: 0, info: 0 , warning: 0,unknown: 0 });
 };
-// Filter issues by search term
+
+
 /**
  * Filters an array of issues based on a search term
  * @param {Array} issues - The array of issue objects to filter

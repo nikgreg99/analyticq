@@ -1,7 +1,6 @@
 import React from "react";
 import {
     Box,
-    Heading,
     Alert
 } from "@chakra-ui/react";
 
@@ -16,15 +15,25 @@ import {
  */
 const EmptyState = ({ title, message }) => {
     return (
-
-        <Alert.Root status="info">
-            <Alert.Title mt={4} mb={1} fontSize="lg">
-                {title}
-            </Alert.Title>
-            <Alert.Content maxWidth="md">
-                {message}
-            </Alert.Content>
-        </Alert.Root>
+        <Box
+            p={6}
+            maxW="md"
+            textAlign="center"
+        >
+            <Alert.Root
+                status="info"
+                title={title}
+                role="alert" // Ensure the alert is announced immediately
+                aria-live="assertive" // Ensure screen readers announce this content as soon as it appears
+                aria-atomic="true"
+            >
+                <Alert.Indicator />
+                <Alert.Content maxWidth="md">
+                    <Alert.Title>{title}</Alert.Title>
+                    <Alert.Description>{message}</Alert.Description>
+                </Alert.Content>
+            </Alert.Root>
+        </Box>
     );
 };
 

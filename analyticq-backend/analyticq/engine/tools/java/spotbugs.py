@@ -24,11 +24,12 @@ class SpotbugsTool(AnalyticQSASTTool):
         container_manager = AnalyticQContainerManager(
             runtime_config=AnalyticQContainerRuntimeConfig(
                 memory="1g",
-                security_opts=[]
+                security_opts=[],
             )
         )
         image_name = "spotbugs"
         image_tag = "latest"
+        container_manager.runtime_config.network.mode = "host"
         analyzer = SpotBugsAnalyzer(container_manager, image_name, image_tag)
         parser = SpotBugsParser()
         super().__init__(analyzer, parser, container_manager, image_name, image_tag)

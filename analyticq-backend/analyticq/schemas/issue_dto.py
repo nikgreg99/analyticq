@@ -10,7 +10,7 @@ class IssueCreateRequest(BaseModel):
     Request DTO for creating a new issue.
     """
     id: int
-    scan_id: str
+    scan_id: int
     rule_id: str
     severity: AnalyticQSeverity
     confidence: AnalyticQConfidence

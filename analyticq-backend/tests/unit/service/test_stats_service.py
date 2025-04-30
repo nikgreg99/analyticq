@@ -1,8 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from analyticq.repository.stats_repository import (AnalyticQContextModel,
-                                                   AnalyticQStatsModel,
+from analyticq.repository.stats_repository import (AnalyticQStatsModel,
                                                    AnalyticQStatsRepository)
 from analyticq.service import AnalyticQStatsService
 from analyticq.validator.context import AnalyticQCodebaseType
@@ -99,7 +98,7 @@ TEST_CONTEXT_DATA = {
 
 @pytest.mark.asyncio
 async def test_create_stats_success(stats_repository, stats_service):
-    stats_repository.add_statistics.return_value = AnalyticQStatsModel(**TEST_STATS_DATA)
+    stats_repository.add_stats.return_value = AnalyticQStatsModel(**TEST_STATS_DATA)
 
     # Create an AnalyticQStatsModel object
     stats_data = AnalyticQStatsModel(**TEST_STATS_DATA)
@@ -108,13 +107,13 @@ async def test_create_stats_success(stats_repository, stats_service):
 
     assert isinstance(result, AnalyticQStatsModel)
     assert result.id == 1
-    stats_repository.add_statistics.assert_called_once_with(stats_data)
+    stats_repository.add_stats.assert_called_once_with(stats_data)
 
 
 @pytest.mark.asyncio
 async def test_create_stats_validation_error(stats_service, stats_repository):
 
-    stats_repository.add_statistics.side_effect = ValueError("Invalid data")
+    stats_repository.add_stats.side_effect = ValueError("Invalid data")
     stats_data = AnalyticQStatsModel(**TEST_STATS_DATA)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -122,7 +121,7 @@ async def test_create_stats_validation_error(stats_service, stats_repository):
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
     assert "Invalid input data: Invalid data" in exc_info.value.detail
-    stats_repository.add_statistics.assert_called_once_with(stats_data)
+    stats_repository.add_stats.assert_called_once_with(stats_data)
 
 
 @pytest.mark.asyncio
@@ -131,7 +130,7 @@ async def test_create_stats_unexpected_error(stats_service, stats_repository):
     Test creating stats with unexpected error.
     """
     # Mock the repository to raise Exception
-    stats_repository.add_statistics.side_effect = Exception("Database error")
+    stats_repository.add_stats.side_effect = Exception("Database error")
 
     # Create an AnalyticQStatsModel object
     stats_data = AnalyticQStatsModel(**TEST_STATS_DATA)
@@ -143,7 +142,7 @@ async def test_create_stats_unexpected_error(stats_service, stats_repository):
     # Assert the exception details
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert "An unexpected error occurred" in exc_info.value.detail
-    stats_repository.add_statistics.assert_called_once_with(stats_data)
+    stats_repository.add_stats.assert_called_once_with(stats_data)
 
 
 @pytest.mark.asyncio
@@ -189,47 +188,6 @@ async def test_get_stats_unexpected_error(stats_service, stats_repository):
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     assert "An unexpected error occurred" in exc_info.value.detail
     stats_repository.get_stats_by_id.assert_called_once_with(1)
-
-
-@pytest.mark.asyncio
-async def test_get_context_by_stats_id_success(stats_service, stats_repository):
-
-    stats_repository.get_context_by_id.return_value = AnalyticQContextModel(**TEST_CONTEXT_DATA)
-
-    context = await stats_service.get_context_by_stats_id(1)
-
-    assert isinstance(context, AnalyticQContextModel)
-    assert context.stats_id == 1
-    stats_repository.get_context_by_id.assert_called_once_with(1)
-
-
-@pytest.mark.asyncio
-async def test_get_context_by_stats_id_not_found(stats_service, stats_repository):
-    stats_repository.get_context_by_id.return_value = None
-
-    with pytest.raises(HTTPException) as exc_info:
-        await stats_service.get_context_by_stats_id(1)
-
-    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
-    stats_repository.get_context_by_id.assert_called_once_with(1)
-
-
-@pytest.mark.asyncio
-async def test_get_context_by_stats_id_unexpected_error(stats_service, stats_repository):
-    """
-    Test retrieving context with unexpected error.
-    """
-    # Mock the repository to raise Exception
-    stats_repository.get_context_by_id.side_effect = Exception("Database error")
-
-    # Call the service method and expect an HTTPException
-    with pytest.raises(HTTPException) as exc_info:
-        await stats_service.get_context_by_stats_id(1)
-
-    # Assert the exception details
-    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert "An unexpected error occurred" in exc_info.value.detail
-    stats_repository.get_context_by_id.assert_called_once_with(1)
 
 
 @pytest.mark.asyncio

@@ -22,6 +22,7 @@ class PylintParser(AnalyticQResultParser):
         }
 
         self.severity_mapping = {
+            "info": "INFO",
             "convention": "LOW",
             "refactor": "LOW",
             "warning": "MEDIUM",

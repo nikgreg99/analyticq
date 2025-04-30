@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { ProgessBarLabeled } from "./ProgessBarLabeled";
 import { formatBytes } from "components/utils/files";
-import { Tooltip } from "./tooltip";
+import { Tooltip } from "./Tooltip";
 
 /**
  * A component that displays the size distribution of files across different programming languages.
@@ -49,10 +49,13 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
 
 
     return (
-        <Card.Root>
-            <Card.Header>
+        <Card.Root
+            as="section"
+            aria-labelledby="size-distribution-heading"
+        >
+            <Card.Header as="header">
                 <Flex justify="space-between" align="center" width="100%">
-                    <Heading size="md">Size Distribution</Heading>
+                    <Heading  id="size-distribution-heading" size="md">Size Distribution</Heading>
                     <HStack spacing={2} flexWrap="wrap" justify="flex-end">
                         {topLanguages.map(([language, _]) => (
                             <Badge
@@ -62,6 +65,7 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                                 px={2}
                                 py={1}
                                 borderRadius="md"
+                                aria-label={`${language} language badge`}
                             >
                                 {language}
                             </Badge>
@@ -73,6 +77,7 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                                 px={2}
                                 py={1}
                                 borderRadius="md"
+                                aria-label="Other languages badge"
                             >
                                 Others
                             </Badge>
@@ -87,26 +92,34 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                         const percentage = (stats.total_size / totalSize) * 100;
 
                         return (
-                            <Box key={language}>
+                            <Box key={language}
+                                as="section"
+                                aria-labelledby={`lang-${language}`}
+                            >
                                 <Flex
                                     justify="space-between"
                                     mb={1}
                                     align="center"
                                 >
                                     <Tooltip label={`${stats.file_count} files`} placement="top">
-                                        <Text fontWeight="medium">{language}</Text>
+                                        <Text
+                                            id={`lang-${language}`}
+                                            fontWeight="medium"
+                                            aria-label={`${language}: ${stats.file_count} files`}
+                                        >
+                                            {language}</Text>
                                     </Tooltip>
                                     <Spacer minWidth={4} />
-                                    <Text fontSize="sm" color="gray.600">
+                                    <Text fontSize="sm" color="gray.600" aria-label={`Size ${formatBytes(stats.total_size)}`} >
                                         {formatBytes(stats.total_size)}
                                     </Text>
-                                    <Text fontSize="sm" width="60px" textAlign="right">
+                                    <Text fontSize="sm" width="60px" textAlign="right"  aria-label={`Percentage ${percentage.toFixed(1)}%`} >
                                         {percentage.toFixed(1)}%
                                     </Text>
                                 </Flex>
 
                                 <ProgessBarLabeled
-                                    label={`${language} Percentage`}
+                                    label={`${language} Percentage contribution`}
                                     percentage={percentage}
                                     colorScheme={color}
                                 />
@@ -115,7 +128,7 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                     })}
 
                     {otherSize > 0 && (
-                        <Box>
+                        <Box as="section" aria-labelledby="other-languages">
                             <Flex
                                 justify="space-between"
                                 mb={1}
@@ -125,10 +138,10 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                                     <Text fontWeight="medium">Others</Text>
                                 </Tooltip>
                                 <Spacer minWidth={4} />
-                                <Text fontSize="sm" color="gray.600">
+                                <Text fontSize="sm" color="gray.600" aria-label={`Size ${formatBytes(otherSize)}`}>
                                     {formatBytes(otherSize)}
                                 </Text>
-                                <Text fontSize="sm" width="60px" textAlign="right">
+                                <Text fontSize="sm" width="60px" textAlign="right" aria-label={`Percentage ${otherPercentage.toFixed(1)}%`}>
                                     {otherPercentage.toFixed(1)}%
                                 </Text>
                             </Flex>
