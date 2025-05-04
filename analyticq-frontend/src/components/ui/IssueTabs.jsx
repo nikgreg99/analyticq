@@ -80,7 +80,8 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
         "MEDIUM": { displayName: "Medium", color: "yellow", order: 3 },
         "LOW": { displayName: "Low", color: "green", order: 4 },
         "INFO": { displayName: "Info", color: "blue", order: 5 },
-        "WARNING": { displayName: "Warning", color: "teal", order: 6 }
+        "WARNING": { displayName: "Warning", color: "teal", order: 6 },
+        "UNKNOWN": { displayName: "Unknown", color: "gray", order: 7 }
     };
 
     const getIssueCounts = () => {

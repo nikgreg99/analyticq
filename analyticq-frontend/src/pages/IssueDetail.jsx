@@ -18,6 +18,7 @@ import {
     Text,
     Spacer
 } from "@chakra-ui/react";
+import { Tooltip } from "components/ui/Tooltip";
 import { updatePageMetadata } from "components/utils/metadata";
 import { SEVERITY_COLOR, CONFIDENCE_COLOR } from "components/utils/issues";
 import { IssueMetadataDisplay } from "components/ui/IssueMetadataDisplay";
@@ -124,18 +125,45 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                         <Flex justify="space-between" direction={{ base: 'column', md: 'row' }} gap={4}>
                             <Box color="blackAlpha.800">
                                 <Text fontSize="lg" mb={1}>
-                                    {getFileName(issueData.path)    }
+                                    {getFileName(issueData.path)}
                                     <Text as="span" fontWeight="semibold" ml={1}>:{issueData.start_line}</Text>
                                 </Text>
                                 <Heading as="h2" size="lg">{issueData.message}</Heading>
                             </Box>
                             <HStack spacing={3} align="start">
-                                <Badge colorPalette={SEVERITY_COLOR[issueData.severity.toUpperCase()]} px={3} py={1} fontSize="sm" borderRadius="full" textTransform="capitalize">
-                                    {issueData.severity}
-                                </Badge>
-                                <Badge colorPalette={CONFIDENCE_COLOR[issueData.confidence.toUpperCase()]} px={3} py={1} fontSize="sm" borderRadius="full" textTransform="capitalize">
-                                    {issueData.confidence}
-                                </Badge>
+                                <Tooltip
+                                    content="Severity"
+                                    showArrow
+                                >
+                                    <Badge
+                                        colorPalette={SEVERITY_COLOR[issueData.severity.toUpperCase()]}
+                                        px={3}
+                                        py={1}
+                                        fontSize="sm"
+                                        borderRadius="full"
+                                        textTransform="capitalize"
+                                        cursor="help"
+                                    >
+                                        {issueData.severity}
+                                    </Badge>
+                                </Tooltip>
+                                <Tooltip
+                                    content="Confidence"
+                                    showArrow
+                                >
+                                    <Badge
+                                        colorPalette={CONFIDENCE_COLOR[issueData.confidence.toUpperCase()]}
+                                        px={3}
+                                        py={1}
+                                        fontSize="sm"
+                                         borderRadius="full"
+                                         textTransform="capitalize"
+                                         cursor="help"
+                                    >
+                                        {issueData.confidence}
+                                    </Badge>
+                                </Tooltip>
+
                             </HStack>
                         </Flex>
                         <Spacer mt={6} />

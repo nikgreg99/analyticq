@@ -4,6 +4,7 @@ import { Tooltip } from './Tooltip';
 import { useNavigate } from 'react-router-dom';
 import { FaForward, FaClock } from "react-icons/fa";
 import { SEVERITY_COLOR } from 'components/utils/issues';
+import { getFileNameFromPath } from 'components/utils/files';
 import { formatDate } from 'components/utils/time';
 
 /**
@@ -40,8 +41,15 @@ export const IssueCard = ({ issue, showCreationDate = true }) => {
       _focus={{ boxShadow: 'outline' }}
       transition="background 0.2s"
     >
-      <Flex justifyContent="space-between" alignItems="center" gap={2}>
-        <Flex alignItems="center" gap={2}>
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        gap={2}
+      >
+        <Flex
+          alignItems="center"
+          gap={2}
+        >
           <Tooltip
             content={`Severity: ${issue.severity}`}
             showArrow
@@ -59,15 +67,19 @@ export const IssueCard = ({ issue, showCreationDate = true }) => {
           >
             {issue.rule_id}
           </Text>
+
+
+          <Text color="gray.700" fontSize="xs">
+            {getFileNameFromPath(issue.path)}:{issue.start_line}
+          </Text>
         </Flex>
 
-        <Text color="gray.500" fontSize="xs">
-          {issue.path}:{issue.start_line}
-        </Text>
+
         <Tooltip
           content="View Details"
           showArrow
-          >
+
+        >
           <IconButton
             size="sm"
             aria-label="View details"
@@ -83,18 +95,24 @@ export const IssueCard = ({ issue, showCreationDate = true }) => {
         </Tooltip>
       </Flex>
 
-      <Text
-        mt={2}
-        fontSize="sm"
-        noOfLines={2}
-        color="gray.700"
+      <Flex
+        alignItems="center"
+        gap={2}
       >
-        {issue.message}
-      </Text>
+        <Text
+          mt={2}
+          fontSize="sm"
+          noOfLines={2}
+          color="gray.700"
+        >
+          {issue.message}
+        </Text>
+      </Flex>
+
       {showCreationDate && (
-        <HStack mt={2}>
-          <FaClock size={12} color="blue" />
-          <Tag.Root colorPalette="blue">
+        <HStack mt={2} aria-label='creation-date'>
+          <FaClock size={12} color="black" />
+          <Tag.Root colorPalette="black">
             <Tag.Label>Created: {formatDate(issue.created_at)}</Tag.Label>
           </Tag.Root>
         </HStack>

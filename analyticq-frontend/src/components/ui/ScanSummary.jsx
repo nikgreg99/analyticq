@@ -113,7 +113,7 @@ export const ScanSummary = ({ scanData }) => {
                 </Heading>
                 {totalIssues > 0 && (
                     <Badge
-                        colorScheme={hasCritical ? 'red' : 'blue'}
+                        colorPalette={hasCritical ? 'red' : 'blue'}
                         fontSize="sm"
                         px={3}
                         py={1}
@@ -193,16 +193,18 @@ export const ScanSummary = ({ scanData }) => {
                         aria-labelledby="severity-heading"
                     >
                         {totalIssues === 0 ? (
-                            <Text
-                                color="blackAlpha.800"
-                                textAlign="center"
-                                role="status"
-                                aria-live="polite"
-                            >
-                                No Issues were detected
-                            </Text>
+                            <Flex width="100%" justify="center" align="center">
+                                <Text
+                                    color="blackAlpha.800"
+                                    textAlign="center"
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    No Issues detected
+                                </Text>
+                            </Flex>
                         ) : (
-                            SEVERITY_LEVELS.map(({ label, key}) =>
+                            SEVERITY_LEVELS.map(({ label, key }) =>
                                 issueCounts[key] > 0 && (
                                     <SeverityCounter
                                         key={label}

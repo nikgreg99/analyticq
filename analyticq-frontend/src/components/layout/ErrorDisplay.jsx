@@ -1,8 +1,9 @@
 import React from "react";
 import {
+    Box,
     Alert,
     HStack,
-    Flex
+    Flex,
 } from "@chakra-ui/react";
 
 /**
@@ -17,9 +18,6 @@ import {
  */
 const ErrorDisplay = ({ title, error, backButton }) => (
     <Flex
-        justify="center"
-        align="center"
-
     >
         <Alert.Root
             role="alert"
@@ -27,8 +25,12 @@ const ErrorDisplay = ({ title, error, backButton }) => (
             aria-labelledby="error-title"
             status="error"
             mb={4}
+            width="100%"
+            height="100%"
+             align="center"
+            justify="center"
         >
-            <Alert.Content>
+            <Alert.Content textAlign="center">
                 <Alert.Indicator />
                 <Alert.Title>{title}</Alert.Title>
                 <Alert.Description>{error}</Alert.Description>

@@ -33,15 +33,21 @@ export function getFileName(path) {
 }
 
 /**
+ * Extracts the file name with extension from a full file path.
+ *
+ * @param {string} path - Full file path (e.g., "/src/components/MyFile.test.jsx")
+ * @returns {string} The file name with extension (e.g., "MyFile.test.jsx")
+ */
+export function getFileNameFromPath(path){
+  if (typeof path !== "string") return "";
+  return path.split("/").pop();
+}
+
+/**
  * Extracts and returns the file extension from a given filename.
  * @param {string} file - The filename to extract the extension from
  * @returns {string} The lowercase file extension without the dot, or an empty string if no extension is found or if input is not a string
- * @example
- * getFileExtension('document.pdf') // returns 'pdf'
- * getFileExtension('image.PNG') // returns 'png'
- * getFileExtension('file') // returns ''
- * getFileExtension(null) // returns ''
- */
+/** */
 export function getFileExtension(file){
   if (typeof file !== 'string') return '';
 

@@ -39,7 +39,12 @@ const RepositoryInfoCard = ({ contextData }) => {
                     <InfoRow label="Repository name" value={contextData.repo_name ?? "N/A"} />
 
                     <Flex justify="space-between">
-                        <Text color="whiteAlpha.800">Repository Type</Text>
+                        <Text
+                            color="whiteAlpha.800"
+                            fontWeight="semibold"
+                            fontSize="sm"
+                            flexShrink={0}
+                         >Repository Type</Text>
                         <RepositoryTypeBadge inputType={contextData.input_type}
                         />
                     </Flex>

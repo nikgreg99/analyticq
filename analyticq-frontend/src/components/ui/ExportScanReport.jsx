@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useDownloadScanReport } from "hooks/useDownloadScanReport";
 import {
     Box,
@@ -55,7 +55,7 @@ export const ExportScanReport = ({ scanId, isCompact = false }) => {
         }
     ], []);
 
-    const handleExport = async (format) => {
+    const handleExport = useCallback(async (format) => {
 
         if (isDownloading) return;
 
@@ -80,7 +80,7 @@ export const ExportScanReport = ({ scanId, isCompact = false }) => {
                 max: 4
             })
         }
-    }
+    }, [downloadReport, isDownloading, scanId]);
 
     return (
         <Box
@@ -108,7 +108,7 @@ export const ExportScanReport = ({ scanId, isCompact = false }) => {
                         spinner={<Spinner size="sm"/>}
                         data-testid="export-report-button"
                     >
-                        {menuOpened ? <FiChevronDown /> : <FiChevronUp />}
+                        {menuOpened ? <FiChevronUp /> : <FiChevronDown />}
                         {isCompact ? "Export" : "Export Report"}
                         <FaFileDownload />
                     </Button>

@@ -27,8 +27,7 @@ import { Box } from "lucide-react";
 const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblingCount = 1, showTooltip = true, showPageInfo = true }) => {
 
     const totalPages = useMemo(() => Math.ceil(total / pageSize), [total, pageSize]);
-
-    const pageInfoText = `Page ${currentPage} of ${totalPages}`;
+    const pageInfoText = useMemo(() => `Page ${currentPage} of ${totalPages}`, [currentPage, totalPages]);
 
     const compactMode = useBreakpointValue({ base: true, md: false });
 
@@ -53,13 +52,14 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
                     siblingCount={compactMode ? 0 : siblingCount}
                 >
                     <ButtonGroup
-                        attached
-                        variant="solid"
+                        variant="surface"
+                        size="sm"
                     >
-                        <Pagination.PrevTrigger asChild>
+                        <Pagination.PrevTrigger   asChild>
                             {showTooltip ? (
                                 <Tooltip content="Previous Page">
                                     <IconButton
+                                        size="sm"
                                         aria-label="Previous page"
                                         disabled={currentPage === 1}
                                     >
@@ -70,6 +70,7 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
                                 <IconButton
                                     aria-label="Previous page"
                                     disabled={currentPage === 1}
+                                    size="sm"
                                 >
                                     <LuChevronLeft />
                                 </IconButton>
@@ -78,7 +79,14 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
 
                         <Pagination.Items
                             render={(page) => (
-                                <IconButton>
+                                <IconButton
+                                    key={`page-${page.value}`}
+                                    size="sm"
+                                    variant={page.selected ? "solid" : "subtle"}
+                                    colorPalette={page.selected ? "blue" : "gray"}
+                                    aria-current={page.selected ? "page" : undefined}
+                                    aria-label={`Page ${page.value}`}
+                                >
                                     {page.value}
                                 </IconButton>
                             )}
@@ -89,6 +97,7 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
                                 <Tooltip content="Next Page">
                                     <IconButton
                                         aria-label="Next page"
+                                        size="sm"
                                         disabled={currentPage === totalPages}
                                     >
                                         <LuChevronRight />
@@ -97,6 +106,7 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
                             ) : (
                                 <IconButton
                                     aria-label="Next page"
+                                    size="sm"
                                     disabled={currentPage === totalPages}
                                 >
                                     <LuChevronRight />
@@ -108,8 +118,8 @@ const PaginationControls = ({ total, pageSize, currentPage, onPageChange, siblin
             </Flex>
             {showPageInfo && (
                 <Text
-                    fontSize="sm"
-                    color="gray.300"
+                    fontSize="xs"
+                    color="Highlight"
                     textAlign="center"
                     mt={2}
                 >

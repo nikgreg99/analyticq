@@ -118,7 +118,10 @@ export const ScanDetailsPage = ({ initialScanData = null }) => {
         >
             <ScanHeader scanData={scanData} />
             <ScanSummary scanData={scanData} />
-            <IssueTabs scanData={scanData} />
+            { scanData.issues.length > 0  &&
+                <IssueTabs scanData={scanData} />
+            }
+
         </Box>
     )
 }

@@ -1,7 +1,8 @@
 import React from "react";
 import {
-    Box,
-    Alert
+    Alert,
+    Flex,
+    CloseButton
 } from "@chakra-ui/react";
 
 /**
@@ -15,10 +16,13 @@ import {
  */
 const EmptyState = ({ title, message }) => {
     return (
-        <Box
+        <Flex
             p={6}
-            maxW="md"
             textAlign="center"
+            width="100%"
+            height="100%"
+            align="center"
+            justify="center"
         >
             <Alert.Root
                 status="info"
@@ -26,14 +30,16 @@ const EmptyState = ({ title, message }) => {
                 role="alert" // Ensure the alert is announced immediately
                 aria-live="assertive" // Ensure screen readers announce this content as soon as it appears
                 aria-atomic="true"
+                 width="100%"
             >
                 <Alert.Indicator />
-                <Alert.Content maxWidth="md">
+                <Alert.Content  textAlign="center">
                     <Alert.Title>{title}</Alert.Title>
                     <Alert.Description>{message}</Alert.Description>
                 </Alert.Content>
+                <CloseButton pos="relative" top="-2" insetEnd="-2" />
             </Alert.Root>
-        </Box>
+        </Flex>
     );
 };
 

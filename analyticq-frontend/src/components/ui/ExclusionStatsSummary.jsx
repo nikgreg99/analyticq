@@ -32,7 +32,6 @@ import { ProgessBarLabeled } from "./ProgessBarLabeled";
  */
 export const ExclusionSummary = ({ excludedFiles, totalScanned, repoName }) => {
 
-    const [showAllFiles, setShowAllFiles] = useState(false);
 
     const totalAnalyzed = totalScanned + excludedFiles.total_size;
     const excludedPercentage = (excludedFiles.total_size / totalAnalyzed) * 100;
@@ -55,12 +54,10 @@ export const ExclusionSummary = ({ excludedFiles, totalScanned, repoName }) => {
 
         excludedFiles.files.forEach(file => {
             const fileName = getFileName(file);
-            const extension = getFileExtension(file);
 
             fileCountMap[fileName] = fileCountMap[fileName] || {
                 fullPath: file,
                 count: 0,
-                extension: extension,
                 estimatedSize: Math.round(excludedFiles.total_size / excludedFiles.count)
             };
             fileCountMap[fileName].count++;
@@ -74,7 +71,7 @@ export const ExclusionSummary = ({ excludedFiles, totalScanned, repoName }) => {
             }))
             .sort((a, b) => b.count - a.count);
 
-    }, [excludedFiles.files]);
+    }, [excludedFiles]);
 
     return (
         <Card.Root

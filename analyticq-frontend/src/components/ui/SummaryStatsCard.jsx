@@ -6,8 +6,7 @@ import {
     Icon,
     Card,
     HStack
-}
-    from "@chakra-ui/react";
+} from "@chakra-ui/react";
 
 /**
  * A card component that displays summary statistics with an icon, title, and value.

@@ -81,25 +81,22 @@ export const StatsDashboard = ({ initStatsData = null }) => {
 
     const colorMap = useMemo(() => {
 
-        if (!statsData || !statsData.language_statistics) {
+        if (statsData?.language_statistics) {
             return {};
         }
 
-        const languages = Object.keys(statsData.language_statistics);
-        const colorMapping = {};
+        return Object.keys(statsData.language_statistics).reduce((acc, language, index, array) => {
+            acc[language] = generateColorFromString(language, index, array.length);
+            return acc;
+        }, {});
 
-        languages.forEach((language, index) => {
-            colorMapping[language] = generateColorFromString(language, index, languages.length);
-        });
-
-        return colorMapping;
-    }, [statsData])
+    }, [statsData?.language_statistics]);
 
 
-    const fetchStatsByContextsId = useCallback(async (id) => {
+    const fetchStatsByContextsId = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await getStatsByContextId(id);
+            const data = await getStatsByContextId(contextId);
             console.log("Getting stats details: ", data);
             setStatsData(data);
             setError(null);
@@ -164,28 +161,29 @@ export const StatsDashboard = ({ initStatsData = null }) => {
                 mb={8}
                 color="blackAlpha.800"
                 aria-live="polite"
+                aria-labelledby="language-details-heading"
             >
                 <SummaryStatsCard
                     title="Total files"
-                    value={statsData.total_files_scanned}
+                    value={statsData.total_files_scanned ?? 0}
                     icon={FiFile}
                     colorScheme="blue"
                 />
                 <SummaryStatsCard
                     title="Total Size"
-                    value={formatBytes(statsData.total_size_scanned)}
+                    value={formatBytes(statsData.total_size_scanned) ?? 0}
                     icon={FiHardDrive}
                     colorScheme="green"
                 />
                 <SummaryStatsCard
                     title="Languages"
-                    value={Object.keys(statsData.language_statistics).length}
+                    value={Object.keys(statsData?.language_statistics ?? {}).length}
                     icon={FiCode}
                     colorScheme="purple"
                 />
                 <SummaryStatsCard
                     title="Excluded Files"
-                    value={statsData.excluded_files.count}
+                    value={statsData.excluded_files.count ?? 0}
                     icon={FiFolder}
                     colorScheme="red"
                 />
@@ -214,6 +212,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
                 mb={4}
                 color="blackAlpha.800"
                 textAlign="center"
+                id="language-details-heading"
             >
                 Language Details
             </Heading>
@@ -223,7 +222,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
                 mb={8}
                 aria-live="polite"
             >
-                {Object.entries(statsData.language_statistics)
+                {Object.entries(statsData.language_statistics || {})
                     .sort((a, b) => b[1].file_count - a[1].file_count)
                     .map(([language, stats]) => (
                         <LanguageStatsCard
@@ -239,7 +238,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
 
 
             {/* Exclusion Summary */}
-            <Heading textAlign="center" color="blackAlpha.800"  id="exclusion-summary">
+            <Heading textAlign="center" color="blackAlpha.800" id="exclusion-summary">
                 Exclusion Summary
             </Heading>
             <ExclusionSummary

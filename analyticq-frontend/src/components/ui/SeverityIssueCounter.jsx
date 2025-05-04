@@ -73,17 +73,17 @@ const SEVERITY_STYLES = {
  * @returns {JSX.Element} A box containing the severity label and count with appropriate styling
  */
 export const SeverityCounter = ({ label, count, hasCritical }) => {
-  const isZero = count === 0;
-  const mdWidth = hasCritical ? "19%" : "22%";
 
-  const severityKey = isZero ? "inactive" : label.toLowerCase();
+  const widthPercent = hasCritical ? "19%" : "22%";
+
+  const severityKey = count === 0 ? "inactive" : label.toLowerCase();
   const styles = SEVERITY_STYLES[severityKey] || SEVERITY_STYLES.inactive;
 
   // Find the appropriate icon for this severity
   const bgColor = styles.bg || "gray.50";
   const txtColor = styles.text || "gray.600";
 
-  const SeverityIcon = SEVERITY_ICONS[severityKey] || SEVERITY_ICONS.info;
+  const SeverityIcon = SEVERITY_ICONS[severityKey] || FaInfoCircle;
 
   return (
     <Box
@@ -92,10 +92,10 @@ export const SeverityCounter = ({ label, count, hasCritical }) => {
       bg={bgColor}
       borderRadius="md"
       textAlign="center"
-      width={{ base: "100%", sm: "45%", md: mdWidth }}
+      width={{ base: "100%", sm: "45%", md: widthPercent }}
       role="region"
-      aria-labelledby={`${label.toLowerCase()}-label`}
-      data-testid={`severity-counter-${label.toLowerCase()}`}
+      aria-labelledby={`${severityKey}-label`}
+      data-testid={`severity-counter-${severityKey}`}
       transition="all 0.2s ease-in-out"
       boxShadow="sm"
     >
@@ -108,10 +108,10 @@ export const SeverityCounter = ({ label, count, hasCritical }) => {
         <Flex alignItems="center" mb={1}>
           <Icon as={SeverityIcon} color={styles.iconColor} mr={1} aria-hidden="true" />
           <Text
-            id={`${label.toLowerCase()}-label`}
+            id={`${severityKey}-label`}
             fontSize="sm"
             color={txtColor}
-            aria-label={`${label} severity level`}
+            aria-label={`${severityKey} severity level`}
           >
             {label}
           </Text>

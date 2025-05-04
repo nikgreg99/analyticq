@@ -131,7 +131,7 @@ export const ScanResultList = ({ repoName }) => {
                                 fontSize="xs"
                                 fontWeight="medium"
                             >
-                                {label} :{count}
+                                {label}: {count}
                             </Badge>
                         </Tooltip>
                     ) : null;

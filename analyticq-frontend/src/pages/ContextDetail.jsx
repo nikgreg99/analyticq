@@ -137,7 +137,6 @@ export const ContextDetailPage = ({ initialContextData = null }) => {
 
             <RepositoryInfoCard contextData={contextData} />
 
-
             <ScanResultList
                 repoName={contextData.repo_name}
             />
