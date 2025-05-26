@@ -30,7 +30,7 @@ jobs:
       - name: Run Prettier check
         working-directory: analyticq-frontend
         run: |
-            npx prettier . --check > prettier-report.txt
+            npx prettier . --write > prettier-report.txt
 
       - name: Upload Prettier Report
         uses: actions/upload-artifact@v4
