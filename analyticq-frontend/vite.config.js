@@ -1,7 +1,7 @@
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
-import { createHtmlPlugin } from 'vite-plugin-html';
-import tsconfigPaths from "vite-tsconfig-paths"
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import { createHtmlPlugin } from "vite-plugin-html";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -12,12 +12,12 @@ export default defineConfig({
       minify: true,
       inject: {
         data: {
-          SITE_NAME: 'AnalyticQ Frontend',
-          AUTHOR: 'Nicolas Gregori',
+          SITE_NAME: "AnalyticQ Frontend",
+          AUTHOR: "Nicolas Gregori",
           AUTHOR_EMAIL: "nicolas.gregori@student.supsi.ch",
-          DESCRIPTION: 'A Vite React application with metadata management',
-        }
-      }
-    })
+          DESCRIPTION: "A Vite React application with metadata management",
+        },
+      },
+    }),
   ],
-})
+});

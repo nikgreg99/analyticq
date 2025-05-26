@@ -1,11 +1,10 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from threading import Lock
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
 from sqlalchemy.orm import declarative_base
 
 logger = logging.getLogger(__name__)
@@ -14,27 +13,41 @@ Base = declarative_base()
 
 class AnalyticQDatabaseManager:
 
-    _instance = None
-    _lock = Lock()
+    _instance: Optional["AnalyticQDatabaseManager"] = None
+    _engine: Optional[AsyncEngine] = None
+    _session_factory: Optional[async_sessionmaker] = None
 
     def __new__(cls, *args, **kwargs):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._engine = create_async_engine(
-                os.environ.get("ANALYTICQ_DB_URL"),
-                echo=True
-            )
-            self._session_factory = async_sessionmaker(
-                self._engine,
-                class_=AsyncSession,
-                expire_on_commit=False
-            )
+        if not self._initialized:
+            self._initialize_engine()
             self._initialized = True
+
+    def _initialize_engine(self) -> None:
+        db_url = os.environ.get("ANALYTICQ_DB_URL")
+        if not db_url:
+            raise ValueError("Database URL not set in environment variables (ANALYTICQ_DB_URL)")
+
+        # Set echo based on environment to avoid excessive logging in production
+        echo = os.environ.get("ANALYTICQ_DB_ECHO", "false").lower() == "true"
+
+        self._engine = create_async_engine(
+            db_url,
+            echo=echo,
+            pool_pre_ping=True,
+        )
+
+        self._session_factory = async_sessionmaker(
+            self._engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False
+        )
 
     async def init_db(self):
         """
@@ -50,8 +63,15 @@ class AnalyticQDatabaseManager:
         Raises:
             SQLAlchemyError: If there is an error during database initialization
         """
-        async with self._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        if not self._engine:
+            self._initialize_engine()
+        try:
+            async with self._engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+            raise
 
     @asynccontextmanager
     async def get_db_session(self) -> AsyncGenerator[AsyncSession, None]:
@@ -71,6 +91,9 @@ class AnalyticQDatabaseManager:
             The session is automatically closed in the finally block, ensuring proper resource cleanup
             even if an exception occurs.
         """
+        if not self._session_factory:
+            self._initialize_engine()
+
         session = self._session_factory()
         try:
             yield session
@@ -95,4 +118,13 @@ class AnalyticQDatabaseManager:
         Raises:
             SQLAlchemyError: If there is an error while closing the database connection.
         """
-        await self._engine.dispose()
+        if self._engine:
+            try:
+                await self._engine.dispose()
+                logger.info("Database connection closed successfully")
+            except Exception as e:
+                logger.error(f"Error closing database connection: {e}")
+                raise
+            finally:
+                self._engine = None
+                self._session_factory = None

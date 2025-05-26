@@ -115,7 +115,7 @@ class AnalyticQSASTScanResultModel(BaseModel):
 
     """
     id: Optional[int] = None
-    scan_id: str
+    scan_id: Optional[str] = None
     context_id: Optional[int] = None
     tool_name: Optional[str] = None
     issues: List[AnalyticQSASTIssueModel] = []

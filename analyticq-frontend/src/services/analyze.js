@@ -8,12 +8,11 @@ import { API_BASE_URL } from "config";
  * and default headers for JSON content type.
  */
 const analyze_api = axios.create({
-    baseURL: `${API_BASE_URL}/analyze`,
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  baseURL: `${API_BASE_URL}/analyze`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
-
 
 /**
  * Sends a POST request to analyze a Git repository
@@ -23,31 +22,29 @@ const analyze_api = axios.create({
  * @throws {Error} If the API request fails
  */
 export const analyzeGitRepo = async (params) => {
-    return analyze_api.post('/git', params);
-}
+  return analyze_api.post("/git", params);
+};
 
-export const analyzeFiles = async(params) => {
+export const analyzeFiles = async (params) => {
+  const formData = new FormData();
+  params.files.forEach((file) => {
+    formData.append("files", file);
+  });
 
-    const formData = new FormData();
-    params.files.forEach(file => {
-        formData.append('files', file);
-    });
+  if (params.config_paths) {
+    formData.append("config_paths", JSON.stringify(params.config_paths));
+  }
 
-    if(params.config_paths) {
-        formData.append('config_paths', JSON.stringify(params.config_paths));
-    }
+  if (params.timeout) {
+    formData.append("timeout", params.timeout);
+  }
 
-
-    if(params.timeout) {
-        formData.append('timeout', params.timeout);
-    }
-
-    return analyze_api.post('/files', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    })
-}
+  return analyze_api.post("/files", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
 /**
  * Retrieves the status of a specific analysis.
@@ -56,5 +53,5 @@ export const analyzeFiles = async(params) => {
  * @throws {Error} If the request fails or the analysis is not found.
  */
 export const getAnalysisStatus = async (analysisId) => {
-    return analyze_api.get(`/status/${analysisId}`);
-}
+  return analyze_api.get(`/status/${analysisId}`);
+};

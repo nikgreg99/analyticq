@@ -18,7 +18,10 @@ class PylintParser(AnalyticQResultParser):
             "message": "message",
             "path": "path",
             "end_line": "endLine",
-            "severity": "type"
+            "severity": "type",
+            "confidence": None,
+            "column": "column",
+            "issue_metadata": None
         }
 
         self.severity_mapping = {

@@ -9,7 +9,28 @@ logger = logging.getLogger(__name__)
 
 
 class JinjaManager:
+    """
+    A singleton class that manages Jinja2 templating functionality for FastAPI applications.
 
+    This manager provides template rendering capabilities, template access, and environment configuration
+    for Jinja2 templates. It follows the singleton pattern to ensure only one instance exists.
+
+    Attributes:
+        _instance (Optional[JinjaManager]): Singleton instance of the class
+        _env (Optional[Environment]): Jinja2 Environment instance
+
+        ```python
+        # Initialize the manager with a FastAPI app
+        app = FastAPI()
+        jinja_manager = JinjaManager.initialize(app)
+
+        # Render a template
+        html = jinja_manager.render_template('index.html', title='Home')
+
+        # Render from string
+        result = jinja_manager.render_string('Hello {{ name }}!', name='World')
+        ```
+    """
     _instance = None
     _env: Optional[Environment] = None
 

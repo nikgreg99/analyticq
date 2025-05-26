@@ -8,10 +8,10 @@ import { API_BASE_URL } from "config";
  * with predefined baseURL and headers.
  */
 const tool_api = axios.create({
-    baseURL: `${API_BASE_URL}/tools`,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: `${API_BASE_URL}/tools`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 /**
@@ -22,7 +22,7 @@ const tool_api = axios.create({
  * @throws {Error} If the API request fails.
  */
 export const getSupportedLanguages = async () =>
-    tool_api.get("/supported-languages").then((res) => res.data.languages);
+  tool_api.get("/supported-languages").then((res) => res.data.languages);
 
 /**
  * Retrieves a list of all available tools from the API.
@@ -32,7 +32,7 @@ export const getSupportedLanguages = async () =>
  * @throws {Error} If the API request fails.
  */
 export const getAllTools = async () =>
-    tool_api.get("/list/all").then((res) => res.data.tools);
+  tool_api.get("/list/all").then((res) => res.data.tools);
 
 /**
  * Retrieves all tools for a specific programming language
@@ -41,4 +41,4 @@ export const getAllTools = async () =>
  * @throws {Error} If the API request fails
  */
 export const getAllToolsByLanguage = async (language) =>
-    tool_api.get(`/list/${language}`).then((res) => res.data.tools);
+  tool_api.get(`/list/${language}`).then((res) => res.data.tools);

@@ -3,7 +3,7 @@ import { API_BASE_URL } from "config";
 
 const report_api = axios.create({
   baseURL: `${API_BASE_URL}/reports`,
-  responseType: "blob"
+  responseType: "blob",
 });
 
 /**
@@ -37,9 +37,13 @@ const getFileName = (contentDisposition, scanId, format) => {
 export const downloadScanReportService = async (scanId, format) => {
   const response = await report_api.get(`/download/${scanId}`, {
     params: { format },
-    responseType: "blob"
+    responseType: "blob",
   });
 
-  const fileName = getFileName(response.headers["content-disposition"], scanId, format);
+  const fileName = getFileName(
+    response.headers["content-disposition"],
+    scanId,
+    format,
+  );
   return { data: response.data, fileName };
 };

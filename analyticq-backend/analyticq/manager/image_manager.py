@@ -105,12 +105,12 @@ class DockerImageManager:
 
             if process.returncode != 0:
                 logger.error("Docker is not available")
-                raise DockerNotFoundException("Doker is not availalbe onto the system")
+                raise DockerNotFoundException("Doker is not availalbe on the system")
             else:
                 return True
 
         except FileNotFoundError:
-            raise DockerNotFoundException("Docker is not avaialble ono the system")
+            raise DockerNotFoundException("Docker is not avaialble on  the system")
 
     async def login(self, docker_config: DockerRegistryConfig) -> bool:
         """
@@ -140,6 +140,10 @@ class DockerImageManager:
             ... )
             >>> await image_manager.login(config)
         """
+        if not docker_config.username or not docker_config.password:
+            logger.error("Login failed: Username and password are required")
+            return False
+
         self.auth_config = {
             "username": docker_config.username,
             "password": docker_config.password,
@@ -166,6 +170,7 @@ class DockerImageManager:
         except Exception:
             self.auth_config = None
             logger.error("Error during login:")
+            return False
 
     async def logout(self) -> None:
         """
@@ -191,23 +196,33 @@ class DockerImageManager:
             logger.warning("Docker logout could not be executed, because no login to registry has been done before")
             raise RuntimeError("No login has been performed yet")
 
+        server_address = self.auth_config["serveraddress"]
+
         try:
             # Since aiodcker doesn't provide a direct access to logout function, a implemantion was the better choice
             process = await asyncio.to_thread(
                 subprocess.run,
-                ["docker", "logout", self.auth_config["serveraddress"]],
+                ["docker", "logout", server_address],
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
 
-            if process.returncode != 0:
-                logger.warning(f"Failed to log out from registry from {self.auth_config['serveraddress']}")
-
-            # Clear auth config for further usage
+            # Store auth_config reference before clearing it for logging purposes
+            temp_server = server_address
             self.auth_config = None
-            logger.info(f"Successfully logged out from registry {self.auth_config['serveraddress']}")
 
-        except Exception:
+            if process.returncode != 0:
+                error_msg = process.stderr.decode()
+                logger.warning(f"Failed to log out from registry {temp_server}: {error_msg}")
+                return False
+
+            logger.info(f"Successfully logged out from registry {temp_server}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error during logout: {str(e)}")
+            # Clear auth config even if logout fails
+            self.auth_config = None
             raise
 
     async def exists(self, image_name: str, image_tag: str = "latest") -> bool:
@@ -225,6 +240,10 @@ class DockerImageManager:
         Raises:
             None: Any DockerError exceptions are caught and return False
         """
+        if not image_name:
+            logger.error("Cannot check existence of image with empty name")
+            return False
+
         try:
             await self.docker.images.get(f"{image_name}:{image_tag}")
             return True
@@ -245,10 +264,9 @@ class DockerImageManager:
         Returns:
             None: This method doesn't return anything.
         """
+        if image_name is None or image_tag is None:
+            raise ValueError("Image name and tag cannot be None or empty.")
         try:
-            if image_name is None or image_tag is None:
-                raise ValueError("Image name and tag cannot be None or empty.")
-
             full_image_name = f"{registry_url}/{image_name}" if registry_url else image_name
 
             await self.docker.images.pull(full_image_name, tag=image_tag, auth=self.auth_config)
@@ -263,3 +281,20 @@ class DockerImageManager:
             else:
                 logger.error(f"Image {image_name}:{image_tag} not found locally or in the registry")
                 return False
+
+    async def close(self):
+        """
+        Closes the Docker client connection if it exists.
+
+        This method ensures proper cleanup of Docker resources by closing the Docker client
+        connection when the manager is being shut down.
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
+        if hasattr(self, 'docker') and self.docker:
+            await self.docker.close()
+            logger.info("Docker client connection closed")

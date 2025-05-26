@@ -29,7 +29,7 @@ def get_issue_service(
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def get_all_contexts(
+async def get_all_issues(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: Optional[int] = Query(10, ge=1, le=100, description="Number of items per page, set to 0 for all items"),
     service: AnalyticQSASTIssueService = Depends(get_issue_service)

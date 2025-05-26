@@ -4,9 +4,15 @@ import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 from io import StringIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
+
+SCHEMA_IDENTIFIERS = [
+    "sarif",
+    "sarifv1",
+    "sarifv2"
+]
 
 
 class OutputFormat(Enum):
@@ -22,11 +28,14 @@ class OutputFormat(Enum):
         SARIF: Static Analysis Results Interchange Format
         PLAIN: Plain text format. The default one
     """
-    JSON = "json"
-    CSV = "csv"
-    XML = "xml"
-    SARIF = "sarif"
-    PLAIN = "plain"
+    JSON = auto()
+    CSV = auto()
+    XML = auto()
+    SARIF = auto()
+    PLAIN = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()
 
 
 class FormatStrategy(ABC):
@@ -115,7 +124,10 @@ class JSONFormatStrategy(FormatStrategy):
         Raises:
             json.JSONDecodeError: If the input string is not valid JSON
         """
-        return json.loads(raw_result)
+        try:
+            return json.loads(raw_result)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}") from e
 
     @staticmethod
     def is_format(content: str) -> bool:
@@ -134,10 +146,13 @@ class JSONFormatStrategy(FormatStrategy):
             >>> is_format('Invalid JSON')
             False
         """
+        if not isinstance(content, str):
+            return False
+
         try:
             json.loads(content)
             return True
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             return False
 
 
@@ -177,9 +192,23 @@ class CSVFormatStrategy(FormatStrategy):
                 {'name': 'Jane', 'age': '25'}
             ]
         """
-        csv_file = StringIO(raw_result)
-        reader = csv.DictReader(csv_file)
-        return list(reader)
+        try:
+            csv_file = StringIO(raw_result)
+            reader = csv.DictReader(csv_file)
+
+            # Verify headers exist
+            if not reader.fieldnames:
+                raise ValueError("CSV has no headers")
+
+            result = list(reader)
+
+            # Check if any rows were parsed
+            if not result:
+                raise ValueError("CSV has no data rows")
+
+            return result
+        except csv.Error as e:
+            raise ValueError(f"CSV parsing error: {e}") from e
 
     @staticmethod
     def is_format(content: str) -> bool:
@@ -196,12 +225,16 @@ class CSVFormatStrategy(FormatStrategy):
             bool: True if the content is in valid CSV format with at least one row and one column,
                   False otherwise or if parsing fails.
         """
+        if not isinstance(content, str):
+            return False
+
         try:
             csv_file = StringIO(content)
             reader = csv.reader(csv_file)
             rows = list(reader)
+
             return len(rows) > 1 and len(rows[0]) > 1
-        except csv.Error:
+        except (csv.Error, TypeError):
             return False
 
 
@@ -317,6 +350,9 @@ class XMLFormatStrategy(FormatStrategy):
             >>> is_format('invalid xml')
             False
         """
+        if not isinstance(content, str):
+            return False
+
         try:
             ET.fromstring(content)
             return True
@@ -357,26 +393,49 @@ class SarifFormatStrategy(FormatStrategy):
                 json.decoder.JSONDecodeError: If the input string is not valid JSON.
     """
 
+    SCHEMA_IDENTIFIERS: ClassVar[List[str]] = [
+        "sarif",
+        "sarifv1",
+        "sarifv2"
+    ]
+
     def is_format(raw_result: str) -> Dict[str, Any]:
         try:
             data = json.loads(raw_result)
-            return (
-                isinstance(data, dict)
-                and "version" in data
-                and data.get("$schema", "").find("sarif") > -1
-                and "runs" in data
-            )
+            has_version = "version" in data
+            has_runs = "runs" in data and isinstance(data["runs"], list)
+
+            # Check for SARIF schema identifier
+            schema_ref = data.get("$schema", "")
+            has_sarif_schema = any(ident in schema_ref for ident in SCHEMA_IDENTIFIERS)
+
+            return has_version and has_runs and has_sarif_schema
         except (json.decoder.JSONDecodeError, TypeError, KeyError):
             return False
 
     def format(self, raw_result) -> Dict[str, Any]:
-        sarif_json = json.loads(raw_result)
-        return sarif_json
+        try:
+            sarif_json = json.loads(raw_result)
+
+            if not self.is_format(raw_result):
+                raise ValueError("Content is valid JSON but not in SARIF format")
+            return sarif_json
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format in SARIF document: {e}") from e
 
 
 class PlainTextFormatStrategy(FormatStrategy):
 
     def is_format(content: str) -> bool:
+        """
+        Check if the content is in string format.
+
+        Args:
+            content (str): The content to be checked.
+
+        Returns:
+            bool: True if content is a string, False otherwise.
+        """
         return isinstance(content, str)
 
     def format(self, raw_result: str) -> Dict:
@@ -411,9 +470,13 @@ class FormatStrategyFactory:
             strategy = ToolStrategyOutput.get_strategy('{"key": "value"}')
             # Returns JSONFormatStrategy if the content is valid JSON
         """
+        if not isinstance(raw_result, str):
+            raise TypeError(f"Expected string input, got {type(raw_result).__name__}")
+
         for strategy in cls.strategies:
             if strategy.is_format(raw_result):
                 return strategy()
+
         return PlainTextFormatStrategy()
 
 

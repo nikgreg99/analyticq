@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box } from "@chakra-ui/react"
-import { getScanById } from "services/scanService";
-import LoadingSpinner from "components/ui/LoadingSpinner";
+import { Box } from "@chakra-ui/react";
+import LoadingSpinner from "components/ui/general/LoadingSpinner";
 import ErrorDisplay from "components/layout/ErrorDisplay";
-import BackButton from "components/ui/BackButton";
-import { ScanHeader } from "components/ui/ScanHeader";
-import { ScanSummary } from "components/ui/ScanSummary";
-import { IssueTabs } from "components/ui/IssueTabs";
+import BackButton from "components/ui/general/BackButton";
+import { ScanHeader } from "components/ui/scan/ScanHeader";
+import { ScanSummary } from "components/ui/scan/ScanSummary";
+import { IssueTabs } from "components/ui/issue/IssueTabs";
 import { updatePageMetadata } from "components/utils/metadata";
+import { useScanDetails } from "hooks/useScanDetails";
 
 /**
  * Component that displays detailed information about a specific scan.
- * Fetches and renders scan data including header, summary, issues, and metadata.
+ * Optimized for data fetching with better state management and error handling.
  *
  * @component
  * @example
@@ -20,108 +20,70 @@ import { updatePageMetadata } from "components/utils/metadata";
  * <ScanDetailsPage />
  * ```
  *
+ * @param {Object} props - Component props
+ * @param {Object} [props.initialScanData=null] - Initial scan data to display before fetching
  * @returns {JSX.Element} A page displaying scan details or loading/error states
- *
- * Uses URL parameters:
- * - contextId: ID of the context the scan belongs to
- * - scanId: ID of the specific scan to display
- *
- * State:
- * - scanData: Contains the fetched scan information
- * - loading: Boolean indicating if data is being fetched
- * - error: Contains error message if fetch fails
- *
- * Features:
- * - Automatic data fetching on component mount
- * - Loading spinner while fetching data
- * - Error handling with user-friendly display
- * - Navigation back to context page
- * - Displays scan header, summary, issues tabs and metadata
  */
 export const ScanDetailsPage = ({ initialScanData = null }) => {
+  const { contextId, scanId } = useParams();
+  const navigate = useNavigate();
+  const { scanData, status } = useScanDetails(scanId, initialScanData);
 
-    const [scanData, setScanData] = useState([]);
-    const [loading, setLoading] = useState(!initialScanData);
-    const [error, setError] = useState(null);
-    const { contextId, scanId } = useParams();
-    const navigate = useNavigate();
+  const hasIssues = useMemo(
+    () => Array.isArray(scanData?.issues) && scanData.issues.length > 0,
+    [scanData],
+  );
 
-
-    // Update metadata when product data changes
-    useEffect(() => {
-        // Set initial loading metadata
-        updatePageMetadata(
-            'Context stats...',
-            'Loading stats information...',
-            `/contexts/${contextId}/stats`
-        );
-
-        // Update with product data once loaded
-        if (scanData) {
-            updatePageMetadata(
-                `Scan ${scanId}`,
-                scanId,
-                `/contexts/${contextId}/scan/${scanId}`
-            );
-        }
-    }, [scanData, contextId, scanId]);
-
-
-    // Fetch scan details from the API
-    const fetchScanDetails = useCallback(async (id) => {
-        try {
-            setLoading(true);
-            const data = await getScanById(id);
-            console.log("Getting scan details: ", data);
-            setScanData(data);
-            setError(null);
-        }
-        catch (err) {
-            console.error("Error fetching scan details:", err);
-            setError("Failed to load scan details. Please try again later.");
-        }
-        finally {
-            setLoading(false);
-        }
-    }, []);  // No dependencies needed as it doesn't use any external state
-
-    // Effect to fetch scan details when component mounts or scanId changes
-    useEffect(() => {
-        if (!initialScanData || initialScanData.id !== parseInt(scanId)) {
-            fetchScanDetails(scanId);
-        }
-    }, [fetchScanDetails, initialScanData, scanId]);
-
-    const handleBackClick = () => {
-        navigate(`/contexts/${contextId}`);
-    };
-
-    if (loading) {
-        return <LoadingSpinner />
+  // Update metadata when scan data changes
+  useEffect(() => {
+    if (status.loading) {
+      updatePageMetadata(
+        "Context stats...",
+        "Loading stats information...",
+        `/contexts/${contextId}/stats`,
+      );
+    } else if (scanData) {
+      updatePageMetadata(
+        `Scan ${scanId}`,
+        scanId,
+        `/contexts/${contextId}/scan/${scanId}`,
+      );
     }
+  }, [scanData, status.loading, contextId, scanId]);
 
-    if (error) {
-        return (
-            <ErrorDisplay
-                title="Scan Details"
-                error={error}
-                backButton={<BackButton onClick={handleBackClick} label={`Back to Context ${contextId} page`} />}
-            />
-        )
-    }
+  const handleBackClick = useCallback(() => {
+    navigate(`/contexts/${contextId}`);
+  }, [navigate, contextId]);
 
+  // Render loading state
+  if (status.loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Render error state
+  if (status.error) {
     return (
-        <Box
-            p={6}
-            mx="auto"
-            maxWidth="1200px"
-        >
-            <ScanHeader scanData={scanData} />
-            <ScanSummary scanData={scanData} />
-            { scanData.issues.length > 0  &&
-                <IssueTabs scanData={scanData} />
-            }
+      <ErrorDisplay
+        title="Scan Details"
+        error={status.error}
+        backButton={
+          <BackButton
+            onClick={handleBackClick}
+            label={`Back to Context ${contextId} page`}
+          />
+        }
+      />
+    );
+  }
 
-        </Box>
-    )
-}
+  // Render main content
+  return (
+    <Box p={6} mx="auto" maxWidth="1200px">
+      <ScanHeader scanData={scanData} />
+      <ScanSummary scanData={scanData} />
+      {hasIssues && <IssueTabs scanData={scanData} />}
+    </Box>
+  );
+};
+
+ScanDetailsPage.displayName = "ScanDetailsPage";

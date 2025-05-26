@@ -50,7 +50,10 @@ def test_init_pylint_parser(pylint_parser):
         "message": "message",
         "path": "path",
         "end_line": "endLine",
-        "severity": "type"
+        "severity": "type",
+        'column': 'column',
+        'confidence': None,
+        'issue_metadata': None
     }
 
 

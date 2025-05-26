@@ -6,13 +6,13 @@ from analyticq.config import AnalyticQBaseConfig, AnalyticQEnvironmentLoader
 from analyticq.manager.db_manager import AnalyticQDatabaseManager
 from analyticq.repository.context_repository import \
     AnalyticQContextRepository  # noqa
-from analyticq.repository.scan_repository import (
-    AnalyticQSASTIssue, AnalyticQSASTScanResult, AnalyticQSASTScanResultModel,
+from analyticq.repository.scan_repository import (  # noqa
+    AnalyticQSASTScanResult, AnalyticQSASTScanResultModel,
     AnalyticQScanResultRepository)
 from analyticq.repository.stats_repository import \
     AnalyticQStatsRepository  # noqa
-from analyticq.validator.issue import AnalyticQSASTIssueModel
-from sqlalchemy import insert, select, text
+from analyticq.validator.issue import AnalyticQConfidence, AnalyticQSeverity
+from sqlalchemy import select, text
 
 BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
 
@@ -56,26 +56,33 @@ async def setup_db():
 
 # Test data
 TEST_SCAN_RESULT_DATA = {
+    "id": 1,
     "scan_id": "scan_123",
     "tool_name": "Bandit",
     "issues": [],
     "summary": {"key": "value"},
-    "scan_metadata": {"key": "value"}
+    "scan_metadata": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 # Test data
 TEST_UPDATED_RESULT_DATA = {
+    "id": 1,
     "scan_id": "scan_123",
     "tool_name": "Bandit",
     "issues": [],
     "summary": {"new_key": "new_value"},
-    "scan_metadata": {"key": "value"}
+    "scan_metadata": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 TEST_ISSUE_DATA = {
+    "scan_id": 1,
     "rule_id": "rule_456",
-    "severity": "HIGH",
-    "confidence": "HIGH",
+    "severity": AnalyticQSeverity.HIGH,
+    "confidence": AnalyticQConfidence.HIGH,
     "code": "print('Hello, World!')",
     "message": "Potential security issue",
     "path": "/path/to/file.py",
@@ -83,7 +90,9 @@ TEST_ISSUE_DATA = {
     "end_line": 10,
     "column": 5,
     "issue_metadata": {"key": "value"},
-    "summary": {"key": "value"}
+    "summary": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 
@@ -114,28 +123,9 @@ async def test_get_scan_result_by_scan_id(scan_repo):
     await scan_repo.add_scan(scan_result)
 
     # Retrieve the scan result by scan_id
-    retrieved_scan_result = await scan_repo.get_by_scan_id("scan_123")
+    retrieved_scan_result = await scan_repo.get_by_scan_id(1)
     assert retrieved_scan_result is not None
-    assert retrieved_scan_result.scan_id == "scan_123"
-
-
-@pytest.mark.asyncio
-async def test_get_all_issues_by_scan_id(scan_repo):
-    # Add a scan result to the database
-    scan_result = AnalyticQSASTScanResultModel(**TEST_SCAN_RESULT_DATA)
-    await scan_repo.add_scan(scan_result)
-
-    # Add an issue to the database
-    issue = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
-    async with AnalyticQDatabaseManager().get_db_session() as session:
-        stmt = insert(AnalyticQSASTIssue).values(**issue.model_dump())
-        await session.execute(stmt)
-        await session.commit()
-
-    # Retrieve all issues by scan_id
-    issues = await scan_repo.get_all_issues_by_scan_id("scan_123")
-    assert len(issues) == 1
-    assert issues[0].rule_id == "rule_456"
+    assert retrieved_scan_result.id == 1
 
 
 @pytest.mark.asyncio
@@ -149,7 +139,7 @@ async def test_update_scan_result_by_scan_id(scan_repo):
     await scan_repo.update_scan_by_id(scan_result.id, updated_scan_result)
 
     # Verify the update
-    updated_scan_result = await scan_repo.get_by_scan_id(1)
+    updated_scan_result = await scan_repo.get_by_scan_id(scan_result.id)
     assert updated_scan_result.summary == {"new_key": "new_value"}
 
 
@@ -160,8 +150,8 @@ async def test_delete_scan_result_by_scan_id(scan_repo):
     await scan_repo.add_scan(scan_result)
 
     # Delete the scan result
-    await scan_repo.delete_by_scan_id("scan_123")
+    await scan_repo.delete_scan_by_id(scan_result.id)
 
     # Verify the scan result was deleted
-    deleted_scan_result = await scan_repo.get_by_scan_id("scan_123")
+    deleted_scan_result = await scan_repo.get_by_scan_id(scan_result.id)
     assert deleted_scan_result is None

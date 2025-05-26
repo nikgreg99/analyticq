@@ -10,10 +10,10 @@ import { API_BASE_URL } from "../config"; // Import base URL from config
  * - JSON content type header
  */
 const context_api = axios.create({
-    baseURL: `${API_BASE_URL}/contexts`,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: `${API_BASE_URL}/contexts`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 /**
@@ -23,23 +23,24 @@ const context_api = axios.create({
  * @returns {Promise<Array>} A promise that resolves to an array of context objects from the API
  */
 export const getAllContexts = async (options = {}) => {
-    const { page, pageSize } = options;
-    let queryParams = {};
+  const { page, pageSize } = options;
+  let queryParams = {};
 
-    if (page !== undefined) {
-        queryParams.page = page;
-    }
+  if (page !== undefined) {
+    queryParams.page = page;
+  }
 
-    if (pageSize !== undefined) {
-        queryParams.page_size = pageSize;
-     }
+  if (pageSize !== undefined) {
+    queryParams.page_size = pageSize;
+  }
 
-    return  await context_api.get("/", { params: queryParams })
-        .then((res) => res.data);
-}
+  return await context_api
+    .get("/", { params: queryParams })
+    .then((res) => res.data);
+};
 
 export const getContextById = async (id) =>
-    context_api.get(`/${id}`).then((res) => res.data)
+  context_api.get(`/${id}`).then((res) => res.data);
 
 /**
  * Retrieves a context by its ID from the context API.
@@ -48,11 +49,10 @@ export const getContextById = async (id) =>
  * @throws {Error} If the API request fails.
  */
 export const getContextByRepoName = async (repoName) =>
-    context_api.get(`/repo/${repoName}`).then((res) => res.data);
-
+  context_api.get(`/repo/${repoName}`).then((res) => res.data);
 
 export const getContextByRepoNamePrefix = async (prefix) =>
-    context_api.get(`/repo/prefix/${prefix}`).then((res) => res.data);
+  context_api.get(`/repo/prefix/${prefix}`).then((res) => res.data);
 
 /**
  * Retrieves statistics for a specific context by its ID.
@@ -61,7 +61,7 @@ export const getContextByRepoNamePrefix = async (prefix) =>
  * @throws {Error} If the API request fails.
  */
 export const getStatsByContextId = async (contextId) =>
-    context_api.get(`/${contextId}/stats`).then((res) => res.data);
+  context_api.get(`/${contextId}/stats`).then((res) => res.data);
 
 /**
  * Fetches contexts based on a repository name prefix
@@ -70,8 +70,7 @@ export const getStatsByContextId = async (contextId) =>
  * @throws {Error} If the API request fails
  */
 export const getScansByRepoName = async (repoName) =>
-    context_api.get(`/${repoName}/scans`).then((res) => res.data);
-
+  context_api.get(`/${repoName}/scans`).then((res) => res.data);
 
 /**
  * Deletes a context associated with the specified repository name.
@@ -80,4 +79,4 @@ export const getScansByRepoName = async (repoName) =>
  * @throws {Error} If the deletion operation fails.
  */
 export const deleteContextByRepoName = async (repoName) =>
-    context_api.delete(`/${repoName}`).then((res) => res.data)
+  context_api.delete(`/${repoName}`).then((res) => res.data);

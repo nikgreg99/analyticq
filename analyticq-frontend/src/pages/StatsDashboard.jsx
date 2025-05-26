@@ -1,30 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { getStatsByContextId } from "services/contextService";
-import {
-    Box,
-    Heading,
-    SimpleGrid
-} from "@chakra-ui/react"
-import {
-    FiFile,
-    FiHardDrive,
-    FiCode,
-    FiFolder
-} from 'react-icons/fi';
-import { SummaryStatsCard } from "components/ui/SummaryStatsCard";
+import { Box, Heading, SimpleGrid } from "@chakra-ui/react";
+import { FiFile, FiHardDrive, FiCode, FiFolder } from "react-icons/fi";
+import { SummaryStatsCard } from "components/ui/stats/SummaryStatsCard";
 import { formatBytes } from "components/utils/files";
-import { generateColorFromString } from "components/utils/colors";
-import LoadingSpinner from "components/ui/LoadingSpinner";
-import BackButton from "components/ui/BackButton";
+import LoadingSpinner from "components/ui/general/LoadingSpinner";
+import BackButton from "components/ui/general/BackButton";
 import ErrorDisplay from "components/layout/ErrorDisplay";
-import { FileSizeDistribution } from "components/ui/FileSizeDistribution";
-import { LanguageStatsDistribution } from "components/ui/LanguageStatsDistribution";
-import { LanguageStatsCard } from "components/ui/LanguageStatsCard";
-import { ExclusionSummary } from "components/ui/ExclusionStatsSummary";
+import { FileSizeDistribution } from "components/ui/stats/FileSizeDistribution";
+import { LanguageStatsDistribution } from "components/ui/stats/LanguageStatsDistribution";
+import { LanguageStatsCard } from "components/ui/stats/LanguageStatsCard";
+import { ExclusionSummary } from "../components/ui/stats/ExclusionStatsSummary";
 import { updatePageMetadata } from "components/utils/metadata";
 import { capitalizeFirstLetter } from "components/utils/strings";
-
+import { useContextStats } from "hooks/useContextStats";
+import { useSortedLanguages } from "hooks/useSortedLanguages";
+import { useLanguageColorMap } from "hooks/useLanguageColorMap";
+import { useLanguageFilter } from "hooks/useLanguageFilter";
 
 /**
  * A dashboard component that displays various statistics about a codebase.
@@ -49,203 +41,186 @@ import { capitalizeFirstLetter } from "components/utils/strings";
  * @requires react-icons/fi - For icon components
  */
 export const StatsDashboard = ({ initStatsData = null }) => {
+  const [searchParams] = useSearchParams();
+  const { contextId } = useParams();
+  const repoName = searchParams.get("repo");
+  const navigate = useNavigate();
 
-    const [statsData, setStatsData] = useState(initStatsData);
-    const [searchParams] = useSearchParams();
-    const [loading, setLoading] = useState(!initStatsData);
-    const [error, setError] = useState(null);
-    const { contextId } = useParams();
-    const repoName = searchParams.get('repo');
-    const navigate = useNavigate();
+  const { statsData, loading, error } = useContextStats({
+    contextId,
+    initStatsData,
+  });
+  const colorMap = useLanguageColorMap(statsData?.language_statistics);
+  const sortedLanguages = useSortedLanguages(statsData?.language_statistics);
 
+  // Update metadata when product data changes
+  useEffect(() => {
+    // Set initial loading metadata
+    updatePageMetadata(
+      "Context stats...",
+      "Loading stats information...",
+      `/contexts/${contextId}/stats`,
+    );
 
-    // Update metadata when product data changes
-    useEffect(() => {
-        // Set initial loading metadata
-        updatePageMetadata(
-            'Context stats...',
-            'Loading stats information...',
-            `/contexts/${contextId}/stats`
-        );
-
-        // Update with product data once loaded
-        if (statsData) {
-            updatePageMetadata(
-                `${capitalizeFirstLetter(repoName)} Stats`,
-                repoName,
-                `/contexts/${contextId}/stats`
-            );
-        }
-    }, [statsData, repoName, contextId]);
-
-
-    const colorMap = useMemo(() => {
-
-        if (statsData?.language_statistics) {
-            return {};
-        }
-
-        return Object.keys(statsData.language_statistics).reduce((acc, language, index, array) => {
-            acc[language] = generateColorFromString(language, index, array.length);
-            return acc;
-        }, {});
-
-    }, [statsData?.language_statistics]);
-
-
-    const fetchStatsByContextsId = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await getStatsByContextId(contextId);
-            console.log("Getting stats details: ", data);
-            setStatsData(data);
-            setError(null);
-        } catch (error) {
-            console.error("Error fetching stat details:", error);
-            setError(`Failed to load context stats details related to context with id ${contextId}. Please try again later.`);
-        }
-        finally {
-            setLoading(false);
-        }
-    }, [contextId]);
-
-    const handleBackClick = () => {
-        navigate(`/context/${contextId}`);
+    // Update with product data once loaded
+    if (statsData) {
+      updatePageMetadata(
+        `${capitalizeFirstLetter(repoName)} Stats`,
+        repoName,
+        `/contexts/${contextId}/stats`,
+      );
     }
+  }, [statsData, repoName, contextId]);
 
-    useEffect(() => {
-        if (!initStatsData || initStatsData.context_id !== parseInt(contextId)) {
-            fetchStatsByContextsId(contextId);
-        }
-    }, [contextId, initStatsData, fetchStatsByContextsId]);
+  const summaryCards = useMemo(
+    () => [
+      {
+        title: "Total files",
+        value: statsData?.total_files_scanned ?? 0,
+        icon: FiFile,
+        colorScheme: "blue",
+        ariaDesc: "total-files-description",
+      },
+      {
+        title: "Total Size",
+        value: formatBytes(statsData?.total_size_scanned ?? 0),
+        icon: FiHardDrive,
+        colorScheme: "green",
+        ariaDesc: "total-files-scanned",
+      },
+      {
+        title: "Languages",
+        value: Object.keys(statsData?.language_statistics ?? {}).length,
+        icon: FiCode,
+        colorScheme: "purple",
+        ariaDesc: "languages-statistics-cards",
+      },
+      {
+        title: "Excluded Files",
+        value: statsData?.excluded_files?.count ?? 0,
+        icon: FiFolder,
+        colorScheme: "red",
+        ariaDesc: "excluded-files-count",
+      },
+    ],
+    [statsData],
+  );
 
-    if (loading) {
-        return <LoadingSpinner />
-    }
+  const handleBackClick = useCallback(() => {
+    navigate(`/context/${contextId}`);
+  }, [navigate, contextId]);
 
-    if (error) {
-        return (
-            <ErrorDisplay
-                title=" Code Statistics Dashboard"
-                error={error}
-                backButton={
-                    <BackButton onClick={handleBackClick} label="Back to Contexts" />
-                }
-            />
-        );
-    }
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
+  if (error) {
     return (
-        <Box
-            p={6}
-            maxW="7xl"
-            mx="auto"
-            minH="100vh"
-            role="main"
-            aria-labelledby="stats-dashboard-title"
-        >
-            <Heading
-                as="h1"
-                id="stats-dashboard-title"
-                size="xl"
-                mb={8}
-                textAlign="center"
-                color="blackAlpha.800"
-                aria-live="polite"
-            >
-                Codebase Statistics: {repoName}
-            </Heading>
-            <SimpleGrid
-                columns={{ base: 1, md: 4 }}
-                spacing={6}
-                mb={8}
-                color="blackAlpha.800"
-                aria-live="polite"
-                aria-labelledby="language-details-heading"
-            >
-                <SummaryStatsCard
-                    title="Total files"
-                    value={statsData.total_files_scanned ?? 0}
-                    icon={FiFile}
-                    colorScheme="blue"
-                />
-                <SummaryStatsCard
-                    title="Total Size"
-                    value={formatBytes(statsData.total_size_scanned) ?? 0}
-                    icon={FiHardDrive}
-                    colorScheme="green"
-                />
-                <SummaryStatsCard
-                    title="Languages"
-                    value={Object.keys(statsData?.language_statistics ?? {}).length}
-                    icon={FiCode}
-                    colorScheme="purple"
-                />
-                <SummaryStatsCard
-                    title="Excluded Files"
-                    value={statsData.excluded_files.count ?? 0}
-                    icon={FiFolder}
-                    colorScheme="red"
-                />
-            </SimpleGrid>
+      <ErrorDisplay
+        title=" Code Statistics Dashboard"
+        error={error}
+        backButton={
+          <BackButton onClick={handleBackClick} label="Back to Contexts" />
+        }
+      />
+    );
+  }
 
-            {/* Language Distribution */}
-            <SimpleGrid
-                columns={{ base: 1, lg: 2 }}
-                spacing={6}
-                mb={8}
-            >
-                <LanguageStatsDistribution
-                    languageStats={statsData.language_statistics}
-                    colorMap={colorMap}
-                />
+  return (
+    <Box
+      p={6}
+      maxW="7xl"
+      mx="auto"
+      minH="100vh"
+      role="main"
+      aria-labelledby="stats-dashboard-title"
+    >
+      <Heading
+        as="h1"
+        id="stats-dashboard-title"
+        size="xl"
+        mb={8}
+        textAlign="center"
+        color="blackAlpha.800"
+        aria-live="polite"
+      >
+        Codebase Statistics: {repoName}
+      </Heading>
+      <SimpleGrid
+        columns={{ base: 1, md: 4 }}
+        spacing={6}
+        mb={8}
+        color="blackAlpha.800"
+        aria-live="polite"
+        aria-labelledby="language-details-heading"
+      >
+        {summaryCards.map(({ title, value, icon, colorScheme, ariaDesc }) => (
+          <SummaryStatsCard
+            key={title}
+            title={title}
+            value={value}
+            icon={icon}
+            colorScheme={colorScheme}
+            aria-describedby={ariaDesc}
+          />
+        ))}
+      </SimpleGrid>
+      <SimpleGrid
+        columns={{ base: 1, lg: 2 }}
+        spacing={6}
+        mb={8}
+        aria-live="polite"
+      >
+        <LanguageStatsDistribution
+          languageStats={statsData?.language_statistics}
+          colorMap={colorMap}
+          aria-live="polite"
+        />
 
-                <FileSizeDistribution
-                    languageStats={statsData.language_statistics}
-                    colorMap={colorMap}
-                />
-            </SimpleGrid>
+        <FileSizeDistribution
+          languageStats={statsData?.language_statistics}
+          colorMap={colorMap}
+          aria-live="polite"
+        />
+      </SimpleGrid>
 
-            <Heading
-                as="h2"
-                size="lg"
-                mb={4}
-                color="blackAlpha.800"
-                textAlign="center"
-                id="language-details-heading"
-            >
-                Language Details
-            </Heading>
-            <SimpleGrid
-                columns={{ base: 1, md: 2, lg: 3 }}
-                spacing={6}
-                mb={8}
-                aria-live="polite"
-            >
-                {Object.entries(statsData.language_statistics || {})
-                    .sort((a, b) => b[1].file_count - a[1].file_count)
-                    .map(([language, stats]) => (
-                        <LanguageStatsCard
-                            key={language}
-                            language={language}
-                            stats={stats}
-                            colorScheme={colorMap[language]}
-                        />
+      <Heading
+        as="h2"
+        size="lg"
+        mb={4}
+        color="blackAlpha.800"
+        textAlign="center"
+        id="language-details-heading"
+      >
+        Language Details
+      </Heading>
+      <SimpleGrid
+        columns={{ base: 1, md: 2, lg: 3 }}
+        spacing={6}
+        mb={8}
+        aria-live="polite"
+      >
+        {sortedLanguages.map(([language, stats]) => (
+          <LanguageStatsCard
+            key={language}
+            language={language}
+            stats={stats}
+            colorScheme={colorMap[language]}
+          />
+        ))}
+      </SimpleGrid>
 
-                    ))
-                }
-            </SimpleGrid>
-
-
-            {/* Exclusion Summary */}
-            <Heading textAlign="center" color="blackAlpha.800" id="exclusion-summary">
-                Exclusion Summary
-            </Heading>
-            <ExclusionSummary
-                excludedFiles={statsData.excluded_files}
-                totalScanned={statsData.total_size_scanned}
-                repoName={repoName}
-            />
-        </Box>
-    )
+      {/* Exclusion Summary */}
+      <Heading textAlign="center" color="blackAlpha.800" id="exclusion-summary">
+        Exclusion Summary
+      </Heading>
+      <ExclusionSummary
+        excludedFiles={statsData?.excluded_files}
+        totalScanned={statsData?.total_size_scanned}
+        repoName={repoName}
+      />
+    </Box>
+  );
 };
+
+StatsDashboard.displayName = "StastDashboard";

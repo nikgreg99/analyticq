@@ -1,4 +1,3 @@
-
 /**
  * Formats a number of bytes into a human-readable string with units
  * @param {number} bytes - The number of bytes to format
@@ -10,15 +9,15 @@
  * formatBytes(0); // returns "0 Bytes"
  */
 export function formatBytes(bytes, decimals = 1) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
 
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
 
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
 /**
@@ -29,7 +28,7 @@ export function formatBytes(bytes, decimals = 1) {
  * getFileName("c:\\folder\\file.txt") // returns "file.txt"
  */
 export function getFileName(path) {
-  return path.split('\\').pop();
+  return path.split("\\").pop();
 }
 
 /**
@@ -38,7 +37,7 @@ export function getFileName(path) {
  * @param {string} path - Full file path (e.g., "/src/components/MyFile.test.jsx")
  * @returns {string} The file name with extension (e.g., "MyFile.test.jsx")
  */
-export function getFileNameFromPath(path){
+export function getFileNameFromPath(path) {
   if (typeof path !== "string") return "";
   return path.split("/").pop();
 }
@@ -48,9 +47,9 @@ export function getFileNameFromPath(path){
  * @param {string} file - The filename to extract the extension from
  * @returns {string} The lowercase file extension without the dot, or an empty string if no extension is found or if input is not a string
 /** */
-export function getFileExtension(file){
-  if (typeof file !== 'string') return '';
+export function getFileExtension(file) {
+  if (typeof file !== "string") return "";
 
-  const parts = file.split('.');
-  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+  const parts = file.split(".");
+  return parts.length > 1 ? parts.pop().toLowerCase() : "";
 }

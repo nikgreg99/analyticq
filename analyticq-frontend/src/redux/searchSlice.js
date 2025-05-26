@@ -1,9 +1,9 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getContextByRepoNamePrefix } from 'services/contextService'; // Modify this import based on your service
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getContextByRepoNamePrefix } from "services/contextService"; // Modify this import based on your service
 
 // Initial state for search
 const initialState = {
-  searchQuery: '',
+  searchQuery: "",
   searchResults: [],
   loading: false,
   error: null,
@@ -16,7 +16,7 @@ const initialState = {
  * @throws {Error} When the API request fails, the error is handled by rejectWithValue
  */
 export const searchByRepoNamePrefix = createAsyncThunk(
-  'search/searchByRepoNamePrefix',
+  "search/searchByRepoNamePrefix",
   async (query, { rejectWithValue }) => {
     try {
       const response = await getContextByRepoNamePrefix(query); // Fetch contexts filtered by prefix
@@ -24,11 +24,11 @@ export const searchByRepoNamePrefix = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const searchSlice = createSlice({
-  name: 'search',
+  name: "search",
   initialState,
   reducers: {
     setSearchQuery(state, action) {

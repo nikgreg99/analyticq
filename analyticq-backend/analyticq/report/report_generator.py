@@ -6,6 +6,25 @@ from analyticq.validator.scan import AnalyticQSASTScanResultModel
 
 
 class ReportGenerator(ABC):
+    """Abstract base class for report generators.
+
+    This class serves as a template for different report generation formats, providing
+    common functionality and structure for generating security analysis reports.
+
+    Attributes:
+        scan_result (AnalyticQSASTScanResultModel): The scan result data to be used for report generation.
+        timestamp (datetime): The timestamp when the report generator was instantiated.
+
+    Methods:
+        generate(): Abstract method to be implemented by concrete classes for specific report formats.
+        get_base_data(): Returns common report data including scan details and issue summaries.
+        get_issue_data(issue): Extracts and formats data from a single issue object.
+
+    The class processes SAST (Static Application Security Testing) scan results and
+    provides methods to format and organize the data for reporting purposes. It includes
+    functionality to categorize issues by severity levels (CRITICAL, HIGH, MEDIUM, LOW,
+    INFO, UNKNOWN) and compile comprehensive issue statistics.
+    """
     """Abstract base class for report generators."""
 
     def __init__(self, scan_result: AnalyticQSASTScanResultModel):

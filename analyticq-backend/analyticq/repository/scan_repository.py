@@ -218,7 +218,7 @@ class AnalyticQScanResultRepository:
             result = await session.execute(
                 select(AnalyticQSASTScanResult)
                 .options(selectinload(AnalyticQSASTScanResult.issues))
-                .where(AnalyticQSASTScanResult.scan_id == id)
+                .where(AnalyticQSASTScanResult.id == id)
             )
             updated_scan_result = result.scalar_one()
             return AnalyticQSASTScanResultModel.model_validate(updated_scan_result)

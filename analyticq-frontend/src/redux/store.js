@@ -1,5 +1,5 @@
-import { configureStore } from '@reduxjs/toolkit';
-import searchReducer from './searchSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import searchReducer from "./searchSlice";
 
 /**
  * Redux store configuration.

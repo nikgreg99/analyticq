@@ -29,8 +29,7 @@ class ScanUpdateRequest(BaseModel):
         scan_metadata (Dict[str, Any]): Additional metadata about the scan. Defaults to empty dict.
     """
     id: Optional[int] = None
-    scan_id: str
-    scan_id: str
+    scan_id: Optional[str] = None
     context_id: Optional[int] = None
     tool_name: Optional[str] = None
     issues: List[AnalyticQSASTIssueModel] = []

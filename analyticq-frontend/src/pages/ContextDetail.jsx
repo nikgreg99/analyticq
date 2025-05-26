@@ -1,182 +1,85 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toaster } from "components/ui/Toaster";
-import { getContextById, deleteContextByRepoName } from "services/contextService";
-import {
-    Box,
-    Flex,
-    Heading,
-    Spacer,
-    Button,
-    HStack
-} from "@chakra-ui/react";
-import LoadingSpinner from "components/ui/LoadingSpinner";
-import ErrorDisplay from "components/layout/ErrorDisplay";
-import RepositoryInfoCard from "components/ui/RepositoryInfoCard";
-import BackButton from "components/ui/BackButton";
-import DeleteConfirmationDialog from "components/ui/DeleteConfirmationDialog";
-import { ChartNoAxesColumnIncreasing } from "lucide-react";
+import { Box } from "@chakra-ui/react";
+
 import { capitalizeFirstLetter } from "components/utils/strings";
 import { updatePageMetadata } from "components/utils/metadata";
-import { ScanResultList } from "components/ui/ScanResultList";
+
+import { useContextDetailsData } from "hooks/useContextDetailsData";
+import { useDeleteContext } from "hooks/useDeleteContextDetail";
+import LoadingSpinner from "components/ui/general/LoadingSpinner";
+import ErrorDisplay from "components/layout/ErrorDisplay";
+import BackButton from "components/ui/general/BackButton";
+
+import ContextDetailHeader from "components/ui/context/ContextDetailHeader";
+import ContextDetailContent from "components/ui/context/ContextDetailContent";
 
 export const ContextDetailPage = ({ initialContextData = null }) => {
-    const [contextData, setContextData] = useState(initialContextData);
-    const [loading, setLoading] = useState(!initialContextData)
-    const [error, setError] = useState(null);
-    const [deleteLoading, setDeleteLoading] = useState(false);
-    const [isOpenModal, setIsOpenModal] = useState(false);
-    const { contextId } = useParams();
-    const navigate = useNavigate();
-    const cancelRef = useRef();
+  const { contextId } = useParams();
+  const navigate = useNavigate();
 
+  const { contextData, loading, error } = useContextDetailsData(
+    contextId,
+    initialContextData,
+  );
 
-    // Update metadata when product data changes
-    useEffect(() => {
-        // Set initial loading metadata
-        updatePageMetadata(
-            'Context loading...',
-            'Loading context information...',
-            `/contexts/${contextId}`
-        );
+  const {
+    isOpenModal,
+    setIsOpenModal,
+    deleteLoading,
+    handleDeleteConfirm,
+    cancelRef,
+  } = useDeleteContext(contextId, contextData);
 
-        // Update with product data once loaded
-        if (contextData) {
-            updatePageMetadata(
-                `${capitalizeFirstLetter(contextData.repo_name)} - Overview`,
-                 contextData.repo_name,
-                `/contexts/${contextId}`
-            );
-        }
-    }, [contextData, contextId]);
+  const handleClickBack = useCallback(() => navigate(-1), [navigate]);
 
-    const fetchContextDetails = useCallback(async (id) => {
-
-        try {
-            setLoading(true);
-            const data = await getContextById(id);
-            console.log("Getting context details: ", data);
-            setContextData(data);
-            setError(null);
-        }
-        catch {
-            console.error("Error fetching context details:", error);
-            setError("Failed to load context details. Please try again later.");
-        }
-        finally {
-            setLoading(false);
-        }
-    }, [error]);
-
-    const handleDeleteConfirm = async () => {
-        try {
-            setDeleteLoading(true);
-            const data = await deleteContextByRepoName(contextId);
-            console.log("Logging data delition", data.data)
-            toaster.success({
-                title: "Deletion successful",
-                description: `Context ${contextData.repo_name} has been deleted`,
-            })
-
-            navigate("/contexts");
-        }
-        catch (err) {
-            console.error("Error deleting context:", err);
-        }
-        finally {
-            setDeleteLoading(false);
-        }
+  const navigateToStats = () => {
+    if (contextData) {
+      navigate(
+        `/contexts/${contextId}/stats?repo=${encodeURIComponent(contextData.repo_name)}`,
+      );
     }
+  };
 
-    useEffect(() => {
-        if (!initialContextData || initialContextData.id !== parseInt(contextId)) {
-            fetchContextDetails(contextId);
-        }
-    }, [contextId, initialContextData, fetchContextDetails]);
-
-    const handleBackClick = () => {
-        navigate(-1);
+  useEffect(() => {
+    if (contextData) {
+      const title = `${capitalizeFirstLetter(contextData.repo_name)} - Overview`;
+      updatePageMetadata(
+        title,
+        contextData.repo_name,
+        `/contexts/${contextId}`,
+      );
     }
+  }, [contextData, contextId]);
 
-    // New function to navigate to the stats page
-    const navigateToStats = () => {
-        navigate(`/contexts/${contextId}/stats?repo=${encodeURIComponent(contextData.repo_name)}`);
-    };
+  if (loading) return <LoadingSpinner />;
 
-
-    if (loading) {
-        return (
-            <LoadingSpinner />
-        )
-    }
-
-    if (error) {
-        return (
-            <ErrorDisplay
-                title="Context Details"
-                error={error}
-                backButton={
-                    <BackButton onClick={handleBackClick} label="Back to Contexts" />
-                }
-            />
-        );
-    }
-
+  if (error) {
     return (
-        <Box p={6} mx="auto" maxWidth="1200px">
-            <Flex justify="space-between" align="center" mb={6}>
-                <Heading
-                    size="lg"
-                    textAlign="center"
-                    color="blackAlpha.800"
-                    flex="1"
-                >
-                    Codebase {contextData.id} Details
-                </Heading>
-            </Flex>
+      <ErrorDisplay
+        title="Context Details"
+        error={error}
+        backButton={
+          <BackButton onClick={handleClickBack} label="Back to Contexts" />
+        }
+      />
+    );
+  }
 
-            <RepositoryInfoCard contextData={contextData} />
-
-            <ScanResultList
-                repoName={contextData.repo_name}
-            />
-
-            <Flex
-                mt={10}
-                justifyContent="space-between"
-                gap={4}
-                flexWrap="wrap"
-                alignItems="center"
-            >
-
-                <BackButton onClick={handleBackClick} label="Back to Contexts" />
-
-                <Spacer />
-
-                <HStack>
-                    <Button
-                        onClick={navigateToStats}
-                        bg="blackAlpha.900"
-                        color="whiteAlpha.900"
-                        variant="solid"
-                        size="sm"
-                    >
-                        <ChartNoAxesColumnIncreasing size={18} />
-                        View Statistics
-                    </Button>
-
-                    <DeleteConfirmationDialog
-                        isOpenModal={isOpenModal}
-                        setIsOpenModal={setIsOpenModal}
-                        itemName={contextData.repo_name}
-                        isLoading={deleteLoading}
-                        onConfirm={handleDeleteConfirm}
-                        cancelRef={cancelRef}
-                    />
-                </HStack>
-            </Flex>
-        </Box>
-    )
+  return (
+    <Box p={{ base: 4, md: 6 }} mx="auto" maxW="1200px">
+      <ContextDetailHeader contextId={contextData?.id} />
+      <ContextDetailContent
+        contextData={contextData}
+        isOpenModal={isOpenModal}
+        setIsOpenModal={setIsOpenModal}
+        deleteLoading={deleteLoading}
+        handleDeleteConfirm={handleDeleteConfirm}
+        cancelRef={cancelRef}
+        navigateToStats={navigateToStats}
+      />
+    </Box>
+  );
 };
 
-export default ContextDetailPage;
+ContextDetailPage.displayName = "ContextDetailPage";

@@ -21,7 +21,10 @@ export const useDownloadScanReport = () => {
     setError(null);
 
     try {
-      const { data, fileName } = await downloadScanReportService(scanId, format);
+      const { data, fileName } = await downloadScanReportService(
+        scanId,
+        format,
+      );
 
       const url = window.URL.createObjectURL(data);
       const link = document.createElement("a");

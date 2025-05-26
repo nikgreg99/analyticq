@@ -12,10 +12,10 @@ import { API_BASE_URL } from "config";
  *   .catch(error => console.error(error));
  */
 const stats_api = axios.create({
-    baseURL: `${API_BASE_URL}/stats`,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: `${API_BASE_URL}/stats`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 /**
@@ -25,13 +25,11 @@ const stats_api = axios.create({
  * @throws {Error} If the API request fails
  */
 export const getStats = async (statsId) =>
-    stats_api.get(`/${statsId}`).then((res) => res.data);
-
+  stats_api.get(`/${statsId}`).then((res) => res.data);
 
 /**
  * Deletes statistics entry by its ID.
  * @param {string|number} statsId - The ID of the statistics entry to delete.
  * @returns {Promise} A promise that resolves when the deletion is complete.
  */
-export const deleteStats = async (statsId) =>
-    stats_api.delete(`/${statsId}`);
+export const deleteStats = async (statsId) => stats_api.delete(`/${statsId}`);

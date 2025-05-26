@@ -10,13 +10,11 @@ import { API_BASE_URL } from "config";
  * - Default headers specifying JSON as the content type
  */
 const scans_api = axios.create({
-    baseURL: `${API_BASE_URL}/scans`,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: `${API_BASE_URL}/scans`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
-
-
 
 /**
  * Retrieves filtered scan issues based on specified parameters
@@ -26,11 +24,11 @@ const scans_api = axios.create({
  * @returns {Promise<Object>} A promise that resolves to the filtered scan issues data
  */
 export const getFilteredScanIssues = (scanId, severity, confidence) =>
-    scans_api
-        .get(`/${scanId}/issues`, {
-            params: { severity, confidence },
-        })
-    .then((res) => res.data)
+  scans_api
+    .get(`/${scanId}/issues`, {
+      params: { severity, confidence },
+    })
+    .then((res) => res.data);
 
 /**
  * Retrieves scans filtered by tool name from the API
@@ -39,8 +37,7 @@ export const getFilteredScanIssues = (scanId, severity, confidence) =>
  * @throws {Error} If the API request fails
  */
 export const getScansByToolName = (toolName) =>
-    scans_api.get(`/tool/${toolName}`).then((res) => res.data);
-
+  scans_api.get(`/tool/${toolName}`).then((res) => res.data);
 
 /**
  * Retrieves a scan by its ID from the scans API
@@ -49,8 +46,7 @@ export const getScansByToolName = (toolName) =>
  * @throws {Error} If the request fails or the scan is not found
  */
 export const getScanById = async (id) =>
-    scans_api.get(`/${id}`).then((res) => res.data);
-
+  scans_api.get(`/${id}`).then((res) => res.data);
 
 /**
  * Deletes a scan by its ID.
@@ -58,4 +54,4 @@ export const getScanById = async (id) =>
  * @returns {Promise<AxiosResponse>} A promise that resolves to the response from the API.
  * @throws {AxiosError} When the API call fails.
  */
-export const deleteScanById = async (scanId) => scans_api.delete(`/${scanId}`)
+export const deleteScanById = async (scanId) => scans_api.delete(`/${scanId}`);

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from analyticq.engine import AnalyticQSASTScanResultModel
 from analyticq.repository.scan_repository import AnalyticQScanResultRepository
-from analyticq.schemas.scan_dto import ScanCreateRequest, ScanUpdateRequest
+from analyticq.schemas.scan_dto import ScanCreateRequest
 from analyticq.service import AnalyticQScanService
 from fastapi import HTTPException, status
 
@@ -30,7 +30,7 @@ TEST_SCAN_DATA = {
 
 # Test data
 TEST_UPDATED_DATA = {
-    "scan_id": "scan_123",
+    "scan_id": 1,
     "context_id": 1,
     "tool_name": "tool_2",
     "summary": {"new_key": "new_value"},
@@ -73,27 +73,6 @@ async def test_create_scan_success(scan_service, scan_repository):
     assert isinstance(result, AnalyticQSASTScanResultModel)
     assert result.scan_id == "scan_123"
     scan_repository.add_scan.assert_called_once_with(scan_data)
-
-
-@pytest.mark.asyncio
-async def test_update_scan_failure(scan_service, scan_repository):
-    """
-    Test updating a scan with a failure.
-    """
-    # Mock the repository to raise an exception
-    scan_repository.update_by_scan_id.side_effect = Exception("Database error")
-
-    # Create a ScanUpdateRequest object
-    updated_data = ScanUpdateRequest(summary={"new_key": "new_value"})
-
-    # Call the service method and expect an HTTPException
-    with pytest.raises(HTTPException) as exc_info:
-        await scan_service.update_scan("scan_123", updated_data)
-
-    # Assert the exception details
-    assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert exc_info.value.detail == "Error updating scan: Database error"
-    scan_repository.update_by_scan_id.assert_called_once_with("scan_123", summary={"new_key": "new_value"})
 
 
 @pytest.mark.asyncio

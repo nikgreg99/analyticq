@@ -118,7 +118,7 @@ TEST_STATS_DATA = {
 async def test_add_statistics(stats_repo):
     """Test adding statistics to the database."""
     stats = AnalyticQStatsModel(**TEST_STATS_DATA)
-    added_stats = await stats_repo.add_statistics(stats)
+    added_stats = await stats_repo.add_stats(stats)
     assert added_stats is not None
     assert added_stats.id == 1
 
@@ -128,7 +128,7 @@ async def test_get_stats_by_id(stats_repo):
     """Test retrieving statistics by ID."""
     # First add a record
     stats = AnalyticQStatsModel(**TEST_STATS_DATA)
-    added_stats = await stats_repo.add_statistics(stats)
+    added_stats = await stats_repo.add_stats(stats)
 
     # Then retrieve it
     retrieved_stats = await stats_repo.get_stats_by_id(added_stats.id)
@@ -150,7 +150,7 @@ async def test_delete_stats(stats_repo):
     """Test deleting statistics."""
     # First add a record
     stats = AnalyticQStatsModel(**TEST_STATS_DATA)
-    added_stats = await stats_repo.add_statistics(stats)
+    added_stats = await stats_repo.add_stats(stats)
 
     # Then delete it
     deleted = await stats_repo.delete_stats(added_stats.id)
@@ -166,7 +166,7 @@ async def test_delete_stats(stats_repo):
 @pytest.mark.asyncio
 async def test_update_stats_success(stats_repo):
     original_stats = AnalyticQStatsModel(**TEST_STATS_DATA)
-    added_stats = await stats_repo.add_statistics(original_stats)
+    added_stats = await stats_repo.add_stats(original_stats)
 
     updated_stats_data = AnalyticQStatsModel(
         **{

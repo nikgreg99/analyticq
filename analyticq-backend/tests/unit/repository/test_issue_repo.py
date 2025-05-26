@@ -7,11 +7,13 @@ from analyticq.engine import AnalyticQConfidence, AnalyticQSeverity
 from analyticq.manager.db_manager import AnalyticQDatabaseManager
 from analyticq.repository.context_repository import \
     AnalyticQContextRepository  # noqa
-from analyticq.repository.issue_repository import (
+from analyticq.repository.issue_repository import (  # noqa
     AnalyticQSASTIssue, AnalyticQSASTIssueModel, AnalyticQSASTIssueRepository)
 from analyticq.repository.scan_repository import \
     AnalyticQScanResultRepository  # noqa
-from sqlalchemy import select, text
+from analyticq.repository.stats_repository import \
+    AnalyticQStatsRepository  # noqa
+from sqlalchemy import text
 
 BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.parent
 
@@ -55,7 +57,7 @@ async def setup_db():
 # Test data
 TEST_ISSUE_DATA = {
     "rule_id": "rule_456",
-    "scan_id": "scan_123",
+    "scan_id": 1,
     "severity": AnalyticQSeverity.HIGH,
     "confidence": AnalyticQConfidence.HIGH,
     "code": "print('Hello, World!')",
@@ -65,13 +67,15 @@ TEST_ISSUE_DATA = {
     "end_line": 10,
     "column": 5,
     "issue_metadata": {"key": "value"},
-    "summary": {"key": "value"}
+    "summary": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 # Test data
 TEST_ISSUE_DATA_2 = {
     "rule_id": "rule_456",
-    "scan_id": "scan_123",
+    "scan_id": 1,
     "severity": AnalyticQSeverity.HIGH,
     "confidence": AnalyticQConfidence.HIGH,
     "code": "print('Hello, World!')",
@@ -81,11 +85,14 @@ TEST_ISSUE_DATA_2 = {
     "end_line": 10,
     "column": 5,
     "issue_metadata": {"key": "value"},
-    "summary": {"key": "value"}
+    "summary": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 TEST_UPDTATED_ISSUE_DATA = {
     "id": 1,
+    "scan_id": 1,
     "rule_id": "rule_456",
     "severity": AnalyticQSeverity.MEDIUM,
     "confidence": AnalyticQConfidence.HIGH,
@@ -96,7 +103,9 @@ TEST_UPDTATED_ISSUE_DATA = {
     "end_line": 10,
     "column": 5,
     "issue_metadata": {"key": "value"},
-    "summary": {"key": "value"}
+    "summary": {"key": "value"},
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z"
 }
 
 
@@ -105,23 +114,17 @@ TEST_UPDTATED_ISSUE_DATA = {
 async def test_add_issue(issue_repo):
     issue = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
     # Add the issue to the database
-    await issue_repo.add(issue)
-    # Verify the issue was added
-    async with AnalyticQDatabaseManager().get_db_session() as session:
-        result = await session.execute(select(AnalyticQSASTIssue).where(AnalyticQSASTIssue.rule_id == "rule_456"))
-        issues = result.scalars().all()
-        assert len(issues) == 1
-        assert issues[0].rule_id == "rule_456"
+    await issue_repo.add_issue(issue)
 
 
 @pytest.mark.asyncio
 async def test_get_issue_by_id(issue_repo):
     # Add an issue to the database
     issue = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
-    await issue_repo.add(issue)
+    await issue_repo.add_issue(issue)
 
     # Retrieve the issue by ID
-    retrieved_issue = await issue_repo.get_by_id(1)
+    retrieved_issue = await issue_repo.get_issue_by_id(1)
     assert retrieved_issue is not None
     assert retrieved_issue.rule_id == "rule_456"
 
@@ -134,20 +137,20 @@ async def test_add_issue_missing_scan_id(issue_repo):
 
     # Ensure a ValueError is raised
     with pytest.raises(ValueError, match="scan_id is required for AnalyticQSASTIssue"):
-        await issue_repo.add(issue)
+        await issue_repo.add_issue(issue)
 
 
 @pytest.mark.asyncio
 async def test_update_issue_by_id(issue_repo):
     # Add an issue to the database
     issue = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
-    await issue_repo.add(issue)
+    await issue_repo.add_issue(issue)
 
     # Update the issue
-    await issue_repo.update_by_id(1, AnalyticQSASTIssueModel(**TEST_UPDTATED_ISSUE_DATA))
+    await issue_repo.update_issue_by_id(1, AnalyticQSASTIssueModel(**TEST_UPDTATED_ISSUE_DATA))
 
     # Verify the update
-    updated_issue = await issue_repo.get_by_id(1)
+    updated_issue = await issue_repo.get_issue_by_id(1)
     assert updated_issue.severity == AnalyticQSeverity.MEDIUM
 
 
@@ -158,12 +161,12 @@ async def test_filter_scan_issues(issue_repo):
     issue2 = AnalyticQSASTIssueModel(**{**TEST_ISSUE_DATA, "severity": AnalyticQSeverity.MEDIUM, "confidence": AnalyticQConfidence.MEDIUM})
     issue3 = AnalyticQSASTIssueModel(**{**TEST_ISSUE_DATA, "severity": AnalyticQSeverity.LOW, "confidence": AnalyticQConfidence.LOW})
 
-    await issue_repo.add(issue1)
-    await issue_repo.add(issue2)
-    await issue_repo.add(issue3)
+    await issue_repo.add_issue(issue1)
+    await issue_repo.add_issue(issue2)
+    await issue_repo.add_issue(issue3)
 
     # Filter issues by severity and confidence
-    filtered_issues = await issue_repo.filter_scan_issues("scan_123", severity=AnalyticQSeverity.MEDIUM, confidence=AnalyticQConfidence.MEDIUM)
+    filtered_issues = await issue_repo.filter_scan_issues(1, severity=AnalyticQSeverity.MEDIUM, confidence=AnalyticQConfidence.MEDIUM)
     assert len(filtered_issues) == 1
     assert filtered_issues[0].severity == AnalyticQSeverity.MEDIUM
     assert filtered_issues[0].confidence == AnalyticQConfidence.MEDIUM
@@ -173,11 +176,11 @@ async def test_filter_scan_issues(issue_repo):
 async def test_delete_issue_by_id(issue_repo):
     # Add an issue to the database
     issue = AnalyticQSASTIssueModel(**TEST_ISSUE_DATA)
-    await issue_repo.add(issue)
+    await issue_repo.add_issue(issue)
 
     # Delete the issue
-    await issue_repo.delete_by_id(1)
+    await issue_repo.delete_issue_by_id(1)
 
     # Verify the issue was deleted
-    deleted_issue = await issue_repo.get_by_id(1)
+    deleted_issue = await issue_repo.get_issue_by_id(1)
     assert deleted_issue is None

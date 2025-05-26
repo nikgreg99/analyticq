@@ -5,3 +5,5 @@ dist
 .gitignore
 README.md
 Dockerfile
+npm-debug.log
+.env

@@ -8,10 +8,10 @@ import { API_BASE_URL } from "config";
  * with base URL set to the issues endpoint and JSON content type header.
  */
 const issue_api = axios.create({
-    baseURL: `${API_BASE_URL}/issues`,
-    headers: {
-        "Content-Type": "application/json",
-    },
+  baseURL: `${API_BASE_URL}/issues`,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 /**
@@ -20,7 +20,8 @@ const issue_api = axios.create({
  * @returns {Promise<Object>} A promise that resolves to the issue data
  * @throws {Error} If the API request fails
  */
-export const getIssueById = async (issueId) =>  issue_api.get(`/${issueId}`).then((res) => res.data);
+export const getIssueById = async (issueId) =>
+  issue_api.get(`/${issueId}`).then((res) => res.data);
 
 /**
  * Updates an existing issue in the system
@@ -29,7 +30,8 @@ export const getIssueById = async (issueId) =>  issue_api.get(`/${issueId}`).the
  * @returns {Promise<Object>} A promise that resolves to the updated issue data
  * @throws {Error} If the API request fails
  */
-export const updateIssue = (issueId, updateData) => issue_api.put(`/${issueId}`, updateData).then((res) => res.data);
+export const updateIssue = (issueId, updateData) =>
+  issue_api.put(`/${issueId}`, updateData).then((res) => res.data);
 
 /**
  * Deletes an issue by its ID.

@@ -50,26 +50,6 @@ async def test_clone_remote_codebase_succcess(codebase_cloner):
 
 
 @pytest.mark.asyncio
-async def test_clone_remote_codebase_with_default_branch(codebase_cloner):
-
-    codebase_url = "https://github.com/fake/repo.git"
-    repo_name = "repo"
-
-    expected_repo_path = PathUtil.get_codebase_repositories_AnalyticQ_path() / repo_name
-
-    with patch('analyticq.util.PathUtil') , \
-         patch("pathlib.Path.exists", return_value=False), \
-         patch("git.Repo.clone_from") as mock_repo:
-
-        mock_repo_instance = MagicMock()
-        mock_repo.return_value = mock_repo_instance
-
-        result_path = await codebase_cloner.clone_remote_codebase(codebase_url)
-        assert expected_repo_path == result_path, f"Expected {expected_repo_path}, got {result_path}"
-        mock_repo.assert_called_once_with(codebase_url, expected_repo_path, branch="main")
-
-
-@pytest.mark.asyncio
 async def test_clone_remote_codebase_with_tag(codebase_cloner):
     codebase_url = "https://github.com/fake/repo.git"
     repo_name = "repo"

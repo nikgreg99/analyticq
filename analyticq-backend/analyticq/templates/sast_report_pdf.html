@@ -62,12 +62,13 @@
             margin-bottom: 0.3rem;
         }
 
-        /* Simple Issue List */
+        /* Issues Table with Path Handling */
         .issues-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
             margin-bottom: 1rem;
+            table-layout: fixed; /* Added fixed layout for better column width control */
         }
 
         .issues-table th {
@@ -81,10 +82,39 @@
             padding: 0.4rem;
             vertical-align: top;
             border-bottom: 1px solid #f0f0f0;
+            word-wrap: break-word; /* Ensures text wraps within cells */
+            overflow-wrap: break-word;
+        }
+
+        /* Column widths */
+        .issues-table th:nth-child(1),
+        .issues-table td:nth-child(1) {
+            width: 15%; /* Severity column */
+        }
+
+        .issues-table th:nth-child(2),
+        .issues-table td:nth-child(2) {
+            width: 45%; /* Issue description column */
+        }
+
+        .issues-table th:nth-child(3),
+        .issues-table td:nth-child(3) {
+            width: 40%; /* Location column */
         }
 
         .issues-table tr:nth-child(even) {
             background-color: #fafafa;
+        }
+
+        /* File path handling */
+        .file-path {
+            word-break: break-all; /* Ensures long paths break appropriately */
+            display: block; /* Makes the path display as its own block element */
+            margin-bottom: 0.2rem;
+        }
+
+        .line-info {
+            white-space: nowrap; /* Keep line numbers together */
         }
 
         /* Severity Tags */
@@ -181,7 +211,18 @@
                             <div>{{ issue.message }}</div>
                         </td>
                         <td>
-                            {{ issue.path }} (Line: {{ issue.start_line }}{% if issue.end_line != issue.start_line and issue.end_line != 0 %}-{{ issue.end_line }}{% endif %})
+                            <span class="file-path">
+                                {% if issue.path.startswith('file:') %}
+                                    {% if 'code/' in issue.path %}
+                                        {{ issue.path.split('code/', 1)[1] }}
+                                    {% else %}
+                                        {{ issue.path.split('/')[-1] }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ issue.path.split('/')[-1] }}
+                                {% endif %}
+                            </span>
+                            <span class="line-info">Line: {{ issue.start_line }}{% if issue.end_line != issue.start_line and issue.end_line != 0 %}-{{ issue.end_line }}{% endif %}</span>
                         </td>
                     </tr>
                     {% endfor %}

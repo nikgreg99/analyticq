@@ -1,46 +1,56 @@
 import React from "react";
-import {
-    Alert,
-    Flex,
-    CloseButton
-} from "@chakra-ui/react";
+import { Alert, Flex, CloseButton, useBreakpointValue } from "@chakra-ui/react";
 
 /**
- * A component that displays an empty state message with a title and alert.
+ * A responsive component that displays an empty state message with a title and alert.
  *
  * @component
  * @param {Object} props - The component props
  * @param {string} props.title - The main heading text to display
  * @param {string} props.message - The message to display in the alert description
- * @returns {JSX.Element} A box containing a heading and an error alert
+ * @returns {JSX.Element} A responsive alert component with heading and description
  */
 const EmptyState = ({ title, message }) => {
-    return (
-        <Flex
-            p={6}
-            textAlign="center"
-            width="100%"
-            height="100%"
-            align="center"
-            justify="center"
-        >
-            <Alert.Root
-                status="info"
-                title={title}
-                role="alert" // Ensure the alert is announced immediately
-                aria-live="assertive" // Ensure screen readers announce this content as soon as it appears
-                aria-atomic="true"
-                 width="100%"
-            >
-                <Alert.Indicator />
-                <Alert.Content  textAlign="center">
-                    <Alert.Title>{title}</Alert.Title>
-                    <Alert.Description>{message}</Alert.Description>
-                </Alert.Content>
-                <CloseButton pos="relative" top="-2" insetEnd="-2" />
-            </Alert.Root>
-        </Flex>
-    );
+  const alertWidth = useBreakpointValue({
+    base: "100%",
+    sm: "90%",
+    md: "80%",
+    lg: "60%",
+  });
+
+  return (
+    <Flex
+      p={{ base: 4, md: 6 }}
+      textAlign="center"
+      width="100%"
+      minHeight={{ base: "200px", md: "300px" }}
+      align="center"
+      justify="center"
+    >
+      <Alert.Root
+        status="info"
+        title={title}
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        width={alertWidth}
+        flexDirection="column"
+        textAlign="center"
+        borderRadius="md"
+        py={{ base: 4, md: 6 }}
+        px={{ base: 3, md: 5 }}
+      >
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title fontSize={{ base: "lg", md: "xl" }}>{title}</Alert.Title>
+          <Alert.Description fontSize={{ base: "sm", md: "md" }}>
+            {message}
+          </Alert.Description>
+        </Alert.Content>
+        <CloseButton pos="absolute" top={2} right={2} />
+      </Alert.Root>
+    </Flex>
+  );
 };
 
 export default EmptyState;

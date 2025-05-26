@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 import {
   Container,
   Heading,
   Text,
-  VStack
-} from '@chakra-ui/react';
-import { updatePageMetadata } from 'components/utils/metadata';
+  VStack,
+  useBreakpointValue,
+} from "@chakra-ui/react";
+import { updatePageMetadata } from "components/utils/metadata";
 
 /**
  * Renders the About page of the AnalyticQ SAST Analysis Tool.
@@ -21,26 +22,20 @@ import { updatePageMetadata } from 'components/utils/metadata';
  * @returns {JSX.Element} A container with project information including title, author, and description
  */
 export const AboutPage = () => {
-
   useEffect(() => {
-    updatePageMetadata(
-      'About the scanner',
-      'About the SAST Scanner',
-      "/about"
-    )
-  },[]);
+    updatePageMetadata("About the scanner", "About the SAST Scanner", "/about");
+  }, []);
+
+  // Responsive font size for the heading and description
+  const headingSize = useBreakpointValue({ base: "2xl", md: "3xl" });
+  const textSize = useBreakpointValue({ base: "md", lg: "lg" });
 
   return (
-    <Container
-      maxW="container.md"
-      py={16}
-      as="main"
-      role='main'
-    >
+    <Container maxW="container.md" py={16} as="main" role="main">
       <VStack
         as="section"
-        spacing={8}
-        p={10}
+        spacing={{ base: 6, md: 8 }} // Responsive spacing
+        p={6}
         borderRadius="2xl"
         align="center"
         aria-labelledby="about-heading"
@@ -48,7 +43,7 @@ export const AboutPage = () => {
         <Heading
           id="about-heading"
           as="h1"
-          size="xl"
+          size={headingSize} // Responsive heading size
           ml={2}
           color="blackAlpha.800"
           tabIndex={-1}
@@ -58,26 +53,28 @@ export const AboutPage = () => {
 
         <Text
           textAlign="center"
-          fontSize="lg"
+          fontSize={textSize} // Responsive text size
           color="blackAlpha.800"
-          maxW="600px"
+          maxW={{ base: "100%", md: "600px" }} // Adjust max width based on screen size
         >
           Master's Thesis Project developed by Nicolas Gregori
         </Text>
 
         <Text
           textAlign="center"
-          fontSize="md"
-          maxW="700px"
-          lineClamp="tall"
+          fontSize={{ base: "sm", lg: "md" }} // Responsive text size for the description
+          maxW={{ base: "100%", md: "700px" }} // Max width adjusted based on screen size
+          lineClamp={3} // Limit the lines for longer descriptions
           color="blackAlpha.800"
         >
-          A project focused  on a Static Application
-          Security Testing (SAST) system tool to identify vulnerabilities in source code.
+          A project focused on a Static Application Security Testing (SAST)
+          system tool to identify vulnerabilities in source code.
         </Text>
       </VStack>
     </Container>
   );
 };
+
+AboutPage.displayName = "AboutPage";
 
 export default AboutPage;

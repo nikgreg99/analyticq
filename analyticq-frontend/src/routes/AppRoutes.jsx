@@ -1,9 +1,9 @@
 import React from "react";
 import {
-    BrowserRouter as Router,
-    Routes,
-    Route,
-    Navigate
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
 } from "react-router-dom";
 import { MainLayout } from "components/layout/MainLayout";
 import { ToolsPage } from "pages/Tools";
@@ -37,30 +37,31 @@ import { NotFoundPage } from "pages/NotFound";
  * @returns {JSX.Element} The router configuration wrapped in Router component
  */
 export const AppRoutes = () => {
-    return (
-        <Router>
-            <MainLayout>
-                <Routes>
-                    <Route path="/" index element={<HomePage />} />
-                    <Route path="/contexts" element={<ContextsPage />} />
-                    <Route path="/contexts/:contextId"
-                        element={<ContextDetailPage />}
-                    />
-                    <Route path="/contexts/:contextId/stats"
-                        element={<StatsDashboard />}
-                    />
-                    <Route path="/contexts/:contextId/scans/:scanId"
-                        element={<ScanDetailsPage/>} />
-                    <Route path="issues/:issueId"
-                        element={<IssueDetailPage/>}
-                    />
-                    <Route path="/tools" element={ <ToolsPage/> } />
-                    <Route path="/about" element={<AboutPage />} />
-                    {/* Catch-all route for 404 */}
-                    <Route path="/404" element={<NotFoundPage />} />
-                    <Route path="*" element={<Navigate to="/404" replace />} />
-                </Routes>
-            </MainLayout>
-        </Router>
-    )
-}
+  return (
+    <Router>
+      <MainLayout>
+        <Routes>
+          <Route path="/" index element={<HomePage />} />
+          <Route path="/contexts" element={<ContextsPage />} />
+          <Route path="/contexts/:contextId" element={<ContextDetailPage />} />
+          <Route
+            path="/contexts/:contextId/stats"
+            element={<StatsDashboard />}
+          />
+          <Route
+            path="/contexts/:contextId/scans/:scanId"
+            element={<ScanDetailsPage />}
+          />
+          <Route path="issues/:issueId" element={<IssueDetailPage />} />
+          <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          {/* Catch-all route for 404 */}
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
+      </MainLayout>
+    </Router>
+  );
+};
+
+AppRoutes.displayName = "AppRoutes";
