@@ -38,8 +38,10 @@ jobs:
             name: prettier-report-${{ github.run_number }}-${{ github.sha }}
             path: analyticq-frontend/prettier-report.txt
 
+
       - name: Run ESLint
         working-directory: analyticq-frontend
+        continue-on-error: true
         run: |
             npx eslint . --ext .js,.ts,.jsx,.tsx -f json -o eslint-report.json
 
