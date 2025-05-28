@@ -195,7 +195,8 @@ export const PaginationFooter = ({
                   <Input
                     placeholder={quickJumpPlaceholder}
                     size="sm"
-                    width="100%"
+                    width="auto"
+                    color="blackAlpha.600"
                     value={jumpToPage}
                     onChange={handleJumpInputChange}
                     onKeyDown={handleKeyDown}
