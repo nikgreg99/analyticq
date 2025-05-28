@@ -47,7 +47,7 @@ jobs:
           run: |
             echo "SECRET_KEY=test_env_secret_key" > analyticq-backend/config/.env.test
             echo '{"host": "localhost", "port": 8000}' > analyticq-backend/config/analyticq_backend_config.json
-             cp analyticq-backend/tests/unit/test_files/.env.test.example analyticq-backend/tests/unit/test_files/.env.test
+             cp analyticq-backend/tests/unit/test_files/.env.test.sample analyticq-backend/tests/unit/test_files/.env.test
 
         - name: Run Flake 8 linter on production code
           run: |
