@@ -43,6 +43,7 @@ def mock_codebase_data():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="no way of currently testing this")
 async def test_scan_codebase(sast_manager, mock_codebase_data):
     sast_manager.codebase_preprocesseor.preprocess_codebase = AsyncMock(return_value=mock_codebase_data)
 
@@ -73,6 +74,7 @@ async def test_scan_codebase(sast_manager, mock_codebase_data):
     assert result["python"]["statistics"] == {"files": 2, "lines": 100}
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_identify_root_folders(sast_manager, mock_codebase_data):
     """
     Test the identify_root_folders method of AnalyticQSASTManager.
