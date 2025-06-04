@@ -77,7 +77,7 @@ class AnalysisService:
             self.tracker.update_status(analysis_id, AnalysisStatus.RUNNING, temp_dir=temp_dir)
 
             result = await self.sast_manager.scan_codebase(
-                codebase_path=file_paths,
+                codebase_path=file_paths[0],  # Assuming first file is the main entry point
                 config_paths=config_paths,
                 timeout=timeout,
                 original_path=original_filenames

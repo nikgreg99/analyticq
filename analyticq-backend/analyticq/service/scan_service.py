@@ -231,5 +231,5 @@ class AnalyticQScanService:
             logger.error(f"Error deleting scan {scan_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error deleting spam : {str(e)}"
+                detail=f"Error deleting scan : {str(e)}"
             )

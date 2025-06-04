@@ -247,7 +247,6 @@ class AnalyticQContainerManager:
             raise ScanTimeoutException(f"{str(e)}") from e
         except Exception as e:
             raise ScanConfigurationException(f"Docker API error: {str(e)}") from e
-            raise
         finally:
             if container:
                 try:

@@ -62,15 +62,15 @@ jobs:
       - name:  Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name:  Build and push analytict-frontend Docker image
+      - name:  Build and push analytictq-frontend Docker image
         run: |
           docker buildx create --use
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t ghcr.io/${{ github.repository_owner }}/analytict-frontend:${{ github.sha }} \
-            -t ghcr.io/${{ github.repository_owner }}/analytict-frontend:latest \
+            -t ghcr.io/${{ github.repository_owner }}/analytictq-frontend:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/analytictq-frontend:latest \
             -f ./analyticq-frontend/Dockerfile ./analyticq-frontend \
             --push
 
-      - name:  Log out from GHCR
+      - name: Log out from GHCR
         run: docker logout ghcr.io

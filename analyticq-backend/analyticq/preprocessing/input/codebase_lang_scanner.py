@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 from collections import defaultdict
@@ -146,14 +147,17 @@ class CodebaseLangScanner:
 
         """
         try:
+            try:
+                stat = file_path.stat()
+            except FileNotFoundError:
+                return
+            size = stat.st_size
             # File not relevant are discarded
             if not FileFilter.is_relevant_file(file_path):
-                size = file_path.stat().st_size
                 self.metrics_reporter.add_excluded_file(file_path, size)
                 return
 
             language, loc = await self.detect_language_and_loc(file_path)
-            size = file_path.stat().st_size
             self.metrics_reporter.add_file_statistics(file_path, language, size, loc)
 
             file_group[language].append(file_path)
@@ -250,7 +254,7 @@ class CodebaseLangScanner:
             return
 
         try:
-            entries = [Path(entry.path) for entry in os.scandir(dir_path)]
+            entries = await asyncio.to_thread(lambda: [Path(entry.path) for entry in os.scandir(dir_path)])
             files = [entry for entry in entries if entry.is_file()]
             directories = [entry for entry in entries if entry.is_dir()]
 
@@ -282,7 +286,9 @@ class CodebaseLangScanner:
             The method uses an internal time tracker to monitor progress and performance.
             Results are stored internally in the file groups data structure.
         """
-        total_files = sum(len(files) for _, _, files in os.walk(root_codebase_path))
+        total_files = await asyncio.to_thread(
+            lambda: sum(len(files) for _, _, files in os.walk(root_codebase_path))
+        )
         self.time_tracker.start(total_files)
         file_groups = defaultdict(list)
 
@@ -301,4 +307,9 @@ class CodebaseLangScanner:
             - Code statistics
             - And other relevant codebase metrics collected by the metrics reporter
     """
-        return self.metrics_reporter.get_codebase_metric_report()
+        raw_data = self.metrics_reporter.get_codebase_metric_report()
+        data_copy = json.loads(json.dumps(raw_data))
+        return data_copy
+
+    def reset(self) -> None:
+        self.metrics_reporter.reset_metric_collector()

@@ -236,8 +236,8 @@ def set_app_routes(app: FastAPI) -> None :
         - tool_router: Handles tool-related endpoints
         - issue_router: Handles issue-related endpoints
     """
-    from analyticq.api import (analyze, contexts, issues, report, scans, stats,
-                               tools)
+    from analyticq.api import (analyze, contexts, health, issues, report,
+                               scans, stats, tools)
 
     app.include_router(stats.stats_router)
     app.include_router(contexts.context_router)
@@ -246,6 +246,7 @@ def set_app_routes(app: FastAPI) -> None :
     app.include_router(issues.issue_router)
     app.include_router(report.report_router)
     app.include_router(analyze.analyze_router)
+    app.include_router(health.health_router)
 
 
 def create_app(config_file: str = AnalyticQConst.ANALYTICQ_DEFAULT_CONFIG_FILE,

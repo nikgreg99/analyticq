@@ -67,6 +67,8 @@ class AnalyticQSASTManager:
         # Preprocess the codebase to gather file and language information
         codebase_data = await self.codebase_preprocesseor.preprocess_codebase(codebase_url=codebase_path, branch=branch, original_path=original_path)
 
+        print(f"Codebase data: {codebase_data}")
+
         # Identify root folders for each language
         language_to_root_folders = self.identify_root_folders(codebase_data)
 

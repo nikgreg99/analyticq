@@ -101,7 +101,7 @@ async def get_scans_by_tool_name(
     },
 )
 async def delete_scan(
-    scan_id: str,
+    scan_id: int,
     service: AnalyticQScanService = Depends(get_scan_service)
 ):
     """

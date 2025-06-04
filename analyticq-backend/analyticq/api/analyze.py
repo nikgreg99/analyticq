@@ -87,7 +87,7 @@ async def analyze_files(
             temp_file_paths,
             config_dict,
             timeout,
-            original_filenames
+            original_filenames[0]
         )
 
         return AnalysisResponse(

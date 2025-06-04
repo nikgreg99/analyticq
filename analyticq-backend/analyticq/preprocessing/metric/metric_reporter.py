@@ -83,6 +83,18 @@ class CodebaseMetricsReporter:
                 result[lang].append(file_entry)
         return result
 
+    def reset_metric_collector(self) -> None:
+        """
+        Reset the metric collector to its initial state.
+
+        This method resets all collected metrics by calling the reset method of the metric collector.
+        No parameters are required and no value is returned.
+
+        Returns:
+            None
+        """
+        self.metric_collector.reset()
+
     def get_codebase_metric_report(self) -> Dict:
         """
         Generates a comprehensive report of codebase metrics.

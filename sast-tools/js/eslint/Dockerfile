@@ -5,7 +5,7 @@ ARG ESLINT_VERSION=8.57.1
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION}
 
 # Install ESLint globally
-RUN npm install   eslint --global
+RUN npm install  eslint --global
 
 # Create a directory for ESLint files (outside of /code)
 WORKDIR /eslint

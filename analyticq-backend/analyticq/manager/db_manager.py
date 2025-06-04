@@ -28,8 +28,28 @@ class AnalyticQDatabaseManager:
             self._initialize_engine()
             self._initialized = True
 
+    def _get_databse_url(self) -> str:
+        """
+        Retrieves the database URL from environment variables.
+
+        Returns:
+            str: The database URL stored in 'ANALYTICQ_DB_URL' environment variable.
+            None if the environment variable is not set.
+        """
+        return os.environ.get("ANALYTICQ_DB_URL")
+
     def _initialize_engine(self) -> None:
-        db_url = os.environ.get("ANALYTICQ_DB_URL")
+        """Initialize SQLAlchemy engine and session factory.
+
+        This method sets up the database engine using the provided database URL and configures
+        the session factory for database operations.
+
+        Raises:
+            ValueError: If database URL is not set in environment variables (ANALYTICQ_DB_URL)
+
+        """
+        db_url = self._get_databse_url()
+        logger.info(f"Initializing database with URL: {db_url}")
         if not db_url:
             raise ValueError("Database URL not set in environment variables (ANALYTICQ_DB_URL)")
 

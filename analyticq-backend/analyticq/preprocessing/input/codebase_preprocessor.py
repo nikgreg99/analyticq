@@ -11,7 +11,7 @@ from analyticq.repository.stats_repository import AnalyticQStatsRepository
 from analyticq.service import AnalyticQContextService, AnalyticQStatsService
 from analyticq.util import BatchUtil, TimeTrackerUtils
 from analyticq.validator.stats import AnalyticQStatsModel
-from dependency_injector.wiring import Provide, inject
+from dependency_injector.wiring import inject
 
 from .codebase_cloner import CodebaseCloner
 from .codebase_lang_scanner import CodebaseLangScanner
@@ -43,9 +43,7 @@ class CodebasePreprocessor:
         return _instance
 
     @inject
-    def __init__(self,
-                 cloner: Provide[CodebaseCloner] = None,
-                 language_scanner: Provide[CodebaseLangScanner] = None):
+    def __init__(self):
         if not hasattr(self, "_initialized"):
             self.cloner = CodebaseCloner()
             self.language_scanner = CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
@@ -94,6 +92,7 @@ class CodebasePreprocessor:
         Raises:
             May raise exceptions from underlying clone and scan operations
         """
+        self.language_scanner = CodebaseLangScanner(CodebaseMetricsReporter(CodebaseMetricsCollector(), CodebaseMetricsCalculator()), TimeTrackerUtils(), BatchUtil())
         codebase_info = {
             "branch": branch,
             "tag": tag,
@@ -102,11 +101,12 @@ class CodebasePreprocessor:
         try:
             logger.info("ORIGINAL PATH in preprocess codebase: %s", original_path)
             repo_path = await self.cloner.clone(codebase_url, original_path, **codebase_info)
+            logger.info(f"Cloned repository to: {repo_path}")
             await self.language_scanner.scan_codebase(repo_path)
             stats = self.language_scanner.generate_codebase_report()
             if original_path is not None:
                 repo_path = original_path
             await self.save_stats_for_codebase(repo_path, **stats)
-            return self.language_scanner.generate_codebase_report()
+            return stats
         except Exception as e:
             raise Exception(f"Failed to preprocess codebase: {e}")

@@ -50,7 +50,7 @@ USER appuser
 
 # Define healthcheck - will use 5173 for dev mode, 8080 for production
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -q -O- http://localhost:${PORT:-5173}/ || exit 1
+  CMD wget -q -O- http://localhost:${PORT:-5173} || exit 1
 
 # Use PORT environment variable with default to 5173 for development
 ENV PORT=5173

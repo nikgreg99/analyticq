@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from "react";
+import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -11,6 +11,7 @@ import {
   Stack,
   Tabs
 } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
 import { FaFileArchive, FaGit, FaPlay } from "react-icons/fa";
 
 import { Toaster, toaster } from "components/ui/general/Toaster";
@@ -19,6 +20,7 @@ import { FileList } from "components/ui/input/FileList";
 import { GitRepoInput } from "components/ui/input/GitRepoInput";
 import { updatePageMetadata } from "components/utils/metadata";
 import { useAnalysis } from "../hooks/useAnalysis";
+import { useAnalysisRedirect } from "hooks/useAnalysisRedirect";
 import InfoUsageGuide from "components/ui/input/InfoUsageGuide";
 import { ScanStatusIndicator } from "components/ui/input/ScanStatusIndicator";
 import { Home } from "lucide-react";
@@ -31,8 +33,12 @@ export const HomePage = () => {
   const [isCustomBranchSelected, setIsCustomBranchSelected] = useState(false);
 
   const dropzoneRef = useRef(null);
-  const { scanStatus, isSubmitting, error, startAnalysis, resetScan } =
-    useAnalysis();
+  const redirectHandledRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  const { scanStatus, isSubmitting, error, startAnalysis, resetScan } = useAnalysis();
+  const { redirectToContext } = useAnalysisRedirect();
+  const navigate = useNavigate();
 
   // Responsive adjustments
   const headingSize = useBreakpointValue({ base: "lg", md: "xl" });
@@ -40,6 +46,14 @@ export const HomePage = () => {
   const tabsOrientation = useBreakpointValue({ base: "column", md: "row" });
   const buttonSize = useBreakpointValue({ base: "md", md: "md" });
   const boxPadding = useBreakpointValue({ base: 3, sm: 4, md: 6 });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     updatePageMetadata("Welcome to AnalyticQ", "AnalyticQ Home", "/home");
@@ -57,9 +71,96 @@ export const HomePage = () => {
     }
   }, [error]);
 
+  // Safe repository name extraction
+  const getRepositoryName = useCallback(() => {
+    try {
+      if (tabIndex === 'git' && gitUrl) {
+        // Try to parse as URL first
+        try {
+          const url = new URL(gitUrl);
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          return pathParts[pathParts.length - 1]?.replace('.git', '') || '';
+        } catch {
+          // Fallback for non-URL formats
+          const parts = gitUrl.split('/').filter(Boolean);
+          return parts[parts.length - 1]?.replace('.git', '') || '';
+        }
+      } else if (tabIndex === 'local' && selectedFiles.length > 0) {
+        const fileName = selectedFiles[0]?.name || '';
+        return fileName.replace(/\.[^/.]+$/, "");
+      }
+    } catch (error) {
+      console.error('Error extracting repository name:', error);
+    }
+    return '';
+  }, [tabIndex, gitUrl, selectedFiles]);
+
+  // Safe redirect function with proper error handling
+  const performRedirect = useCallback(async (repoName) => {
+    if (!mountedRef.current) return;
+
+    try {
+      if (repoName) {
+        console.log('Redirecting to context:', repoName);
+        await redirectToContext(repoName, {
+          replace: true,
+          fallbackPath: '/contexts'
+        });
+      } else {
+        console.log('No repo name, redirecting to contexts page');
+        if (mountedRef.current) {
+          toaster.create({
+            title: "Analysis Complete",
+            description: "Analysis finished successfully. Redirecting to contexts page.",
+            type: "success",
+            duration: 3000,
+          });
+
+          setTimeout(() => {
+            if (mountedRef.current) {
+              navigate('/contexts', { replace: true });
+            }
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      console.error('Error during redirect:', error);
+      // Always provide fallback
+      if (mountedRef.current) {
+        navigate('/contexts', { replace: true });
+      }
+    }
+  }, [redirectToContext, navigate]);
+
+  // Handle successful analysis completion and redirect
+  useEffect(() => {
+    // Reset redirect flag when scan status changes away from completed
+    if (scanStatus?.status !== 'completed') {
+      redirectHandledRef.current = false;
+      return;
+    }
+
+    // Only handle redirect once per completed scan
+    if (
+      scanStatus?.status === 'completed' &&
+      scanStatus?.success &&
+      !redirectHandledRef.current &&
+      mountedRef.current
+    ) {
+      redirectHandledRef.current = true;
+
+      console.log('Analysis completed successfully, initiating redirect');
+
+      const repoName = getRepositoryName();
+      performRedirect(repoName);
+    }
+  }, [scanStatus?.status, scanStatus?.success, getRepositoryName, performRedirect]);
+
   const handleSubmit = () => {
+    // Reset redirect flag before starting new analysis
+    redirectHandledRef.current = false;
+
     // Use the branch value directly without checking isCustomBranchSelected
-    // This ensures we always send the current branch value regardless of how it was selected
     const success = startAnalysis({
       source: tabIndex,
       files: selectedFiles,
@@ -83,7 +184,10 @@ export const HomePage = () => {
     }
   };
 
-   const resetAllState = () => {
+  const resetAllState = () => {
+    // Reset redirect flag
+    redirectHandledRef.current = false;
+
     // Reset form fields
     setSelectedFiles([]);
     setGitUrl("");
@@ -108,13 +212,13 @@ export const HomePage = () => {
   };
 
   const handleTabChange = (newTab) => {
-    if(error){
+    if (error) {
       resetScan();
     }
 
     setTabIndex(newTab);
 
-     if (newTab === "local") {
+    if (newTab === "local") {
       setGitUrl("");
       setBranch("");
       setIsCustomBranchSelected(false);
@@ -124,7 +228,7 @@ export const HomePage = () => {
         dropzoneRef.current.reset();
       }
     }
-  }
+  };
 
   const isSubmitDisabled = useMemo(() => {
     if (isSubmitting) return true;
@@ -144,6 +248,37 @@ export const HomePage = () => {
     isCustomBranchSelected,
     branch,
   ]);
+
+  const handleKeyDown = useCallback((event) => {
+    // Only trigger on Enter key, and ensure we're not in a textarea or other input that should handle Enter normally
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+      const target = event.target;
+
+      // Don't interfere with Enter in textareas, contenteditable, or form inputs that might need Enter
+      if (
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true' ||
+        (target.tagName === 'INPUT' && target.type === 'text' && target.getAttribute('role') !== 'combobox')
+      ) {
+        return;
+      }
+
+      // Check if submit button is available and not disabled
+      if (!isSubmitDisabled && !isSubmitting) {
+        event.preventDefault();
+        handleSubmit();
+      }
+    }
+  }, [isSubmitDisabled, isSubmitting, handleSubmit]);
+
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown])
+
 
   const fileTypeAccepted = useMemo(
     () => ({

@@ -72,6 +72,27 @@ class CodebaseMetricsCollector:
     """Collects and manages codebase metrics including file sizes, language statistics, and exclusions."""
 
     def __init__(self):
+        self.reset()
+
+    def reset(self) -> None:
+        """
+        Resets all metrics and statistics tracking to their initial state.
+
+        This method reinitializes:
+        - Language statistics (counts, sizes, files, lines of code)
+        - Lists of excluded directories and files
+        - Total file counts and sizes
+        - Excluded file metrics
+
+        Attributes set to default values:
+            language_stats: Nested defaultdict storing per-language statistics
+            excluded_dirs: Empty list of excluded directory paths
+            excluded_files: Empty list of excluded file paths
+            total_files: Counter reset to 0
+            total_size: Total size counter reset to 0
+            excluded_file_count: Excluded files counter reset to 0
+            excluded_file_size: Excluded files size counter reset to 0
+        """
         self.language_stats = defaultdict(lambda: {
             "count": 0,
             "total_size": 0,

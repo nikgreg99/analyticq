@@ -1,5 +1,6 @@
 import tempfile
 from abc import abstractmethod
+from pathlib import Path
 from typing import Optional
 
 from .container_runner import AnalyticQContainerRunner
@@ -42,17 +43,24 @@ class AnalyticQAnalyzer(AnalyticQContainerRunner):
 
         """Run the analysis in a container."""
         with tempfile.TemporaryDirectory() as tmp_dir:
+
             volumes = self.get_base_volumes(str(codebase_path), tmp_dir)
 
+            # If a config path is provided, add it to the volumes
             if config_path:
-                volumes.update(self.get_config_volume(str(config_path)))
+                config_path = Path(config_path)
+                if not config_path.exists():
+                    raise FileNotFoundError(f"Config file not found: {config_path}")
+
+                config_filename = config_path.name
+                volumes.update(self.get_config_volume(str(config_path)), config_filename)
 
             return await self.container_manager.run_container_command(
                 image_name=self.image_name,
                 image_tag=self.image_tag,
                 command_args=[],
                 volumes=volumes,
-                env_vars=[],
+                env_vars=None,
                 timeout=timeout,
                 file_path=self.get_output_filename()
             )

@@ -1,3 +1,5 @@
+import os
+
 import uvicorn
 from analyticq.app import create_app
 from analyticq.config import AnalyticQBaseConfig
@@ -20,13 +22,19 @@ def run_backend():
     """
     app = create_app("analyticq_backend_config.json", "dev")
 
+    if not os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true":
+        host = AnalyticQBaseConfig.get("host")
+    else:
+        host = "0.0.0.0"
+
     uvicorn.run(
         app=app,
-        host=AnalyticQBaseConfig.get("host"),
+        host=host,
         port=AnalyticQBaseConfig.get("port"),
         log_level=AnalyticQBaseConfig.get("debug"),
         lifespan="on",
-        loop="asyncio")
+        loop="asyncio"
+    )
 
 
 if __name__ == "__main__":

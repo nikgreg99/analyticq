@@ -53,17 +53,18 @@ class AnalysisTracker:
             return
 
         # Sort by creation time (oldest first)
-        sorted_analyses = sorted(
-            self._analyses.items(),
-            key=lambda x: x[1].created_at
-        )
+        removable = [
+            (analysis_id, record)
+            for analysis_id, record in self._analyses.items()
+            if record.status in [AnalysisStatus.COMPLETED, AnalysisStatus.FAILED]
+        ]
 
-        # Remove oldest completed/failed analyses
+        removable.sort(key=lambda x: x[1].created_at)
+
         to_remove = len(self._analyses) - self._max_analyses
-        for analysis_id, record in sorted_analyses[:to_remove]:
-            if record.status in [AnalysisStatus.COMPLETED, AnalysisStatus.FAILED]:
-                self._cleanup_analysis_files(record)
-                del self._analyses[analysis_id]
+        for analysis_id, record in removable[:to_remove]:
+            self._cleanup_analysis_files(record)
+            del self._analyses[analysis_id]
 
     def _cleanup_analysis_files(self, record: AnalysisRecord):
         """Clean up temporary files and directories for an analysis."""

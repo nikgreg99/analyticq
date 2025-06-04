@@ -1,6 +1,5 @@
 # Stage 1: Build Stage
 ARG PYTHON_VERSION=3.12
-
 FROM python:${PYTHON_VERSION}-slim AS build
 
 # Set environment variables for Python
@@ -14,16 +13,16 @@ ENV ANALYTICQ_BACKEND_HOST="0.0.0.0" \
 
 WORKDIR /analyticq-backend
 
-# Install dependencies for building Python packages
+# Install dependencies required for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libc-dev libffi-dev libssl-dev git\
+    gcc libc-dev libffi-dev libssl-dev git \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a virtual environment
 RUN python -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Install dependencies from requirements.txt
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
@@ -31,34 +30,56 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Stage 2: Runtime Stage
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
-# Set environment variables for Python
+# Set environment variables for Python and app
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Set application profile and host/port configurations
-ENV ANALYTICQ_BACKEND_HOST="0.0.0.0" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    ANALYTICQ_BACKEND_HOST="0.0.0.0" \
     ANALYTICQ_BACKEND_PORT=8000 \
-    ANALYTICQ_BACKEND_PROFILE="dev" \
+    ANALYTICQ_BACKEND_PROFILE="prod" \
     ANALYTICQ_USER=analyticq
 
-# Create a new user for running the application
-RUN useradd --create-home ${ANALYTICQ_USER}
+# Install necessary system packages and Docker CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl gnupg lsb-release git \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
+    && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Create a new user first
+RUN useradd --create-home --shell /bin/bash ${ANALYTICQ_USER}
+
+# ADD THIS SECTION HERE - Fix Docker group permissions
+# Create docker group and add user (GID will be handled at runtime via --group-add)
+RUN groupadd docker 2>/dev/null || true && \
+    usermod -aG docker ${ANALYTICQ_USER}
+
 WORKDIR /analyticq-backend
 
-# Switch to the new user
-USER ${ANALYTICQ_USER}
-
-# Copy the virtual environment from the build stage
+# Copy virtual environment from build stage
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Copy the backend source code
-COPY . .
+# Copy project files and give proper ownership
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} analyticq ./analyticq/.
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} config ./config/.
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} requirements.txt ./
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} start.py ./
+
+# Copy the entrypoint script
+COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Switch to non-root user
+USER ${ANALYTICQ_USER}:${ANALYTICQ_USER}
 
 # Expose the backend port
 EXPOSE ${ANALYTICQ_BACKEND_PORT}
 
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${ANALYTICQ_BACKEND_PORT}/health || exit 1
+
 # Start the application
-CMD ["python", "start.py"]
+ENTRYPOINT ["/entrypoint.sh"]

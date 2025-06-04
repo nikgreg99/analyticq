@@ -59,7 +59,8 @@ class AnalyticQBaseConfig(BaseModel):
         """
         try:
             conf_path_env = str(PathUtil.get_backend_default_config_AnalyticQ_path() / f".env.{profile}")
-            AnalyticQEnvironmentLoader.load(conf_path_env, profile)
+            if not os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true":
+                AnalyticQEnvironmentLoader.load(conf_path_env, profile)
             if not os.path.exists(conf_filename):
                 default_filename = FileUtil.get_default_AnalyticQ_config_filename()
                 config_data = cls.load_config_file(PathUtil.get_backend_default_config_AnalyticQ_path(), default_filename)
