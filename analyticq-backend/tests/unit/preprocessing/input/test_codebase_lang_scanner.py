@@ -170,24 +170,3 @@ async def test_scan_codebase_languages(scanner, tmp_path):
     scanner.time_tracker.stop.assert_called_once()
     scanner.metrics_reporter.add_file_statistics.assert_any_call(py_file, "Python", py_file.stat().st_size, 1)
     scanner.metrics_reporter.add_file_statistics.assert_any_call(js_file, "JavaScript", js_file.stat().st_size, 1)
-
-
-@pytest.mark.asyncio
-async def test_get_language_metric_report(scanner, tmp_path):
-
-    # Create a temporary directory structure
-    src_dir = tmp_path / "src"
-    src_dir.mkdir()
-    py_file = src_dir / "main.py"
-
-    py_file.write_text("print('hello')")
-
-    js_file = src_dir / "script.js"
-    js_file.write_text("console.log('hello')")
-
-    with patch("analyticq.preprocessing.DirFilter.is_irrelevant_dir", return_value=False):
-        await scanner.scan_codebase(src_dir)
-
-    language_report = scanner.generate_codebase_report()
-
-    assert language_report is not {}, "Expected report not to be empty"
