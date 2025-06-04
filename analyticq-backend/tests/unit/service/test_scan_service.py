@@ -142,5 +142,5 @@ async def test_delete_scan_failure(scan_service, scan_repository):
 
     # Assert the exception details
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    assert exc_info.value.detail == "Error deleting spam : Database error"
+    assert exc_info.value.detail == "Error deleting scan : Database error"
     scan_repository.delete_scan_by_id.assert_called_once_with("scan_123")
