@@ -34,9 +34,32 @@ class FlakeParser(AnalyticQResultParser):
         }.get(severity_level[0], AnalyticQSeverity.LOW)  # Default for C, N, etc.
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps a flake8 confidence level to an AnalyticQConfidence enum value.
+
+        Args:
+            confidence_level (str): The confidence level string from flake8.
+
+        Returns:
+            AnalyticQConfidence: The mapped confidence level, currently always returns UNKNOWN.
+        """
         return AnalyticQConfidence.UNKNOWN
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+        """
+        Parse raw Flake8 scan results into a standardized AnalyticQSASTScanResultModel.
+
+        This method processes the raw dictionary output from Flake8 scans, normalizing the issues
+        and adding Flake8-specific metadata like file counts and total issue counts.
+
+        Args:
+            raw_result (Dict[str, Any]): Raw scan results from Flake8 in dictionary format,
+                where keys are filenames and values are lists of issues found in each file.
+
+        Returns:
+            AnalyticQSASTScanResultModel: A standardized scan result model containing the parsed
+                and normalized Flake8 issues along with scan metadata.
+        """
         try:
             # Normalize the raw_result into a list of issues
             flake8_issues = []

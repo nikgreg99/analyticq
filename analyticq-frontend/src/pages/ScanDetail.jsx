@@ -10,6 +10,7 @@ import { IssueTabs } from "components/ui/issue/IssueTabs";
 import { updatePageMetadata } from "components/utils/metadata";
 import { useScanDetails } from "hooks/useScanDetails";
 
+
 /**
  * Component that displays detailed information about a specific scan.
  * Optimized for data fetching with better state management and error handling.

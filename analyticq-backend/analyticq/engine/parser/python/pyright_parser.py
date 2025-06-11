@@ -24,12 +24,18 @@ class PyrightParser(AnalyticQResultParser):
         super().__init__(tool_name="pyright", field_mapping=field_mapping)
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
-        return {
+        if not isinstance(severity_level, str):
+            return AnalyticQSeverity.UNKNOWN
+
+        severity_mapping = {
             "none": AnalyticQSeverity.UNKNOWN,
             "error": AnalyticQSeverity.HIGH,
             "warning": AnalyticQSeverity.MEDIUM,
-            "information": AnalyticQSeverity.INFO
-        }.get(severity_level, AnalyticQSeverity.UNKNOWN)
+            "information": AnalyticQSeverity.INFO,
+            "info": AnalyticQSeverity.INFO
+        }
+
+        return severity_mapping.get(severity_level.lower(), AnalyticQSeverity.UNKNOWN)
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN

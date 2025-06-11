@@ -16,6 +16,23 @@ services:
       networks:
         - analyticq-network
 
+  docker-dind:
+    image:  docker:${DOCKER_VERSION:-24-dind}
+    container_name: docker-dind
+    restart: always
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""  # Disable TLS for internal communication
+    volumes:
+      - docker-data:/var/lib/docker
+      - analyticq-data:/analyticq-data  # Shared volume for data exchange
+    networks:
+      - analyticq-network
+    expose:
+      - "2375"
+    command: >
+      dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375
+
   postgres:
 
     image: postgres:${POSTGRES_VERSION}
@@ -32,6 +49,11 @@ services:
       - "${POSTGRES_PORT}:5432"  # Mapping PostgreSQL port to local machine
     networks:
       - analyticq-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ROOT_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     entrypoint: >
       bash -c "
         docker-entrypoint.sh postgres &
@@ -65,21 +87,22 @@ services:
       context: ./analyticq-backend
       dockerfile: Dockerfile
     container_name: analyticq-backend
+    privileged: true
     env_file: .env
     environment:
       - RUNNING_IN_DOCKER=true
       - ANALYTICQ_TMP_BASE=/analyticq-data
+      - DOCKER_HOST=tcp://docker-dind:2375
     ports:
       - "8000:8000"
     restart: always
     depends_on:
-    - postgres
+     postgres:
+      condition: service_healthy
+     docker-dind:
+      condition: service_started
     volumes:
-      # Mount Docker socket for pulling images
-      - /var/run/docker.sock:/var/run/docker.sock
       - analyticq-data:/analyticq-data
-    group_add:
-      - ${DOCKER_GID:-0}
     networks:
       - analyticq-network
 
@@ -90,6 +113,8 @@ volumes:
     name: postgres_data
   analyticq-data:
     name: analyticq-data
+  docker-data:
+    name: docker-data
 
 networks:
   analyticq-network:

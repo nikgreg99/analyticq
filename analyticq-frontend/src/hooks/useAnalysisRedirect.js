@@ -36,7 +36,7 @@ export const useAnalysisRedirect = () => {
                 navigate(`/contexts/${context.id}`, { replace });
 
                 if(context && context.id){
-                    navigate(`/contexts/${context.id}/analysis`, { replace });
+                    navigate(`/contexts/${context.id}`, { replace });
                 }
                 else {
                     console.warn(`Context not found for repository: ${extractedRepoName}`);

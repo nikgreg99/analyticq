@@ -15,11 +15,6 @@ class NjsscanTool(AnalyticQSASTTool):
         supported_languages (set): A set containing "js" as the supported language.
     Note:
         Njjscan official repository: https://github.com/ajinabraham/njsscan
-    Example:
-        ```python
-        tool = NjsscanTool()
-        results = tool.analyze(source_code)
-        ```
     """
 
     supported_languages = {"js"}

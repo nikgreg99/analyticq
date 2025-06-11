@@ -76,7 +76,7 @@ class AnalyticQSASTIssueModel(BaseModel):
     """
     id: Optional[int] = None
     scan_id: Optional[int] = None
-    rule_id: str
+    rule_id: str = Field(default="unknown")
     severity: AnalyticQSeverity = AnalyticQSeverity.UNKNOWN
     confidence: AnalyticQConfidence = AnalyticQConfidence.UNKNOWN
     code: str = Field(default="Not present")

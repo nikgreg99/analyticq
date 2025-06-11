@@ -1,5 +1,10 @@
 import React from "react";
-import { Flex, Text } from "@chakra-ui/react";
+import {
+  Flex,
+  Text,
+  Icon
+}
+  from "@chakra-ui/react";
 
 /**
  * A responsive row for displaying a label-value pair.
@@ -8,7 +13,7 @@ import { Flex, Text } from "@chakra-ui/react";
  * @param {string} props.label - Label text
  * @param {string|React.ReactNode} props.value - Value content
  */
-export const InfoRow = ({ label, value }) => {
+export const InfoRow = ({ label, value, icon = null }) => {
   return (
     <Flex
       as="div"
@@ -19,16 +24,32 @@ export const InfoRow = ({ label, value }) => {
       py={1}
       wrap="wrap"
     >
-      <Text
-        as="dt"
-        color="whiteAlpha.800"
-        fontWeight="semibold"
-        fontSize="sm"
-        minW={{ base: "100%", md: "120px" }}
+      <Flex
+        align="center"
+        gap={2}
+        minW={{ base: "100%", md: "40%" }}
         flexShrink={0}
       >
-        {label}
-      </Text>
+        {icon && (
+          <Icon
+            as={icon}
+            boxSize={4}
+            mr={2}
+            flexShrink={0}
+          />
+        )}
+        <Text
+          as="dt"
+          color="whiteAlpha.800"
+          fontWeight="semibold"
+          fontSize="sm"
+          minW={{ base: "100%", md: "120px" }}
+          flexShrink={0}
+        >
+          {label}
+        </Text>
+      </Flex>
+
       <Text
         as="dd"
         color="whiteAlpha.800"

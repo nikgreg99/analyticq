@@ -27,7 +27,7 @@ class PHPStanParser(AnalyticQResultParser):
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         return AnalyticQSeverity.UNKNOWN
 
-    def parse_scan_result(aself, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         """
         Parse PHPSTan results using the base class parser.
         """
@@ -49,6 +49,7 @@ class PHPStanParser(AnalyticQResultParser):
                         }
                     }
                     all_issues.append(issue)
+
             scan_result = super().parse_scan_result(all_issues)
             scan_result.scan_metadata.update({
                 "metrics": raw_result.get("totals", {}),

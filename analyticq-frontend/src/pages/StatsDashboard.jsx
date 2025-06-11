@@ -16,7 +16,6 @@ import { capitalizeFirstLetter } from "components/utils/strings";
 import { useContextStats } from "hooks/useContextStats";
 import { useSortedLanguages } from "hooks/useSortedLanguages";
 import { useLanguageColorMap } from "hooks/useLanguageColorMap";
-import { useLanguageFilter } from "hooks/useLanguageFilter";
 
 /**
  * A dashboard component that displays various statistics about a codebase.

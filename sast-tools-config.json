@@ -1,0 +1,100 @@
+{
+    "tools": [
+        {
+        "name": "bandit",
+        "language": "python",
+        "image": "bandit",
+        "tag": "latest"
+        },
+        {
+            "name": "flake8",
+            "language": "python",
+            "image": "flake8",
+            "tag": "latest"
+        },
+        {
+            "name": "pylint",
+            "language": "python",
+            "image": "pylint",
+            "tag": "latest"
+        },
+        {
+            "name": "pyright",
+            "language": "python",
+            "image": "pyright",
+            "tag": "latest"
+        },
+        {
+            "name": "staticheck",
+            "language": "go",
+            "image": "staticheck",
+            "tag": "latest"
+        },
+        {
+            "name": "gosec",
+            "language": "go",
+            "image": "gosec",
+            "tag": "latest"
+        },
+        {
+            "name": "flawfinder",
+            "language": "C",
+            "image": "flawfider",
+            "tag": "latest"
+        },
+        {
+            "name": "cppcheck",
+            "language": "C/C++",
+            "image": "cppcheck",
+            "tag": "latest"
+        },
+        {
+            "name": "PHPStan",
+            "language": "PHP",
+            "image": "phpstan",
+            "tag": "latest"
+        },
+        {
+            "name": "Bearer",
+            "language": "multi",
+            "image": "bearer",
+            "tag": "latest"
+        },
+        {
+            "name": "Rubocop",
+            "language": "ruby",
+            "image": "rubocop",
+            "tag": "latest"
+        },
+        {
+            "name": "Breakman",
+            "language": "ruby",
+            "image": "brakeman",
+            "tag": "latest"
+        },
+        {
+            "name": "ESLint",
+            "language": "Javascript",
+            "image": "eslint",
+            "tag": "latest"
+        },
+        {
+            "name": "Njscan",
+            "language": "Javascript",
+            "image": "njjscan",
+            "tag": "latest"
+        },
+        {
+            "image": "Checkstyle",
+            "language": "Java",
+            "imaage": "checkstyle",
+            "tag": "latest"
+        },
+        {
+            "image": "Spotbugs",
+            "language": "Java",
+            "imaage": "spotbugs",
+            "tag": "latest"
+        }
+    ]
+}

@@ -16,7 +16,7 @@ class BearerParser(AnalyticQResultParser):
             "code": "code_extract",
             "path": "full_filename",
             "start_line": "line_number",
-            "endl_line": "line_number",
+            "end_line": "line_number",
             "column": "column_info.start",
             "severity": "severity_level",
             "issue_metadata": "metadata"
@@ -64,6 +64,10 @@ class BearerParser(AnalyticQResultParser):
                         "description": issue.get("description", ""),
                         "cwe_ids": issue.get("cwe_ids", []),
                         "fingerprint": issue.get("fingerprint", ""),
+                        "column_range": {
+                            "start": column_info.get("start", 0),
+                            "end": column_info.get("end", 0)
+                        }
                     }
                 }
 

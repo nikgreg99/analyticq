@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useRef } from "react";
 import { formatDate, getTimeSince } from "components/utils/time";
-import { useNavigate } from "react-router-dom";
 import {
   Box,
   Text,
@@ -81,7 +80,7 @@ export const ScanHeader = ({ scanData }) => {
                 borderRadius="md"
               >
                 <HStack spacing={1}>
-                  <FaTag size={10} />
+                  <FaTag />
                   <Text>{scanData.tool_name}</Text>
                 </HStack>
               </Badge>

@@ -33,10 +33,13 @@ class BanditParser(AnalyticQResultParser):
             raise e
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        if not confidence_level or not isinstance(confidence_level, str):
+            return AnalyticQSeverity.UNKNOWN
+
         try:
             return AnalyticQConfidence.parse(confidence_level.upper())
         except ValueError as e:
-            raise e
+            raise ScanParserException(f"Invalid severity level '{confidence_level}': {str(e)}") from e
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         """
@@ -61,12 +64,26 @@ class BanditParser(AnalyticQResultParser):
             TypeError: If the input data types are incorrect
             AttributeError: If required attributes are missing from the input
         """
+        if not isinstance(raw_result, dict):
+            raise ScanParserException("Raw result must be a dictionary")
+
         try:
             bandit_issues = raw_result.get("results", [])
+
+            if not isinstance(bandit_issues, list):
+                raise ScanParserException("'results' field must be a list")
+
             scan = super().parse_scan_result(bandit_issues)
+
+            metrics = raw_result.get("metrics", {})
+            if not isinstance(metrics, dict):
+                metrics = {}
+
+            generated_at = raw_result.get("generated_at")
+
             scan.scan_metadata.update({
-                "metrics": raw_result.get("metrics", {}),
-                "generated_at": raw_result.get("generated_at"),
+                "metrics": metrics,
+                "generated_at": generated_at
             })
             return scan
         except ScanParserException as e:

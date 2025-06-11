@@ -25,21 +25,8 @@ class AnalyticQSASTTool(ABC):
         container_manager (AnalyticQContainerManager): Manager for container operations.
         image_name (str): Name of the Docker image for the SAST tool.
         image_tag (str): Tag of the Docker image for the SAST tool.
-
-    Example:
-        ```python
-        class MySASTTool(AnalyticQSASTTool):
-            supported_languages = {'python', 'javascript'}
-
-            def __init__(self):
-                super().__init__(
-                    analyzer=MyAnalyzer(),
-                    parser=MyParser(),
-                    container_manager=MyContainerManager(),
-                    image_name="my-sast-tool",
-                    image_tag="latest"
-        ```
     """
+
     supported_languages: Set[str] = set()
 
     def __init__(self,
@@ -54,8 +41,15 @@ class AnalyticQSASTTool(ABC):
         self.image_name = image_name
         self.image_tag = image_tag
 
+    def _validate_path(self, path: str) -> Path:
+        """Validate if the given path exists and return it as a Path object."""
+        code_path = Path(path)
+        if not code_path.exists():
+            raise ScanConfigurationException(f"Path does not exist: {code_path}")
+        return code_path
+
     async def install(self) -> None:
-        """Install the required container image for the corrispondent SAST tool.
+        """Install the required container image for the corrisponding SAST tool.
 
         This asynchronous method checks if the required container image exists and
         pulls it if necessary.
@@ -79,11 +73,8 @@ class AnalyticQSASTTool(ABC):
         timeout: Optional[int] = None
     ) -> AnalyticQSASTScanResultModel:
         try:
-            code_path = Path(codebase_path)
-            if not code_path.exists():
-                raise ScanConfigurationException(
-                    f"Code path does not exist for {self.image_name}: {code_path}"
-                )
+            code_path = self._validate_path(codebase_path)
+            config_file_path = self._validate_path(config_path) if config_path else None
 
             if config_path:
                 config_file_path = Path(config_path)
@@ -98,7 +89,6 @@ class AnalyticQSASTTool(ABC):
                 timeout=timeout
             )
             dict_output = StringToolFormatter.from_str_to_dict(raw_result)
-            # print(dict_output)
             return self.parser.parse_scan_result(dict_output)
 
         except ValueError as e:

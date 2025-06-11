@@ -47,13 +47,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a new user first
+# Create user (no need for docker group with DinD)
 RUN useradd --create-home --shell /bin/bash ${ANALYTICQ_USER}
-
-# ADD THIS SECTION HERE - Fix Docker group permissions
-# Create docker group and add user (GID will be handled at runtime via --group-add)
-RUN groupadd docker 2>/dev/null || true && \
-    usermod -aG docker ${ANALYTICQ_USER}
 
 WORKDIR /analyticq-backend
 
@@ -68,11 +63,11 @@ COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} requirements.txt ./
 COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} start.py ./
 
 # Copy the entrypoint script
-COPY --chown=${ANALYTICQ_USER}:${ANALYTICQ_USER} entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Switch to non-root user
-USER ${ANALYTICQ_USER}:${ANALYTICQ_USER}
+USER ${ANALYTICQ_USER}
 
 # Expose the backend port
 EXPOSE ${ANALYTICQ_BACKEND_PORT}

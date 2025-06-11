@@ -35,13 +35,12 @@ const ExpandableText = ({ text, maxChars = 200, expansableTextColor }) => {
 
   const toggleExpanded = () => setExpanded((prev) => !prev);
 
-  const baseFontSize = useBreakpointValue({ base: "sm", md: "md" });
 
   return (
     <HStack w="100%">
       <Text
         id="expandable-text"
-        fontSize={baseFontSize}
+        fontSize="sm"
         noOfLines={expanded ? undefined : 3}
         color={expansableTextColor}
         whiteSpace="pre-wrap"

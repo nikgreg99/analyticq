@@ -16,7 +16,7 @@ class CppCheckParser(AnalyticQResultParser):
             "path": "file",
             "start_line": "line",
             "end_line": "line",
-            "columnn": "column",
+            "column": "column",
             "severity": "severity",
             "code": "verbose",
             "issue_metadata": "metadata"
@@ -39,32 +39,41 @@ class CppCheckParser(AnalyticQResultParser):
 
     def parse_locations(self, issue_data: Dict) -> List[Dict[str, Any]]:
         locations = []
-        if 'location' in issue_data.get('children', {}):
-            loc_data = issue_data['children']['location']
+        if 'location' not in issue_data.get('children', {}):
+            return locations
+
+        loc_data = issue_data['children']['location']
+
         if isinstance(loc_data, list):
-            for loc in loc_data:
-                locations.append({
-                    "file": loc["attributes"].get("file", ""),
-                    "line": loc["attributes"].get("line", "0"),
-                    "column": loc["attributes"].get("column", "0"),
-                    'info': loc['attributes'].get('info', '')
-                })
+            location_list = loc_data
         else:
-            locations.append({
-                'file': loc_data['attributes'].get('file', ''),
-                'line': loc_data['attributes'].get('line', '0'),
-                'column': loc_data['attributes'].get('column', '0'),
-                'info': loc_data['attributes'].get('info', '')
-            })
+            location_list = [loc_data]
+
+        for loc in location_list:
+            attributes = loc.get('attributes', {})
+            location_info = {
+                "file": attributes.get("file", ""),  # filename (relative or absolute path)
+                "file0": attributes.get("file0", ""),  # source file name (optional)
+                "line": int(attributes.get("line", "0")),
+                "column": int(attributes.get("column", "0")) if attributes.get("column") else None,
+                "info": attributes.get("info", "")  # short information for each location (optional)
+            }
+
+            if not location_info["file0"]:
+                del location_info["file0"]
+            if location_info["column"] is None:
+                del location_info["column"]
+
+            locations.append(location_info)
 
         return locations
 
     def parse_xml_to_dict(self, raw_result: Dict) -> List[Dict[str, Any]]:
-        transormed_issues = []
+        transformed_issues = []
         try:
             issues = raw_result['children']['errors']['children']['error']
             if not isinstance(issues, list):
-                issues = issues
+                issues = [issues]
 
             for issue in issues:
                 attributes = issue['attributes']
@@ -76,7 +85,7 @@ class CppCheckParser(AnalyticQResultParser):
                     "column:": "0",
                 }
 
-                transormed_issue = {
+                transformed_issue = {
                     "id": attributes.get('id', ''),
                     "msg": attributes.get('msg', ''),
                     "file": primary_loc['file'],
@@ -84,14 +93,19 @@ class CppCheckParser(AnalyticQResultParser):
                     "severity": attributes.get('severity', 'low'),
                     "metadata": {
                         "cwe": attributes.get('cwe', ''),
-                        "all_locations": locations,
+                        "verbose": attributes.get('verbose', ''),
                         "symbol": issue.get('children', {}).get('symbol', {}).get('text', ''),
-                        "help_uri": f"https://cppcheck.sourceforge.io/docs/data-{attributes.get('id', '')}.html"
+                        "help_uri": f"https://cppcheck.sourceforge.io/docs/data-{attributes.get('id', '')}.html",
+                        "locations": {
+                            "primary": locations[0] if locations else None,
+                            "count": len(locations)
+                        }
                     }
                 }
-                transormed_issues.append(transormed_issue)
 
-                return transormed_issues
+                transformed_issues.append(transformed_issue)
+
+            return transformed_issues
 
         except KeyError as e:
             raise ScanParserException(

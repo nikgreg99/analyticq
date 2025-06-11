@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, TextIO, Union
 
 import yaml
 
@@ -8,8 +9,15 @@ class AnalyticQConfigParser:
     """
     A class to parse configuration files in JSON or YAML format.
     """
+
+    SUPPORTED_FORMATS = {
+        "json": json.load,
+        "yaml": yaml.safe_load,
+        "yml": yaml.safe_load
+    }
+
     @staticmethod
-    def parse(file, conf_path: str) -> Dict[str, Any]:
+    def parse(file: TextIO, conf_path: Union[str, Path]) -> Dict[str, Any]:
         """
         Parse a configuration file based on its extension (JSON or YAML).
 
@@ -20,8 +28,13 @@ class AnalyticQConfigParser:
         Returns:
             dict: A dictionary representing the parsed configuration data.
         """
-        SUPPORTED_FORMATS = {"json": json.load, "yaml": yaml.safe_load, "yml": yaml.safe_load}
-        ext = conf_path.rsplit(".", 1)[-1]
-        if ext in SUPPORTED_FORMATS:
-            return SUPPORTED_FORMATS[ext](file)
-        raise ValueError(f"Unsupported file format: {ext}")
+        ext = Path(conf_path).suffix.lstrip('.').lower()
+        parser = AnalyticQConfigParser.SUPPORTED_FORMATS.get(ext)
+
+        if parser is None:
+            raise ValueError(f"Unsupported file format: {ext}")
+
+        try:
+            return parser(file)
+        except Exception as e:
+            raise ValueError(f"Failed to parse configuration file '{conf_path}': {e}") from e

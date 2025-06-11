@@ -86,7 +86,8 @@ def get_analyticq_root_structure() -> List[str]:
         PathUtil.get_home_AnalyticQ_path(),
         PathUtil.get_config_AnalyticQ_path(),
         PathUtil.get_codebase_repositories_AnalyticQ_path(),
-        PathUtil.get_codebase_scripts_AnalyticQ_path()
+        PathUtil.get_codebase_scripts_AnalyticQ_path(),
+        PathUtil.get_codebase_report_AnalyticQ_path()
     ]
 
 

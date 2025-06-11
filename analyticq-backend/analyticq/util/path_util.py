@@ -135,6 +135,17 @@ class PathUtil:
         return PathUtil.get_home_AnalyticQ_path().joinpath(AnalyticQConst.ANALYTICQ_REPOS_FOLDER)
 
     @staticmethod
+    def get_codebase_report_AnalyticQ_path() -> Path:
+        """
+        Returns the path to the report folder of AnalyticQ codebase.
+        The method concatenates the home path of AnalyticQ with the report folder constant
+        defined in AnalyticQConst.
+        Returns:
+            Path: A Path object pointing to the report folder.
+        """
+        return PathUtil.get_home_AnalyticQ_path().joinpath(AnalyticQConst.ANALYTICQ_REPORT_FOLDER)
+
+    @staticmethod
     def get_codebase_scripts_AnalyticQ_path() -> Path:
         """
         Get the codebase scripts directory path for AnalyticQ.

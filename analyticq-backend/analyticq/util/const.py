@@ -13,6 +13,7 @@ class AnalyticQConst:
     ANALYTICQ_BACKEND_FOLDER: str = "analyticq-backend"
     ANALYTICQ_CONFIG_FOLDER: str = "config"
     ANALYTICQ_REPOS_FOLDER: str = "repos"
+    ANALYTICQ_REPORT_FOLDER: str = "reports"
     ANALYTICQ_SCRIPTS_FOLDER: str = "scripts"
     ANALYTICQ_TEST_FOLDER: str = "tests"
     ANALYTICQ_TEST_FILE_FOLDER: str = "test_files"

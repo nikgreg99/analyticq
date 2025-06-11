@@ -151,12 +151,15 @@ class DockerImageManager:
         }
 
         try:
-            # Since aiodcker doesn't provide a direct access to logout function, a implemantion was the better choice
             process = await asyncio.to_thread(
                 subprocess.run,
-                ["docker", "login", docker_config.registry, "--username" , docker_config.username, "--password", docker_config.password],
+                ["docker", "login", docker_config.registry, "--username" , docker_config.username, "--password-stdin"],
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
+            )
+
+            await process.communicate(
+                input=docker_config.password.encode()
             )
 
             if process.returncode != 0:

@@ -37,6 +37,10 @@ class FlawFinderParser(AnalyticQResultParser):
         return AnalyticQConfidence.UNKNOWN
 
     def _parse_csv_to_dict(self, raw_result) -> List[Dict[str, Any]]:
+
+        if not raw_result:
+            return []
+
         transformed_issues = []
         for row in raw_result:
             # Enhance message with suggestion
@@ -45,7 +49,7 @@ class FlawFinderParser(AnalyticQResultParser):
             message = f"{warning} {suggestion}".strip()
 
             # Process CWEs
-            cwes = [cwe.strip() for cwe in row.get('CWEs', '').split(',')] if row.get('CWEs') else []
+            cwes = [cwe.strip() for cwe in row.get('CWEs', '').split(',') if cwe.strip()] if row.get('CWEs') else []
 
             transformed_issue = {
                 "RuleId": row.get('RuleId'),
@@ -64,7 +68,7 @@ class FlawFinderParser(AnalyticQResultParser):
 
         return transformed_issues
 
-    def parse_scan_result(self, raw_result: str) -> AnalyticQSASTScanResultModel:
+    def parse_scan_result(self, raw_result: List[Dict[str, Any]]) -> AnalyticQSASTScanResultModel:
         """
         Parse FlawFinder CSV results using the base class parser.
         """

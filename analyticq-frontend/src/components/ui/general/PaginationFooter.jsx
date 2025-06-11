@@ -133,7 +133,7 @@ export const PaginationFooter = ({
         {showTotalItems && (
           <Text
             fontSize="sm"
-            color="gray.600"
+            color="blackAlpha.800"
             ml={2}
             display={{ base: "none", md: "block" }}
             aria-live="polite"
@@ -168,7 +168,7 @@ export const PaginationFooter = ({
             />
             <Text
               fontSize="sm"
-              color="gray.600"
+              color="blackAlpha.800"
               minWidth="100px"
               textAlign="center"
               aria-live="polite"
@@ -188,7 +188,7 @@ export const PaginationFooter = ({
               alignItems="center"
             >
               <HStack spacing={2} align="center">
-                <Text fontSize="sm" color="gray.600" whiteSpace="nowrap">
+                <Text fontSize="sm" color="blackAlpha.800" whiteSpace="nowrap">
                   Go to:
                 </Text>
                 <Field.Root invalid={!!jumpErrorMessage} width="120px" mb={0}>
@@ -196,7 +196,7 @@ export const PaginationFooter = ({
                     placeholder={quickJumpPlaceholder}
                     size="sm"
                     width="auto"
-                    color="blackAlpha.600"
+                    color="blackAlpha.800"
                     value={jumpToPage}
                     onChange={handleJumpInputChange}
                     onKeyDown={handleKeyDown}

@@ -50,7 +50,11 @@ class AnalyticQContainerManager:
         """
         if not self.initialized:
             try:
-                self.docker = aiodocker.Docker()
+                docker_host = os.getenv('DOCKER_HOST', '')
+                if docker_host.startswith("tcp://"):
+                    self.docker = aiodocker.Docker(url=docker_host)
+                else:
+                    self.docker = aiodocker.Docker()
                 await self.docker.version()
                 self.initialized = True
                 self.image_manager = DockerImageManager(self.docker)

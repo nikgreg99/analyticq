@@ -105,17 +105,20 @@ class AnalyticQResultParser(ABC):
             }
         }
 
-    def _generate_metadata(self) -> Dict[str, Any]:
+    def _generate_metadata(self, extras: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Generate metadata for the analysis result.
         This method creates a dictionary containing basic metadata about the analysis run,
         including the tool name and empty metrics dictionary that can be populated later.
         """
-        return {
+        base_metadata = {
             "tool_name": f"{self.tool_name}",
             "timestamp": datetime.now(UTC).strftime("%d/%m/%Y, %H:%M:%S"),
             "metrics": {},  # Default metrics (can be overridden)
         }
+        if extras:
+            base_metadata.update(extras)
+        return base_metadata
 
     @abstractmethod
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
@@ -151,7 +154,7 @@ class AnalyticQResultParser(ABC):
         """
         pass
 
-    def map_endline(self, end_line: Union[List, str]):
+    def map_end_line(self, end_line: Union[List, str, int, None]) -> int:
         """
         Maps the end line of a code block based on different input types.
 
@@ -167,9 +170,15 @@ class AnalyticQResultParser(ABC):
         if isinstance(end_line, list):
             return end_line[-1] if end_line else 0
         elif isinstance(end_line, str):
-            return 0
+            try:
+                return int(end_line.strip()) if end_line.strip() else 0
+            except ValueError:
+                logger.warning(f"Invalid end line value: {end_line}. Defaulting to 0.")
+                return 0
+        elif isinstance(end_line, int):
+            return end_line
         else:
-            return end_line if end_line else 0
+            return 0
 
     def _process_metadata(self, raw_issue: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -198,28 +207,25 @@ class AnalyticQResultParser(ABC):
         metadata_field = self.field_mapping.get("issue_metadata")
         if not metadata_field:
             return {}
+
         try:
             metadata = raw_issue
             for key in metadata_field.split("."):
                 if key in metadata:
                     metadata = metadata[key]
-                else:
-                    return {}
 
-                if isinstance(metadata, dict):
-                    # Copy all fields from the original metadata dictionary
-                    processed_metadata = {k: v for k, v in metadata.items()}
-                    return processed_metadata
-                elif isinstance(metadata, list):
-                    processed_metadata = {}
-                    processed_metadata = {"items": metadata}
-                else:
-                    # For simple values, wrap them in a dictionary
-                    return {"value": metadata}
+            if isinstance(metadata, dict):
+                # Copy all fields from the original metadata dictionary
+                processed_metadata = {k: v for k, v in metadata.items()}
+                return processed_metadata
+            elif isinstance(metadata, list):
+                return {"items": metadata}
+            else:
+                return {"value": metadata}
         except (KeyError, TypeError):
             return {}  # Return empty dict on any error
 
-    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+    def parse_scan_result(self, raw_result: List[Dict[str, Any]]) -> AnalyticQSASTScanResultModel:
         try:
             issues = []
             new_scan_id = str(uuid.uuid4())
@@ -238,15 +244,13 @@ class AnalyticQResultParser(ABC):
                     message=self._get_field(raw_issue, "message", default="No message"),
                     path=self._get_field(raw_issue, "path", default="unknown"),
                     start_line=self._get_field(raw_issue, "start_line", default=0),
-                    end_line=self.map_endline(self._get_field(raw_issue, "end_line", default=0)),
+                    end_line=self.map_end_line(self._get_field(raw_issue, "end_line", default=0)),
                     issue_metadata=processed_metadata
                 )
                 issues.append(issue)
 
             summary = self._generate_summary(issues)
             metadata = self._generate_metadata()
-
-            print(issues)
 
             return AnalyticQSASTScanResultModel(
                 scan_id=new_scan_id,

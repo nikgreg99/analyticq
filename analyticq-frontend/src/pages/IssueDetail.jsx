@@ -146,7 +146,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
           </Box>
 
           <Box color="blackAlpha.800">
-            <Heading size="md" mb={4}>
+            <Heading size="lg" mb={4}>
               Details
             </Heading>
             <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
@@ -162,7 +162,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 </Flex>
               </Box>
               <Box gridColumn={{ lg: "span 2" }}>
-                <Text fontWeight="medium" mb={1}>
+                <Text fontWeight="medium" fontSize="md" mb={1}>
                   File Path
                 </Text>
                 <Code>

@@ -34,7 +34,6 @@ export const HomePage = () => {
 
   const dropzoneRef = useRef(null);
   const redirectHandledRef = useRef(false);
-  const mountedRef = useRef(true);
 
   const { scanStatus, isSubmitting, error, startAnalysis, resetScan } = useAnalysis();
   const { redirectToContext } = useAnalysisRedirect();
@@ -47,18 +46,12 @@ export const HomePage = () => {
   const buttonSize = useBreakpointValue({ base: "md", md: "md" });
   const boxPadding = useBreakpointValue({ base: 3, sm: 4, md: 6 });
 
-  // Cleanup on unmount
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
+  // Initialize page metadata
   useEffect(() => {
     updatePageMetadata("Welcome to AnalyticQ", "AnalyticQ Home", "/home");
   }, []);
 
+  // Show error toasts
   useEffect(() => {
     if (error) {
       toaster.create({
@@ -71,109 +64,52 @@ export const HomePage = () => {
     }
   }, [error]);
 
-  // Safe repository name extraction
+  // Extract repository name for redirect
   const getRepositoryName = useCallback(() => {
-    try {
-      if (tabIndex === 'git' && gitUrl) {
-        // Try to parse as URL first
-        try {
-          const url = new URL(gitUrl);
-          const pathParts = url.pathname.split('/').filter(Boolean);
-          return pathParts[pathParts.length - 1]?.replace('.git', '') || '';
-        } catch {
-          // Fallback for non-URL formats
-          const parts = gitUrl.split('/').filter(Boolean);
-          return parts[parts.length - 1]?.replace('.git', '') || '';
-        }
-      } else if (tabIndex === 'local' && selectedFiles.length > 0) {
-        const fileName = selectedFiles[0]?.name || '';
-        return fileName.replace(/\.[^/.]+$/, "");
-      }
-    } catch (error) {
-      console.error('Error extracting repository name:', error);
+    if (tabIndex === 'git' && gitUrl) {
+      // Extract repo name from Git URL
+      const parts = gitUrl.split('/').filter(Boolean);
+      return parts[parts.length - 1]?.replace('.git', '') || '';
+    } else if (tabIndex === 'local' && selectedFiles.length > 0) {
+      // Extract name from first file
+      const fileName = selectedFiles[0]?.name || '';
+      return fileName.replace(/\.[^/.]+$/, "");
     }
     return '';
   }, [tabIndex, gitUrl, selectedFiles]);
 
-  // Safe redirect function with proper error handling
-  const performRedirect = useCallback(async (repoName) => {
-    if (!mountedRef.current) return;
-
-    try {
-      if (repoName) {
-        console.log('Redirecting to context:', repoName);
-        await redirectToContext(repoName, {
-          replace: true,
-          fallbackPath: '/contexts'
-        });
-      } else {
-        console.log('No repo name, redirecting to contexts page');
-        if (mountedRef.current) {
-          toaster.create({
-            title: "Analysis Complete",
-            description: "Analysis finished successfully. Redirecting to contexts page.",
-            type: "success",
-            duration: 3000,
-          });
-
-          setTimeout(() => {
-            if (mountedRef.current) {
-              navigate('/contexts', { replace: true });
-            }
-          }, 1500);
-        }
-      }
-    } catch (error) {
-      console.error('Error during redirect:', error);
-      // Always provide fallback
-      if (mountedRef.current) {
-        navigate('/contexts', { replace: true });
-      }
-    }
-  }, [redirectToContext, navigate]);
-
-  // Handle successful analysis completion and redirect
+  // Handle successful analysis completion
   useEffect(() => {
-    // Reset redirect flag when scan status changes away from completed
-    if (scanStatus?.status !== 'completed') {
-      redirectHandledRef.current = false;
-      return;
-    }
+    const isCompleted = scanStatus?.status === 'completed' && scanStatus?.success;
 
-    // Only handle redirect once per completed scan
-    if (
-      scanStatus?.status === 'completed' &&
-      scanStatus?.success &&
-      !redirectHandledRef.current &&
-      mountedRef.current
-    ) {
+    if (isCompleted && !redirectHandledRef.current) {
       redirectHandledRef.current = true;
 
-      console.log('Analysis completed successfully, initiating redirect');
-
       const repoName = getRepositoryName();
-      performRedirect(repoName);
+      console.log("Redirecting to context for repo:", repoName);
+
+      if (repoName) {
+        redirectToContext(repoName, { replace: true });
+      } else {
+        // No repo name, show success message and redirect to contexts
+        toaster.create({
+          title: "Analysis Complete",
+          description: "Analysis finished successfully.",
+          type: "success",
+          duration: 3000,
+        });
+        setTimeout(() => navigate('/contexts', { replace: true }), 1500);
+      }
     }
-  }, [scanStatus?.status, scanStatus?.success, getRepositoryName, performRedirect]);
 
-  const handleSubmit = () => {
-    // Reset redirect flag before starting new analysis
-    redirectHandledRef.current = false;
-
-    // Use the branch value directly without checking isCustomBranchSelected
-    const success = startAnalysis({
-      source: tabIndex,
-      files: selectedFiles,
-      gitUrl,
-      branch: branch.trim() || "main", // Default to "main" if branch is empty
-    });
-
-    if (success) {
-      resetForm();
+    // Reset redirect flag when status changes
+    if (scanStatus?.status !== 'completed') {
+      redirectHandledRef.current = false;
     }
-  };
+  }, [scanStatus, getRepositoryName, redirectToContext, navigate]);
 
-  const resetForm = () => {
+  // Reset form fields
+  const resetForm = useCallback(() => {
     if (tabIndex === "local") {
       setSelectedFiles([]);
       dropzoneRef.current?.reset();
@@ -182,54 +118,54 @@ export const HomePage = () => {
       setBranch("");
       setIsCustomBranchSelected(false);
     }
-  };
+  }, [tabIndex]);
 
-  const resetAllState = () => {
-    // Reset redirect flag
+  // Handle form submission
+  const handleSubmit = useCallback(() => {
     redirectHandledRef.current = false;
 
-    // Reset form fields
+    const success = startAnalysis({
+      source: tabIndex,
+      files: selectedFiles,
+      gitUrl,
+      branch: branch.trim() || "main",
+    });
+
+    if (success) {
+      resetForm();
+    }
+  }, [startAnalysis, tabIndex, selectedFiles, gitUrl, branch, resetForm]);
+
+  // Reset all state
+  const resetAllState = useCallback(() => {
+    redirectHandledRef.current = false;
     setSelectedFiles([]);
     setGitUrl("");
     setBranch("");
     setIsCustomBranchSelected(false);
-
-    // Reset dropzone if it exists
-    if (dropzoneRef.current?.reset) {
-      dropzoneRef.current.reset();
-    }
-
-    // Reset scan status
+    dropzoneRef.current?.reset();
     resetScan();
-
-    // Clear any existing toasts
     toaster.dismiss();
-  };
+  }, [resetScan]);
 
-  // Handle branch changes from GitRepoInput
-  const handleBranchChange = (newBranch) => {
-    setBranch(newBranch);
-  };
-
-  const handleTabChange = (newTab) => {
-    if (error) {
-      resetScan();
-    }
+  // Handle tab changes
+  const handleTabChange = useCallback((newTab) => {
+    if (error) resetScan();
 
     setTabIndex(newTab);
 
+    // Clear other tab's data
     if (newTab === "local") {
       setGitUrl("");
       setBranch("");
       setIsCustomBranchSelected(false);
     } else {
       setSelectedFiles([]);
-      if (dropzoneRef.current?.reset) {
-        dropzoneRef.current.reset();
-      }
+      dropzoneRef.current?.reset();
     }
-  };
+  }, [error, resetScan]);
 
+  // Check if submit should be disabled
   const isSubmitDisabled = useMemo(() => {
     if (isSubmitting) return true;
 
@@ -237,57 +173,36 @@ export const HomePage = () => {
       return selectedFiles.length === 0;
     }
 
-    // For Git tab, require URL and branch
-    // If custom branch is selected, ensure it has a value
+    // For Git: require URL, and if custom branch is selected, require branch value
     return !gitUrl || (isCustomBranchSelected && !branch.trim());
-  }, [
-    isSubmitting,
-    tabIndex,
-    selectedFiles,
-    gitUrl,
-    isCustomBranchSelected,
-    branch,
-  ]);
+  }, [isSubmitting, tabIndex, selectedFiles, gitUrl, isCustomBranchSelected, branch]);
 
+  // Handle Enter key submission
   const handleKeyDown = useCallback((event) => {
-    // Only trigger on Enter key, and ensure we're not in a textarea or other input that should handle Enter normally
-    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !isSubmitDisabled && !isSubmitting) {
       const target = event.target;
 
-      // Don't interfere with Enter in textareas, contenteditable, or form inputs that might need Enter
-      if (
-        target.tagName === 'TEXTAREA' ||
-        target.contentEditable === 'true' ||
-        (target.tagName === 'INPUT' && target.type === 'text' && target.getAttribute('role') !== 'combobox')
-      ) {
+      // Don't interfere with textareas or text inputs
+      if (target.tagName === 'TEXTAREA' ||
+          (target.tagName === 'INPUT' && target.type === 'text')) {
         return;
       }
 
-      // Check if submit button is available and not disabled
-      if (!isSubmitDisabled && !isSubmitting) {
-        event.preventDefault();
-        handleSubmit();
-      }
+      event.preventDefault();
+      handleSubmit();
     }
   }, [isSubmitDisabled, isSubmitting, handleSubmit]);
 
-
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown])
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
-
-  const fileTypeAccepted = useMemo(
-    () => ({
-      "application/zip": [".zip"],
-      "application/x-tar": [".tar"],
-      "application/gzip": [".gz"],
-    }),
-    [],
-  );
+  const fileTypeAccepted = useMemo(() => ({
+    "application/zip": [".zip"],
+    "application/x-tar": [".tar"],
+    "application/gzip": [".gz"],
+  }), []);
 
   return (
     <Container maxW="container.md" p={containerPadding}>
@@ -334,36 +249,27 @@ export const HomePage = () => {
                 <Tabs.Trigger
                   flex={{ base: "1", md: "auto" }}
                   p={{ base: 2, md: 3 }}
-                  _focus={{ boxShadow: "outline" }}
-                  aria-label="Analyze a Git Repository"
                   value="git"
                 >
                   <Flex align="center" justify={{ base: "center", md: "flex-start" }}>
-                    <FaGit style={{ marginRight: "8px" }} aria-hidden="true" />
+                    <FaGit style={{ marginRight: "8px" }} />
                     <Text>Git Repository</Text>
                   </Flex>
                 </Tabs.Trigger>
                 <Tabs.Trigger
                   flex={{ base: "1", md: "auto" }}
                   p={{ base: 2, md: 3 }}
-                  _focus={{ boxShadow: "outline" }}
                   value="local"
-                  aria-label="Analyze Local Files"
                 >
                   <Flex align="center" justify={{ base: "center", md: "flex-start" }}>
-                    <FaFileArchive
-                      style={{ marginRight: "8px" }}
-                      aria-hidden="true"
-                    />
+                    <FaFileArchive style={{ marginRight: "8px" }} />
                     <Text>Local File/Directory</Text>
                   </Flex>
                 </Tabs.Trigger>
                 <Tabs.Indicator />
               </Tabs.List>
-              <Tabs.Content
-                key="local"
-                value="local"
-              >
+
+              <Tabs.Content value="local">
                 <FileDropZone
                   ref={dropzoneRef}
                   onDrop={setSelectedFiles}
@@ -372,17 +278,16 @@ export const HomePage = () => {
                 <FileList
                   files={selectedFiles}
                   onDeleteFile={(f) =>
-                    setSelectedFiles((prev) =>
-                      prev.filter((file) => file !== f),
-                    )
+                    setSelectedFiles((prev) => prev.filter((file) => file !== f))
                   }
                   onDeleteAllFiles={() => setSelectedFiles([])}
                 />
               </Tabs.Content>
+
               <Tabs.Content value="git">
                 <GitRepoInput
                   onUrlChange={setGitUrl}
-                  onBranchChange={handleBranchChange}
+                  onBranchChange={setBranch}
                   onCustomBranchToggle={setIsCustomBranchSelected}
                   isCustomBranchSelected={isCustomBranchSelected}
                   customBranchValue={branch}
@@ -391,6 +296,7 @@ export const HomePage = () => {
                 />
               </Tabs.Content>
             </Tabs.Root>
+
             <Flex justify="center">
               <Button
                 mt={6}
@@ -401,7 +307,6 @@ export const HomePage = () => {
                 isLoading={isSubmitting}
                 loadingText="Submitting"
                 onClick={handleSubmit}
-                aria-label="Start the analysis"
                 isDisabled={isSubmitDisabled}
                 width={{ base: "100%", sm: "auto" }}
                 px={{ base: 4, sm: 6 }}
