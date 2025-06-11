@@ -74,18 +74,15 @@ class DockerImageManager:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
-                cls._instance = False
         return cls._instance
 
     def __init__(self, docker_client: aiodocker.Docker):
-        if self._initialized:
-            return
         self.docker = aiodocker.Docker() if docker_client is None else docker_client
         self.auth_config = None
         self._initialized = True
 
     @staticmethod
-    async def check_docker_availability() -> bool:
+    async def check_docker_availability():
         """
         Check if Docker is available on the system.
         This method verifies if Docker is installed and accessible by attempting to execute
@@ -108,12 +105,12 @@ class DockerImageManager:
 
             if process.returncode != 0:
                 logger.error("Docker is not available")
-                raise DockerNotFoundException("Docker is not available on the system")
+                raise DockerNotFoundException("Doker is not availalbe on the system")
             else:
                 return True
 
         except FileNotFoundError:
-            raise DockerNotFoundException("Docker is not avaialble on the system")
+            raise DockerNotFoundException("Docker is not avaialble on  the system")
 
     async def login(self, docker_config: DockerRegistryConfig) -> bool:
         """
@@ -256,7 +253,7 @@ class DockerImageManager:
         except DockerError:
             return False
 
-    async def pull(self, image_name: str, image_tag: str, registry_url: Optional[str] = None) -> bool:
+    async def pull(self, image_name: str, image_tag: str, registry_url: str = None) -> bool:
         """
         Pull a Docker image from a registry.
         This method pulls a Docker image with the specified name and tag from a Docker registry.
@@ -272,12 +269,6 @@ class DockerImageManager:
         """
         if image_name is None or image_tag is None:
             raise ValueError("Image name and tag cannot be None or empty.")
-
-        if not isinstance(image_name, str) or not isinstance(image_tag, str):
-            raise TypeError("Image name and tag must be strings")
-
-        logger.debug(f"Attempting to pull image: {image_name}:{image_tag}")
-
         try:
             full_image_name = f"{registry_url}/{image_name}" if registry_url else image_name
 
@@ -309,5 +300,4 @@ class DockerImageManager:
         """
         if hasattr(self, 'docker') and self.docker:
             await self.docker.close()
-            self.docker = None
             logger.info("Docker client connection closed")

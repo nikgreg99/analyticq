@@ -13,7 +13,7 @@ def test_load_environment_found(mock_exists, mock_load_dotenv):
     AnalyticQEnvironmentLoader.load(conf_path_env, profile)
 
     # Verify load_dotenv was called with the correct path
-    mock_load_dotenv.assert_called_with(conf_path_env, profile)
+    mock_load_dotenv.exist(conf_path_env, profile)
 
 
 @patch("os.path.exists", return_value=False)

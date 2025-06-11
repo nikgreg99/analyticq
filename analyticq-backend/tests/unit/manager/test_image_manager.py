@@ -156,7 +156,7 @@ async def test_login_successful(image_manager, docker_registry_config):
         mock_subprocess.assert_called_once_with(
             subprocess.run,
             ["docker", "login", docker_registry_config.registry, "--username", docker_registry_config.username,
-                "--password", docker_registry_config.password],
+                "--password-stdin"],
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -164,7 +164,7 @@ async def test_login_successful(image_manager, docker_registry_config):
         mock_subprocess.assert_called_once_with(
             subprocess.run,
             ["docker", "login", docker_registry_config.registry, "--username", docker_registry_config.username,
-                "--password", docker_registry_config.password],
+                "--password-stdin"],
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -184,7 +184,7 @@ async def test_login_failed(image_manager, docker_registry_config):
         mock_subprocess.assert_called_once_with(
             subprocess.run,
             ["docker", "login", docker_registry_config.registry, "--username", docker_registry_config.username,
-             "--password", docker_registry_config.password],
+             "--password-stdin"],
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
