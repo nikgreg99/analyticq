@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, Type
 
 from analyticq.validator.scan import AnalyticQSASTScanResultModel
 
@@ -11,12 +11,33 @@ from .report_generator import ReportGenerator
 
 class ReportManager:
 
-    GENERATORS = {
+    GENERATORS: Dict[str, Type[ReportGenerator]] = {
         "json": JSONReportGenerator,
         "html": HTMLReportGenerator,
         "pdf": PDFReportGenerator,
         "csv": CSVReportGenerator
     }
+
+    @classmethod
+    def register_format(cls, format_type: str, generator_class: Type[ReportGenerator]) -> None:
+        """
+        Register a new report format and its corresponding generator class.
+
+        This class method adds a new report format type and its associated generator class to the
+        GENERATORS dictionary. The format type is stored in lowercase to ensure case-insensitive matching.
+
+        Args:
+            format_type (str): The identifier for the report format (e.g., 'pdf', 'csv', etc.)
+            generator_class (Type[ReportGenerator]): The class responsible for generating reports in the specified format.
+                                                   Must be a subclass of ReportGenerator.
+
+        Returns:
+            None
+
+        Example:
+            >>> ReportManager.register_format('pdf', PDFGenerator)
+        """
+        cls.GENERATORS[format_type.lower()] = generator_class
 
     @staticmethod
     def get_generator(format_type: str, scan_result: AnalyticQSASTScanResultModel) -> ReportGenerator:
@@ -29,13 +50,13 @@ class ReportManager:
             ReportGenerator: An instance of the appropriate report generator class.
         Raises:
             ValueError: If the specified format type is not supported.
-        Example:
-            >>> generator = get_generator('pdf', scan_result)
-            >>> generator.generate()
         """
         generator_class = ReportManager.GENERATORS.get(format_type.lower())
         if not generator_class:
-            raise ValueError(f"Unsupported format: {format_type}")
+            raise ValueError(
+                f"Unsupported format: {format_type}. "
+                f"Supported formats are: {', '.join(ReportManager.GENERATORS.keys())}"
+            )
 
         return generator_class(scan_result)
 

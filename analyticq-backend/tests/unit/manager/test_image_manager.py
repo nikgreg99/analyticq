@@ -33,7 +33,7 @@ def docker_registry_config():
 
 @pytest.mark.asyncio
 async def test_docker_available(image_manager):
-    with patch("asyncio.create_subprocess_exec") as mock_create_subprocess_exec:
+    with patch("asyncio.to_thread") as mock_create_subprocess_exec:
         # Mock the subprocess to simulate a successful Docker check
         mock_process = AsyncMock()
         mock_process.returncode = 0

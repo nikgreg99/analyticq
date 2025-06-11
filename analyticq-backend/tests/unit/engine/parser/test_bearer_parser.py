@@ -70,7 +70,7 @@ def test_init(bearer_parser):
         "code": "code_extract",
         "path": "full_filename",
         "start_line": "line_number",
-        "endl_line": "line_number",
+        "end_line": "line_number",
         "column": "column_info.start",
         "severity": "severity_level",
         "issue_metadata": "metadata"

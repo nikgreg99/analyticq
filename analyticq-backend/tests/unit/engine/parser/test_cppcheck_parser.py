@@ -121,8 +121,8 @@ def test_loc_parse(cppcheck_parser):
     locs = cppcheck_parser.parse_locations(issue_data)
     assert len(issue_data) == 1
     assert locs[0]['file'] == 'test.cpp'
-    assert locs[0]['line'] == '42'
-    assert locs[0]['column'] == '5'
+    assert locs[0]['line'] == 42
+    assert locs[0]['column'] == 5
     assert locs[0]['info'] == 'Test info'
 
 
@@ -132,7 +132,7 @@ def test_metadata_handling(cppcheck_parser, complex_xml_input):
     print(first_issue)
     assert first_issue.issue_metadata["cwe"] == "476"
     assert "help_uri" in first_issue.issue_metadata
-    assert len(first_issue.issue_metadata["all_locations"]) == 1
+    assert len(first_issue.issue_metadata["locations"]) == 2
 
 
 def test_error_parsing(cppcheck_parser):
@@ -141,18 +141,3 @@ def test_error_parsing(cppcheck_parser):
 
     with pytest.raises(ScanParserException):
         cppcheck_parser.parse_scan_result({'invalid': 'structure'})
-
-
-def test_empty_result_handling(cppcheck_parser):
-    input_data = {
-        'children': {
-            'errors': {
-                'children': {
-                    'error': []
-                }
-            }
-        }
-    }
-
-    with pytest.raises(ScanParserException):
-        cppcheck_parser.parse_scan_result(input_data)

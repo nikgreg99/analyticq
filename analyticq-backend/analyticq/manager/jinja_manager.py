@@ -1,6 +1,7 @@
 import logging
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from fastapi import FastAPI
 from jinja2 import Environment, FileSystemLoader, Template, select_autoescape
@@ -33,22 +34,31 @@ class JinjaManager:
     """
     _instance = None
     _env: Optional[Environment] = None
+    _initizalied = False
 
     def __new__(cls):
         """Implement singleton pattern for the template service."""
         if cls._instance is None:
             cls._instance = super(JinjaManager, cls).__new__(cls)
             cls._instance._env = None
+            cls._instance._initizalied = False
         return cls._instance
+
+    def __init__(self):
+        if self._initizalied:
+            return
+        self._env = None
+        self._initizalied = True
 
     @classmethod
     def initialize(
         cls,
         app: FastAPI,
         template_dir: Optional[str] = None,
-        filters: Optional[Dict[str, callable]] = None,
-        globals: Optional[Dict[str, Any]] = None
-    ):
+        filters: Optional[Dict[str, Callable]] = None,
+        globals: Optional[Dict[str, Any]] = None,
+        **env_options
+    ) -> 'JinjaManager':
         """
         Initialize the Jinja2 environment and attach it to the FastAPI app.
 
@@ -74,7 +84,8 @@ class JinjaManager:
             loader=FileSystemLoader(template_dir),
             autoescape=select_autoescape(['html', 'xml']),
             trim_blocks=True,
-            lstrip_blocks=True
+            lstrip_blocks=True,
+            **env_options
         )
 
         # Register custom filters if provided
@@ -109,6 +120,13 @@ class JinjaManager:
             raise RuntimeError("Template service not initialized. Call initialize() first.")
         return self._env
 
+    @classmethod
+    def get_from_app(cls, app: FastAPI) -> 'JinjaManager':
+        if not hasattr(app.state, 'template_service'):
+            raise RuntimeError('JinjaManager not intizialed for this FastAPI app')
+        return app.state.template_service
+
+    @lru_cache(maxsize=32)
     def get_template(self, template_name: str) -> Template:
         """
         Retrieve a Jinja2 template by its name.
@@ -144,6 +162,7 @@ class JinjaManager:
         Example:
             rendered = render_template('example.html', title='My Page', content='Hello World')
         """
+        logger.debug(f"Rendering template: {template_name} with context keys: {list(context.keys())}")
         template = self.get_template(template_name)
         return template.render(**context)
 

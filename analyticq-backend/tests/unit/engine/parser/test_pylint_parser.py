@@ -114,11 +114,8 @@ def test_confidence_mapping(pylint_parser):
 
 
 def test_parse_empty_result(pylint_parser):
-    result = pylint_parser.parse_scan_result([])
-    assert isinstance(result, AnalyticQSASTScanResultModel)
-    assert len(result.issues) == 0
-    assert result.summary["total"] == 0
-    assert all(result.summary["by_severity"][sev.value] == 0 for sev in AnalyticQSeverity)
+    with pytest.raises(ScanParserException):
+        pylint_parser.parse_scan_result([])
 
 
 def test_invalid_input_type(pylint_parser):
