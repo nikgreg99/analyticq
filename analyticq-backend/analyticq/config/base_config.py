@@ -83,6 +83,6 @@ class AnalyticQBaseConfig(BaseModel):
             The setting value if available, else default_value.
         """
         if AnalyticQBaseConfig._settings is not None:
-            return AnalyticQBaseConfig._settings.get(key, default_value)
+            return AnalyticQBaseConfig._settings.get(key)
         logger.error("Configuration not initialized. Call `from_file()` before accessing settings.")
         return default_value

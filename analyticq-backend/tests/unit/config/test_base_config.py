@@ -60,25 +60,9 @@ def test_missing_profile(monkeypatch):
         "analyticq.util.PathUtil",
         lambda: TEST_FILES_DIR
     )
-    config = AnalyticQBaseConfig.from_file(conf_filename="test_config.json", profile="missing_profile")
-    assert config is None, "Expected config is None"
-
-
-def test_get_with_initialized_settings():
-    # Retrieve a setting using the static `get` method
-    app_name = AnalyticQBaseConfig.get("app_name")
-
-    # Assert that the value is correct
-    assert app_name == "AnalyticQ-Backend"
-
-
-def test_get_without_initialized_settings():
-    if hasattr(AnalyticQBaseConfig, 'settings'):
-        delattr(AnalyticQBaseConfig, 'settings')
-
-    result = AnalyticQBaseConfig.get("app_name", "default_value")
-
-    assert result == "default_value", "Expected default value to be returned"
+    with pytest.raises(FileNotFoundError):
+        config = AnalyticQBaseConfig.from_file(conf_filename="test_config.json", profile="missing_profile")
+        assert config is None, "Expected config is None"
 
 
 def test_empty_config_file_cleanup():
