@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
@@ -5,6 +6,8 @@ from analyticq.engine.core.models import (AnalyticQConfidence,
                                           AnalyticQSASTScanResultModel,
                                           AnalyticQSeverity)
 from analyticq.exception import ScanParserException
+
+logger = logging.getLogger(__name__)
 
 
 class ESLintParser(AnalyticQResultParser):
@@ -43,6 +46,8 @@ class ESLintParser(AnalyticQResultParser):
         return severity_map.get(severity_level, AnalyticQSeverity.UNKNOWN)
 
     def transform_output(self, raw_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        logging.debug(raw_result)
+
         transformed_issues = []
 
         for file_data in raw_result:
@@ -66,11 +71,15 @@ class ESLintParser(AnalyticQResultParser):
                     "source": source_code
                 }
 
-                suggestions = message.get("suggestions")
+                suggestions = message.get("suggestions", [])
                 if isinstance(suggestions, list) and suggestions:
-                    transformed_issue["issue_metadata"] = {
-                        "suggestions": suggestions
-                    }
+                    for suggestion in suggestions:
+                        transformed_issue["issue_metadata"] = {
+                            "messageId": suggestion.get("messageId", ""),
+                            "range": suggestion.get("range", ""),
+                            "text": suggestion.get("text", "unknown"),
+                            "desc": suggestion.get("desc", "unknown")
+                        }
 
                 transformed_issues.append(transformed_issue)
 

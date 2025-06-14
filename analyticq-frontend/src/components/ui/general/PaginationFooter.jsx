@@ -9,9 +9,9 @@ import {
   VisuallyHidden,
   Field,
   Input,
-  Button,
   HStack
 } from "@chakra-ui/react";
+import { Toaster,toaster } from "./Toaster";
 import { DEFAULT_PAGE_SIZE_OPTIONS } from "components/utils/pagination";
 import { Rows3, ChevronDown } from "lucide-react";
 import PaginationControls from "../general/PaginationControls";
@@ -40,14 +40,41 @@ export const PaginationFooter = ({
   const endItem = Math.min(totalItems, currentPage * parseInt(pageSize[0], 10));
 
   const handleQuickJump = (e) => {
-    e?.preventDefault();
+
+    if (e) {
+      e.preventDefault();
+    }
+
     const pageNum = parseInt(jumpToPage, 10);
 
     if (isNaN(pageNum)) {
+      toaster.create(
+        {
+          title: "Invalid page number",
+          description: "Please enter a valid number",
+          type: "error",
+          duration: 3000,
+          closable: true
+        }
+      )
       setJumpErrorMessage("Please enter a valid number");
     } else if (pageNum < 1) {
+      toaster.create({
+        title: "Invalid page number",
+        description: "Page must be at least 1",
+        type: "error",
+        duration: 3000,
+        closable: true
+      })
       setJumpErrorMessage(`Page must be at least 1`);
     } else if (pageNum > totalPages) {
+      toaster.create({
+        title: "Page not available",
+        description: `Page ${pageNum} is not available. Maximum page is ${totalPages}`,
+        type: 'error',
+        duration: 3000,
+        closable: true
+      })
       setJumpErrorMessage(`Page ${pageNum} not available. Maximum page is ${totalPages}`);
     } else {
       setCurrentPage(pageNum);
@@ -182,6 +209,7 @@ export const PaginationFooter = ({
             <Box
               as="form"
               onSubmit={handleQuickJump}
+              onKeyDown={handleKeyDown}
               width="100%"
               display="flex"
               flexDirection="column"
@@ -207,15 +235,11 @@ export const PaginationFooter = ({
                   />
                 </Field.Root>
               </HStack>
-              {jumpErrorMessage && (
-                <Field.ErrorText textAlign="center" fontSize="xs" mt={1}>
-                  {jumpErrorMessage}
-                </Field.ErrorText>
-              )}
             </Box>
           )}
         </VStack>
       )}
+      <Toaster/>
     </Flex>
   );
 };
