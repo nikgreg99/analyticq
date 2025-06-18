@@ -34,7 +34,7 @@ class BanditParser(AnalyticQResultParser):
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         if not confidence_level or not isinstance(confidence_level, str):
-            return AnalyticQSeverity.UNKNOWN
+            return AnalyticQConfidence.UNKNOWN
 
         try:
             return AnalyticQConfidence.parse(confidence_level.upper())
@@ -80,6 +80,8 @@ class BanditParser(AnalyticQResultParser):
                 metrics = {}
 
             generated_at = raw_result.get("generated_at")
+            if generated_at and not isinstance(generated_at, str):
+                generated_at = str(generated_at)
 
             scan.scan_metadata.update({
                 "metrics": metrics,
@@ -91,4 +93,4 @@ class BanditParser(AnalyticQResultParser):
         except (TypeError, AttributeError) as e:
             raise ScanParserException(f"Invalid Bandit result format: {str(e)}") from e
         except Exception as e:
-            raise ScanParserException(f"Unexpected error parsing Bandiit results: {str(e)}") from e
+            raise ScanParserException(f"Unexpected error parsing Bandit results: {str(e)}") from e

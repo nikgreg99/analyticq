@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
@@ -36,7 +36,7 @@ class PylintParser(AnalyticQResultParser):
 
         super().__init__(tool_name="Pylint", field_mapping=field_mapping)
 
-    def _preprocess_raw_result(self, raw_result: Dict[str, Any]) -> Dict[str, Any]:
+    def _preprocess_raw_result(self, raw_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Preprocesses the raw result from pylint analysis.
         Args:
@@ -46,22 +46,27 @@ class PylintParser(AnalyticQResultParser):
         """
         if isinstance(raw_result, dict):
             for result in raw_result:
-                if result.get("messsage-id") is None:
-                    result["message-id"] = "unkown"
+                if result.get("message-id") is None:
+                    result["message-id"] = "unknown"
 
         return raw_result
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps a pylint confidence level to an AnalyticQConfidence enum value.
+
+        Args:
+            confidence_level (str): The confidence level string from pylint
+
+        Returns:
+            AnalyticQConfidence: The corresponding AnalyticQConfidence enum value.
+                Currently returns UNKNOWN for all inputs.
+        """
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
-        if not severity_level:
-            return AnalyticQSeverity.UNKNOWN
-
-        try:
-            return AnalyticQSeverity.parse(self.severity_mapping[severity_level])
-        except ValueError as e:
-            raise ValueError(f"Invalid severity level: {severity_level}") from e
+        mapped = self.severity_mapping.get(severity_level.lower(), "UNKNOWN")
+        return AnalyticQSeverity.parse(mapped)
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         """

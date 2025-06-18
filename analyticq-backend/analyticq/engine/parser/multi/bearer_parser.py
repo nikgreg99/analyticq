@@ -33,7 +33,7 @@ class BearerParser(AnalyticQResultParser):
         try:
             return AnalyticQSeverity.parse(severity_level)
         except ValueError as e:
-            raise e
+            raise ValueError(f"Invalid severity level in Bearer result: '{severity_level}'") from e
 
     def transform_output(self, raw_result: Dict[str, Any]) -> List[Dict[str, Any]]:
         transformed_issues = []
@@ -88,6 +88,7 @@ class BearerParser(AnalyticQResultParser):
                 "total_info": len(raw_result.get("info", []))
             })
 
+            scan_result.scan_metadata["tool_version"] = raw_result.get("version", "unknown")
             return scan_result
 
         except Exception as e:

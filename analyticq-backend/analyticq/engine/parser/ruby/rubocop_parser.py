@@ -15,17 +15,33 @@ class RubocopParser(AnalyticQResultParser):
             "message": "message",
             "path": "path",
             "start_line": "line",
-            "endl_line": "line",
+            "end_line": "line",
             "column": "column",
             "severity": "severity"
         }
         super().__init__(tool_name="rubocop", field_mapping=field_mapping)
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps Rubocop confidence level to AnalyticQ confidence enum.
+
+        Args:
+            confidence_level (str): The confidence level string from Rubocop output
+
+        Returns:
+            AnalyticQConfidence: Always returns UNKNOWN since Rubocop does not provide confidence levels
+
+        Notes:
+            Rubocop static analyzer does not provide confidence levels in its output,
+            so this method always defaults to returning UNKNOWN confidence.
+        """
+        # Rubocop does not provide confidence, defaulting to UNKNOWN
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         # According to https://docs.rubocop.org/rubocop/configuration.html#severity
+        if not severity_level:
+            return AnalyticQSeverity.UNKNOWN
         severity_map = {
             "refactor": AnalyticQSeverity.LOW,
             "convention": AnalyticQSeverity.LOW,
@@ -49,8 +65,8 @@ class RubocopParser(AnalyticQResultParser):
                     "path": file_path,
                     "message": offense.get("message", "unknown"),
                     "severity": offense.get("severity", "unknown"),
-                    "line": location.get("line", "unknown"),
-                    "column": location.get("column", "unknown"),
+                    "line": location.get("line", "0"),
+                    "column": location.get("column", "0"),
                 }
 
                 transformed_issues.append(transformed_issue)

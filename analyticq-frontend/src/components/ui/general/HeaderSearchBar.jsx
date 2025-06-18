@@ -61,6 +61,8 @@ const HeaderSearchBar = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [searchAttempted,setSearchAttempted] = useState(false);
+  const [hasSearchResuls, setSearchResults] = useState(false);
 
   // Custom hooks
   const {
@@ -106,14 +108,37 @@ const HeaderSearchBar = () => {
   useEffect(() => {
     const isValidRepo = !searchQuery || REPO_PATTERN.test(searchQuery);
     setIsValid(isValidRepo);
-  }, [searchQuery]);
+
+    if(searchQuery != "" && searchAttempted){
+      setSearchAttempted(false);
+    }
+
+  }, [searchQuery, searchAttempted]);
 
   // Trigger search when debounced query changes
   useEffect(() => {
     if (debouncedSearchQuery.length >= MIN_SEARCH_LENGTH) {
       dispatch(searchByRepoNamePrefix(debouncedSearchQuery));
+      setSearchResults(true);
+    }
+    else {
+      setSearchResults(false);
     }
   }, [debouncedSearchQuery, dispatch]);
+
+  const handleInputFocus = useCallback(() => {
+    if(! searchQuery.trim() && searchHistory.length > 0){
+      setShowHistory(true);
+      setShowFavorites(false)
+    }
+  },[searchQuery, searchHistory.length])
+
+  const handleInputBlur = useCallback(() => {
+    setTimeout(() => {
+      setShowHistory(false);
+      setShowFavorites(false);
+    }, 150);
+  }, []);
 
   // Toggle favorite status
   const toggleFavorite = useCallback(
@@ -135,14 +160,37 @@ const HeaderSearchBar = () => {
       const value = e.target.value;
       setSearchQueryState(value);
       dispatch(setSearchQuery(value));
+
+      if(value.trim() && (searchHistory.length > 0 || favorites.length > 0)){
+          const matchingHistory = searchHistory.filter(item =>
+            item.toLowerCase().includes(value.toLowerCase())
+          );
+          const matchingFavorites = favorites.filter(item =>
+            item.toLowerCase().includes(value.toLowerCase())
+          )
+
+          if(matchingHistory.length > 0){
+            setShowHistory(true);
+            setShowFavorites(false);
+          }
+          else if(matchingFavorites.length > 0) {
+            setShowFavorites(true);
+            setShowHistory(false);
+          }
+      }
+
     },
-    [dispatch],
+    [dispatch, searchHistory, favorites],
   );
 
   // Clear search input
   const handleClearSearch = useCallback(() => {
     setSearchQueryState("");
     dispatch(setSearchQuery(""));
+    setSearchAttempted(false);
+    setSearchResults(false);
+    setShowHistory(false);
+    setShowFavorites(false);
     searchInputRef.current?.focus();
   }, [dispatch]);
 
@@ -151,13 +199,34 @@ const HeaderSearchBar = () => {
     async (e) => {
       if (e) e.preventDefault();
 
-      if (searchQuery.length < MIN_SEARCH_LENGTH || !searchQuery.trim()) {
+    setSearchAttempted(true);
+      const trimmedQuery = searchQuery.trim();
+
+      // Better validation with user feedback
+      if (!trimmedQuery) {
+        toaster.create(TOAST_CONFIGS.emptySearch);
+        return;
+      }
+
+      if (trimmedQuery.length < MIN_SEARCH_LENGTH) {
+        toaster.create(TOAST_CONFIGS.searchTooShort);
+        return;
+      }
+
+      if(!isValid){
+        toaster.create({
+          title: "Invalid repository name",
+          description: "Repository names can only contain letters, numbers, hyphens, and underscores",
+          type: "error",
+          duration: 3000
+        });
         return;
       }
 
       setIsSearching(true);
       setShowHistory(false);
       setShowFavorites(false);
+
 
       try {
         const context = await getContextByRepoName(searchQuery);
@@ -173,18 +242,35 @@ const HeaderSearchBar = () => {
         setIsSearching(false);
       }
     },
-    [searchQuery, navigate, addToHistory],
+    [searchQuery, navigate, addToHistory, isValid],
   );
 
   // Handle selection from history or favorites
   const handleSelectItem = useCallback(
-    (item) => {
+    async (item) => {
       setSearchQueryState(item);
       dispatch(setSearchQuery(item));
-      setTimeout(() => handleSearch(), 100);
+     setShowHistory(false);
+      setShowFavorites(false);
+
+      // Immediate search without setTimeout for better UX
+      try {
+        setIsSearching(true);
+        const context = await getContextByRepoName(item);
+        addToHistory(item);
+        navigate(`/contexts/${context.id}`);
+      } catch {
+        toaster.create({
+          ...TOAST_CONFIGS.error,
+          title: TOAST_CONFIGS.error.title(item),
+        });
+      } finally {
+        setIsSearching(false);
+      }
     },
-    [dispatch, handleSearch],
+    [dispatch, addToHistory, navigate],
   );
+
 
   return (
     <Box position="relative" data-testid="header-search-bar">
@@ -199,6 +285,8 @@ const HeaderSearchBar = () => {
             onSearch={handleSearch}
             onChange={handleInputChange}
             onClear={handleClearSearch}
+            onBlur={handleInputBlur}
+            onFocus={handleInputFocus}
             showShortcutIndicator={isShortcutActive}
           />
         </Box>
@@ -221,26 +309,36 @@ const HeaderSearchBar = () => {
           ref={historyRef}
           title="Recent Searches"
           icon={MdHistory}
-          items={searchHistory}
+          items={searchHistory.filter(item =>
+            !searchQuery.trim() ||
+            item.toLowerCase().includes(searchQuery.toLowerCase())
+          )}
           favorites={favorites}
           onSelect={handleSelectItem}
           onRemove={removeFromHistory}
           onToggleFavorite={toggleFavorite}
           onClearAll={clearHistory}
+          role="listbox"
+          aria-label="Search history suggestions"
         />
       )}
 
       {/* Favorites dropdown */}
       {showFavorites && favorites.length > 0 && (
-        <Dropdown
+        <SearchBarDropdown
           ref={favoritesRef}
           title="Favorite Repositories"
           icon={FiStar}
-          items={favorites}
+          items={favorites.filter(item =>
+            !searchQuery.trim() ||
+            item.toLowerCase().includes(searchQuery.toLowerCase())
+          )}
           isFavoritesList={true}
           onSelect={handleSelectItem}
           onRemove={removeFromFavorites}
           onClearAll={clearFavorites}
+          role="listbox"
+          aria-label="Favorite repository suggestions"
         />
       )}
 

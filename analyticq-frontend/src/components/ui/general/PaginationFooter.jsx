@@ -243,3 +243,5 @@ export const PaginationFooter = ({
     </Flex>
   );
 };
+
+PaginationFooter.displayName = "PaginationFooter";

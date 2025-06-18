@@ -74,6 +74,7 @@ const DeleteConfirmationDialog = ({
           size="sm"
           loading={isLoading}
           loadingText="Deleting..."
+          ref={cancelRef}
         >
           <LuTrash2 />
           {config.buttonText}
@@ -81,7 +82,9 @@ const DeleteConfirmationDialog = ({
       </Dialog.Trigger>
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content
+            role="document"
+          >
             <Dialog.Header
               display="flex"
               justifyContent="space-between"
@@ -121,7 +124,7 @@ const DeleteConfirmationDialog = ({
                 onClick={onConfirm}
                 mr={3}
               >
-                <LuTrash2 />
+                <LuTrash2 aria-hidden="true" focusable="false" />
                 Delete
               </Button>
             </Dialog.Footer>

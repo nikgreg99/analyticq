@@ -61,7 +61,7 @@ export const NotFoundPage = () => {
           transition="all 0.2s"
           aria-label="Go to Home Page"
         >
-          <FaHome />
+          <FaHome aria-hidden="true" focusable="false"/>
           Return to Home
         </Button>
       </VStack>

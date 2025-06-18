@@ -129,14 +129,6 @@ export const ExclusionSummary = ({ excludedFiles, totalScanned, repoName }) => {
           </StatGroup>
         </SimpleGrid>
 
-        <Box
-          role="progressbar"
-          aria-valuenow={includedPercentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Included Percentage Progress Bar"
-        ></Box>
-
         <Text textAlign="center" fontSize="sm" fontWeight="bold" mb={4}>
           Total repository size: {formatBytes(totalAnalyzed)}
         </Text>

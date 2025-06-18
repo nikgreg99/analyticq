@@ -31,10 +31,28 @@ class CppCheckParser(AnalyticQResultParser):
         }
         super().__init__(tool_name="cppcheck", field_mapping=field_mapping)
 
-    def _map_confidence(self, confidence_level) -> AnalyticQConfidence:
+    def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps confidence levels from Cppcheck to AnalyticQ confidence levels.
+
+        Args:
+            confidence_level (str): The confidence level string from Cppcheck
+
+        Returns:
+            AnalyticQConfidence: The mapped AnalyticQ confidence level, currently always returns UNKNOWN
+        """
         return AnalyticQConfidence.UNKNOWN
 
-    def _map_severity(self, severity_level) -> AnalyticQSeverity:
+    def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
+        """
+        Maps the severity level from the cppcheck format to the AnalyticQ severity level.
+
+        Args:
+            severity_level (str): The severity level string from cppcheck output.
+
+        Returns:
+            AnalyticQSeverity: The corresponding AnalyticQ severity level. Returns UNKNOWN if mapping not found.
+        """
         return self.severity_map.get(severity_level.lower(), AnalyticQSeverity.UNKNOWN)
 
     def parse_locations(self, issue_data: Dict) -> List[Dict[str, Any]]:
@@ -82,7 +100,7 @@ class CppCheckParser(AnalyticQResultParser):
                 primary_loc = locations[0] if locations else {
                     "file": "",
                     "line": "0",
-                    "column:": "0",
+                    "column:": "0"
                 }
 
                 transformed_issue = {
@@ -113,6 +131,22 @@ class CppCheckParser(AnalyticQResultParser):
             ) from e
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+        """
+        Parse the scan results from CppCheck XML output into AnalyticQSASTScanResultModel.
+
+        This method transforms the raw XML results from CppCheck into a standardized
+        scan result model by first converting the XML to a dictionary and then
+        passing it to the parent class parser.
+
+        Args:
+            raw_result (Dict[str, Any]): Raw scan results from CppCheck in XML format
+
+        Returns:
+            AnalyticQSASTScanResultModel: Parsed and standardized scan results
+
+        Raises:
+            ScanParserException: If there is an error parsing the CppCheck results
+        """
         try:
             transformed_results = self.parse_xml_to_dict(raw_result)
             return super().parse_scan_result(transformed_results)

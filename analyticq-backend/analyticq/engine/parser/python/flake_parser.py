@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
@@ -27,11 +27,13 @@ class FlakeParser(AnalyticQResultParser):
         if not severity_level or not isinstance(severity_level, str):
             return AnalyticQSeverity.UNKNOWN
 
+        prefix = severity_level[0].upper()
+
         return {
             'E': AnalyticQSeverity.HIGH,      # Error
             'F': AnalyticQSeverity.CRITICAL,  # Fatal
             'W': AnalyticQSeverity.MEDIUM,    # Warning
-        }.get(severity_level[0], AnalyticQSeverity.LOW)  # Default for C, N, etc.
+        }.get(prefix, AnalyticQSeverity.LOW)  # Default for C, N, etc.
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         """
@@ -45,7 +47,7 @@ class FlakeParser(AnalyticQResultParser):
         """
         return AnalyticQConfidence.UNKNOWN
 
-    def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
+    def parse_scan_result(self, raw_result: Dict[str, List[Dict[str, Any]]]) -> AnalyticQSASTScanResultModel:
         """
         Parse raw Flake8 scan results into a standardized AnalyticQSASTScanResultModel.
 

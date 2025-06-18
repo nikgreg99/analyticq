@@ -36,7 +36,7 @@ class FlawFinderParser(AnalyticQResultParser):
         """FlawFinder doesn't provide confidence levels."""
         return AnalyticQConfidence.UNKNOWN
 
-    def _parse_csv_to_dict(self, raw_result) -> List[Dict[str, Any]]:
+    def _parse_csv_to_dict(self, raw_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
         if not raw_result:
             return []
@@ -57,7 +57,7 @@ class FlawFinderParser(AnalyticQResultParser):
                 "File": row.get('File'),
                 "Line": row.get('Line', '0'),
                 "Level": row.get('Level', '1'),
-                "Context": row.get('Context', '').strip(),
+                "Context": (row.get('Context') or '').strip(),
                 "Metadata": {
                     "category": row.get('Category'),
                     "cwes": cwes,
@@ -77,8 +77,13 @@ class FlawFinderParser(AnalyticQResultParser):
             transformed_results = self._parse_csv_to_dict(raw_result)
 
             # Use base class's parse_scan_result
-            return super().parse_scan_result(transformed_results)
+            scan_result = super().parse_scan_result(transformed_results)
+            scan_result.scan_metadata.update({
+                "total_issues": len(transformed_results),
+                "files_analyzed": len(set(issue["File"] for issue in transformed_results if "File" in issue))
+            })
 
+            return scan_result
         except Exception as e:
             raise ScanParserException(
                 f"Unexpected error parsing FlawFinder results: {str(e)}"

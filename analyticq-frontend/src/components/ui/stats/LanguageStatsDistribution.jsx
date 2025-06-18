@@ -101,7 +101,7 @@ export const LanguageStatsDistribution = ({
       </Card.Header>
       <Card.Body>
         <VisuallyHidden>
-          <Text>{accessibilityDescription}</Text>
+          {accessibilityDescription}
         </VisuallyHidden>
         <Box mb={6}>
           <Flex h="8px" borderRadius="full" overflow="hidden">

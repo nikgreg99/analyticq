@@ -103,11 +103,10 @@ export const FileSizeDistribution = ({ languageStats, colorMap }) => {
                 aria-labelledby={`lang-${language}`}
               >
                 <Flex justify="space-between" mb={1} align="center">
-                  <Tooltip label={`${stats.file_count} files`} placement="top">
+                  <Tooltip label={`${stats.file_count} files`} placement="top" tabIndex={0}>
                     <Text
                       id={`lang-${language}`}
                       fontWeight="medium"
-                      aria-label={`${language}: ${stats.file_count} files`}
                     >
                       {language}
                     </Text>

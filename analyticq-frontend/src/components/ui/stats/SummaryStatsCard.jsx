@@ -33,7 +33,7 @@ export const SummaryStatsCard = memo(
                 color="blackAlpha.800"
                 aria-hidden="true"
               />
-              <Box ml={2}>
+              <Box>
                 <Text
                   id={`${title}-label`}
                   fontSize={{ base: "sm", md: "md" }}
@@ -49,7 +49,7 @@ export const SummaryStatsCard = memo(
                     fontWeight="bold"
                     color="blackAlpha.800"
                   >
-                    {value}
+                    {value ?? "N/A"}
                   </Text>
                 </Tooltip>
               </Box>

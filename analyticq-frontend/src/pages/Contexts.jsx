@@ -40,6 +40,8 @@ export const ContextsPage = () => {
       <EmptyState
         title="Repository Contexts"
         message="There are currently no repository contexts in the system. Please add a repository to get started."
+        role="region"
+        aria-label="Emtpy repository context state"
       />
     );
   }
@@ -49,21 +51,23 @@ export const ContextsPage = () => {
       <ErrorDisplay
         title="Contexts"
         error={error}
+        role="region"
         backButton={
           <BackButton onClick={() => navigate("/")} label="Back to Home" />
         }
+        aria-live="assertive"
       />
     );
   }
 
   return (
-    <Box p={6}>
+    <Box as="main" p={6} aria-labelledby="contexts-page-handling">
       <Heading size="lg" mb={4} textAlign="center" color="blackAlpha.800">
         Codebase Analyzed
       </Heading>
 
       {loading ? (
-        <LoadingSpinner />
+        <LoadingSpinner aria-busy="true"  aria-label="Loading repository contexts"/>
       ) : (
         <ContextListSection
           filteredContexts={filteredContexts}

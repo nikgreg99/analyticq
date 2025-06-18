@@ -132,7 +132,7 @@ export const FileList = React.memo(
 
         <Box maxH="500px" overflowY="auto" borderRadius="md">
           {sortedFiles.map((file, index) => (
-            <Box key={`${file.name}-${file.size}-${index}`}>
+            <Box>
               <Flex
                 key={`${file.name}-${file.size}-${index}`}
                 color="gray.600"
@@ -161,7 +161,7 @@ export const FileList = React.memo(
                     color="blackAlpha.800"
                     fontSize={textSize}
                     fontWeight="medium"
-                    noOfLines
+                    noOfLines={1}
                     maxW={{ base: "100%", md: "60%" }}
                   >
                     {file.name}
@@ -188,6 +188,8 @@ export const FileList = React.memo(
                         <IconButton
                           bg="transparent"
                           aria-label={`Show file details for ${file.name}`}
+                          aria-expanded={expandedFileIndex === index}
+                          aria-controls={`file-preview-${index}`}
                           size={buttonSize}
                           onClick={() => toggleFilePreview(index)}
                           _hover={{ bg: "blue.100", color: "blue.700" }}
@@ -196,7 +198,7 @@ export const FileList = React.memo(
                           <MdInfo />
                         </IconButton>
                       </Collapsible.Trigger>
-                      <Collapsible.Content>
+                      <Collapsible.Content id={`file-preview-${index}`}>
                         <Box
                           p={3}
                           mb={2}
@@ -218,7 +220,6 @@ export const FileList = React.memo(
 
                   {onDeleteFile && (
                     <Tooltip
-                      aria-label={`Delete ${file.name}`}
                       content={`Delete ${file.name}`}
                       showArrow
                     >
@@ -238,11 +239,11 @@ export const FileList = React.memo(
                       </IconButton>
                     </Tooltip>
                   )}
-                  <Toaster />
                 </HStack>
               </Flex>
             </Box>
           ))}
+          <Toaster />
         </Box>
       </VStack >
     );

@@ -67,7 +67,13 @@ export const ContextDetailPage = ({ initialContextData = null }) => {
   }
 
   return (
-    <Box p={{ base: 4, md: 6 }} mx="auto" maxW="1200px">
+    <Box
+      as="main"
+      p={{ base: 4, md: 6 }}
+      mx="auto"
+      maxW="1200px"
+      aria-labelledby="context-detail-title"
+    >
       <ContextDetailHeader contextId={contextData?.id} />
       <ContextDetailContent
         contextData={contextData}

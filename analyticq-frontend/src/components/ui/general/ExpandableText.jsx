@@ -59,8 +59,13 @@ const ExpandableText = ({ text, maxChars = 200, expansableTextColor }) => {
           aria-expanded={expanded}
           aria-controls="expandable-text"
         >
-          <Icon as={expanded ? FaEyeSlash : FaEye} boxSize={4} />
-          <Text>{expanded ? "Hide" : "View more"}</Text>
+          <Icon
+            as={expanded ? FaEyeSlash : FaEye}
+            boxSize={4}
+            aria-hidden="true"
+            focusable="false"
+            />
+          <Text as="span">{expanded ? "Hide" : "View more"}</Text>
         </Button>
       )}
     </HStack>

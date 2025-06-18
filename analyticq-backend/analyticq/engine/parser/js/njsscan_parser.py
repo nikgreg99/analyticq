@@ -18,13 +18,22 @@ class NjsScanParser(AnalyticQResultParser):
             "end_line": "end_line",
             "column": "column",
             "code": "match_string",
-            "sevevrity": "severity",
+            "severity": "severity",
             "confidence": "confidence",
             "issue_metadata": "metadata"
         }
         super().__init__(tool_name="njsscan", field_mapping=field_mapping)
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps confidence level string to AnalyticQConfidence enum.
+
+        Args:
+            confidence_level (str): The confidence level string to map
+
+        Returns:
+            AnalyticQConfidence: The mapped confidence level enum value, currently always returns UNKNOWN
+        """
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:

@@ -28,10 +28,12 @@ const SearchInput = ({
   onSearch,
   onChange,
   onClear,
+  onFocus,
+  onBlur,
+  onKeyDown = null,
   showShortcutIndicator,
 }) => {
   const MIN_SEARCH_LENGTH = 3;
-  const [isFocused, setIsFocused] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // Only show validation messages when appropriate
@@ -39,13 +41,13 @@ const SearchInput = ({
     showValidationErrors &&
     searchQuery &&
     searchQuery.length < MIN_SEARCH_LENGTH &&
-    (attemptedSubmit || (!isFocused && searchQuery.length > 0));
+    (attemptedSubmit || searchQuery.length > 0);
 
   const shouldShowPatternError =
     showValidationErrors &&
     !isValid &&
     searchQuery &&
-    (attemptedSubmit || !isFocused);
+    (attemptedSubmit);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
@@ -107,8 +109,8 @@ const SearchInput = ({
             value={searchQuery}
             onChange={onChange}
             onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onFocus={onFocus}
+            onBlur={onBlur}
             border="1px"
             borderColor={shouldShowPatternError || shouldShowLengthError ? "red.400" : "gray.600"}
             borderRadius="md"
@@ -121,6 +123,8 @@ const SearchInput = ({
             aria-label="Search repository"
             transition="all 0.2s"
             height="40px"
+            autoComplete="off"
+            spellCheck={false}
           />
         </InputGroup>
 

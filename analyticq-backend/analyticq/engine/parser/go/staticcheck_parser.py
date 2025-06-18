@@ -24,6 +24,15 @@ class StaticCheckParser(AnalyticQResultParser):
         super().__init__(tool_name="Staticcheck", field_mapping=field_mapping)
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
+        """
+        Maps the confidence level from staticcheck to AnalyticQConfidence enum.
+
+        Args:
+            confidence_level (str): The confidence level string from staticcheck output.
+
+        Returns:
+            AnalyticQConfidence: The mapped confidence level. Currently returns UNKNOWN for all inputs.
+        """
         return AnalyticQConfidence.UNKNOWN
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:

@@ -50,7 +50,6 @@ class CheckStyleParser(AnalyticQResultParser):
         value = issue
         try:
             for key in mapped_field.split("."):
-                print(key)
                 # Handle array indexing (e.g., "locations.0.physicalLocation")
                 if key.isdigit():
                     key = int(key)
@@ -273,8 +272,6 @@ class CheckStyleParser(AnalyticQResultParser):
         """
         try:
             transformed_results = self.transform_sarif_to_issues(raw_result)
-            print("Issues")
-            print(transformed_results)
             return super().parse_scan_result(transformed_results)
         except Exception as e:
             raise ScanParserException(

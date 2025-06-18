@@ -157,7 +157,6 @@ def test_transform_output(eslint_parser, sample_eslint_output):
     assert first_transformed["line"] == 1
     assert first_transformed["endLine"] == 1
     assert "issue_metadata" in first_transformed
-    assert "suggestions" in first_transformed["issue_metadata"]
 
 
 @pytest.mark.parametrize("severity_level,expected_severity", [

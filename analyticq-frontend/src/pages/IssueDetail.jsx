@@ -31,6 +31,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const { issueId } = useParams();
   const navigate = useNavigate();
+  const headingRef = useRef(null);
   const cancelRef = useRef();
 
   const { issueData, loading, error, deleting, handleDelete } = useIssueDetails(
@@ -48,6 +49,12 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
       `/issues/${issueId}`,
     );
   }, [issueData, issueId]);
+
+  useEffect(() => {
+    if(issueData && headingRef.current){
+      headingRef.current.focus();
+    }
+  }, [issueData]);
 
   const handleBackClick = useCallback(() => navigate(-1), [navigate]);
 
@@ -70,8 +77,17 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
 
   return (
     <Box as="main" maxW="full" mx="auto" px={{ base: 4, md: 8 }} py={6}>
-      <Flex mb={6} align="center" justify="space-between" wrap="wrap" gap={4}>
+      <Flex
+        mb={6}
+        align="center"
+        justify="space-between"
+        wrap="wrap"
+        gap={4}
+        aria-labelledby="issue-detail-heading"
+        >
         <Heading
+          ref={headingRef}
+          tabIndex={-1}
           id="issue-detail-heading"
           size="lg"
           fontWeight="semibold"
@@ -120,6 +136,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                     fontSize="sm"
                     borderRadius="full"
                     textTransform="capitalize"
+                    aria-label={`Severity: ${issueData.severity}`}
                     cursor="help"
                   >
                     {issueData.severity}
@@ -136,6 +153,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                     borderRadius="full"
                     textTransform="capitalize"
                     cursor="help"
+                    aria-label={`Confidence: ${issueData.confidence}`}
                   >
                     {issueData.confidence}
                   </Badge>
@@ -158,7 +176,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   <Code fontSize="sm" fontFamily="mono" isTruncated>
                     {issueData.rule_id}
                   </Code>
-                  <CopyButton value={issueData.rule_id} />
+                  <CopyButton value={issueData.rule_id} aria-label="Copy Rule ID to clipboard" />
                 </Flex>
               </Box>
               <Box gridColumn={{ lg: "span 2" }}>
@@ -232,6 +250,8 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 p={4}
                 border="1px solid"
                 borderColor="gray.200"
+                role="region"
+                aria-labelledby="additional-context-heading"
               >
                 <IssueMetadataDisplay metadata={issueData.issue_metadata} />
               </Box>

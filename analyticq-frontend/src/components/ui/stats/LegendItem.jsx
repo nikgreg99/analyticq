@@ -14,7 +14,11 @@ import { Box, HStack, WrapItem, Text } from "@chakra-ui/react";
  */
 const LegendItem = ({ language, fileCount, percentage, color }) => (
   <WrapItem>
-    <HStack spacing={2} align="center">
+    <HStack
+      spacing={2}
+      align="center"
+      aria-label={`${language}: ${fileCount} files, ${percentage}%`}
+    >
       <Box
         w="12px"
         h="12px"

@@ -49,6 +49,7 @@ export const StatsDashboard = ({ initStatsData = null }) => {
     contextId,
     initStatsData,
   });
+
   const colorMap = useLanguageColorMap(statsData?.language_statistics);
   const sortedLanguages = useSortedLanguages(statsData?.language_statistics);
 
