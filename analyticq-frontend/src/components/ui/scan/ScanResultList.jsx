@@ -169,6 +169,10 @@ export const ScanResultList = ({ repoName }) => {
     parseInt(pageSize[0]),
   );
 
+  // Calculate the range of items being displayed
+  const startIndex = (currentPage - 1) * parseInt(pageSize[0]) + 1;
+  const endIndex = Math.min(currentPage * parseInt(pageSize[0]), filteredData.length);
+
   const createToolNameCollection = (data) => {
     const unique = [...new Set(data.map((scan) => scan.tool_name))];
     return createListCollection({
@@ -202,10 +206,9 @@ export const ScanResultList = ({ repoName }) => {
       shadow="lg"
       borderRadius="xl"
       variant="elevated"
-      bg="white"
-      _dark={{ bg: "gray.800" }}
+      bg="gray.600"
     >
-      <Card.Header borderBottomWidth="1px" pb={4}  _dark={{ bg: "gray.700" }}>
+      <Card.Header borderBottomWidth="1px" pb={4}  _dark={{ bg: "gray.500" }}>
         <VStack spacing={4} align="stretch">
           <Flex
             justify="space-between"
@@ -232,7 +235,18 @@ export const ScanResultList = ({ repoName }) => {
 
             <HStack spacing={2}>
               <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.300" }}>
-                {filteredData.length} of {scansData.length} scans
+                {filteredData.length > 0 ? (
+                  <>
+                    Showing {startIndex}-{endIndex} of {filteredData.length} scans
+                    {scansData.length !== filteredData.length && (
+                      <Text as="span" color="gray.500" _dark={{ color: "gray.400" }}>
+                        {" "}(filtered from {scansData.length} total)
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  `0 of ${scansData.length} scans`
+                )}
               </Text>
               <Button
                 size="sm"
@@ -259,8 +273,7 @@ export const ScanResultList = ({ repoName }) => {
                   placeholder="Search scans by ID or tool name..."
                   value={filters.searchQuery}
                   onChange={handleSearchChange}
-                  bg="white"
-                  _dark={{ bg: "gray.600" }}
+                  bg="gray.600"
                   borderRadius="md"
                 />
               </InputGroup>
@@ -438,8 +451,7 @@ export const ScanResultList = ({ repoName }) => {
           borderTopWidth="1px"
           pt={4}
           pb={4}
-          bg="gray.50"
-          _dark={{ bg: "gray.700" }}
+          bg="gray.500"
         >
           <PaginationFooter
             totalItems={filteredData.length}

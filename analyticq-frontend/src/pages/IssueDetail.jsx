@@ -176,7 +176,11 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   <Code fontSize="sm" fontFamily="mono" isTruncated>
                     {issueData.rule_id}
                   </Code>
-                  <CopyButton value={issueData.rule_id} aria-label="Copy Rule ID to clipboard" />
+                  <CopyButton
+                    value={issueData.rule_id}
+                    size="sm"
+                    aria-label="Copy Rule ID to clipboard"
+                  />
                 </Flex>
               </Box>
               <Box gridColumn={{ lg: "span 2" }}>

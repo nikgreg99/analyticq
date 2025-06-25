@@ -67,7 +67,7 @@ export const LanguageStatsDistribution = ({
     return { sortedLanguages: sorted };
   }, [languageStats, colorMap]);
 
-  // Create accessibility description
+
   const accessibilityDescription = useMemo(() => {
     return `This chart shows the distribution of programming languages in files: ${sortedLanguages
       .map(

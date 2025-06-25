@@ -15,7 +15,7 @@ class CheckStyleParser(AnalyticQResultParser):
             "message": "message.text",
             "path": "locations.0.physicalLocation.artifactLocation.uri",
             "start_line": "locations.0.physicalLocation.region.startLine",
-            "end_line": "locations.0.pyshicalLocation.region.endLine",
+            "end_line": "locations.0.physhicalLocation.region.endLine",
             "column": "locations.0.physicalLocation.region.startColumn",
             "severity": "level",
             "code": "snippet",
@@ -61,9 +61,11 @@ class CheckStyleParser(AnalyticQResultParser):
 
     def _map_severity(self, severity_level: str) -> AnalyticQSeverity:
         """Map SARIF severity levels to AnalyticQ severity."""
+        if not severity_level:
+            return AnalyticQSeverity.UNKNOWN
         return self.severity_map.get(severity_level.lower(), AnalyticQSeverity.UNKNOWN)
 
-    def _map_confidence(sef, confidence_level: str) -> AnalyticQConfidence:
+    def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         """
         Map confidence levels to AnalyticQ confidence.
         Checkstyle typically doesn't include confidence, so we'll use HIGH for all.

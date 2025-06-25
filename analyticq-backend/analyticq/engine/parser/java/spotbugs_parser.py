@@ -62,7 +62,6 @@ class SpotBugsParser(AnalyticQResultParser):
         try:
             for key in mapped_field.split("."):
                 # Handle array indexing (e.g., "locations.0.physicalLocation")
-                print(key)
                 if key.isdigit():
                     key = int(key)
                 value = value[key]

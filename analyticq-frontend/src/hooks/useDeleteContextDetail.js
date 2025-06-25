@@ -19,7 +19,7 @@ export const useDeleteContext = (contextId, contextData) => {
   const handleDeleteConfirm = async () => {
     try {
       setDeleteLoading(true);
-      await deleteContextByRepoName(contextId);
+      await deleteContextByRepoName(contextData?.repo_name);
 
       toaster.success({
         title: "Deletion successful",

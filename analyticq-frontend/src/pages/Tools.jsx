@@ -126,8 +126,17 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
     [selectedLanguagesMap]
   );
 
-  // Memoized comparison data
-  const toolComparisonData =  useToolComparisonData(selectedLanguages);
+  // Memoized comparison data - handle different data formats
+  const languagesForComparison = useMemo(() => {
+    if (selectedLanguages.length > 0) {
+      return selectedLanguages;
+    }
+    // If no languages selected, use all languages
+    // Make sure they have the same format as selectedLanguages
+    return languages || [];
+  }, [selectedLanguages, languages]);
+
+  const toolComparisonData = useToolComparisonData(languagesForComparison);
 
   if (loading) return <LoadingSpinner />;
   if (error)
@@ -216,17 +225,18 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
         <Text color="blackAlpha.800" fontWeight="medium">
           {selectedLanguages.length > 0
             ? `${selectedLanguages.length} language${selectedLanguages.length !== 1 ? "s" : ""} selected`
-            : "Select languages to compare tools"}
+            : "Select languages to compare tools or compare all"}
         </Text>
         <Button
-          disabled={selectedLanguages.length < 2}
           colorPalette="blue"
           onClick={() => setComparisonDialogOpened(true)}
           size="md"
         >
           <MdCompareArrows />
-          Compare{" "}
-          {selectedLanguages.length > 0 ? `(${selectedLanguages.length})` : ""}
+          {selectedLanguages.length === 0
+            ? "Compare All"
+            : `Compare (${selectedLanguages.length})`
+          }
         </Button>
       </Flex>
 
@@ -356,7 +366,7 @@ export const ToolsPage = ({ initialLanguagesData = null }) => {
         isOpen={comparisonDialogOpened}
         setIsOpenModal={setComparisonDialogOpened}
         ref={cancelRef}
-        selectedLanguages={selectedLanguages}
+        selectedLanguages={languagesForComparison}
         comparisonData={toolComparisonData}
       />
       <Toaster />

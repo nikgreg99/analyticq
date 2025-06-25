@@ -130,11 +130,11 @@ class AnalyticQContainerRunner(ABC):
                 if local_path.exists():
                     if local_path.is_dir():
                         file_count = len(list(local_path.rglob("*")))
-                        logger.info(f"    Directory contains {file_count} items")
+                        logger.info(f" Directory contains {file_count} items")
                     else:
-                        logger.info(f"    File size: {local_path.stat().st_size} bytes")
+                        logger.info(f"File size: {local_path.stat().st_size} bytes")
                 else:
-                    logger.error(f"    Path does not exist: {local_path}")
+                    logger.error(f"Path does not exist: {local_path}")
 
             return await self.container_manager.run_container_command(
                 image_name=self.image_name,

@@ -100,7 +100,7 @@ export const LanguageToolTile = ({ language, colorScheme = "red" }) => {
         </Flex>
       ) : (
         <Text color="gray.500" fontSize="sm" aria-label="No tools available">
-          No tools configured
+          No tools available for this language
         </Text>
       )}
     </Box>

@@ -76,7 +76,7 @@ export const FileList = React.memo(
 
     if (!files || files.length === 0) {
       return (
-        <Text color="blackAlpha.500" mt={4} textAlign="center">
+        <Text color="blackAlpha.800" mt={4} textAlign="center">
           No files selected.
         </Text>
       );

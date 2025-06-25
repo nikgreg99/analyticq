@@ -34,7 +34,6 @@ services:
       dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375
 
   postgres:
-
     image: postgres:${POSTGRES_VERSION}
     container_name: analyticq-db-postgres
     restart: always
@@ -103,6 +102,7 @@ services:
       condition: service_started
     volumes:
       - analyticq-data:/analyticq-data
+      - ./analyticq-backend:/analyticq-data/code
     networks:
       - analyticq-network
 
