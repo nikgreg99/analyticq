@@ -29,6 +29,8 @@ export const IssueListTab = ({
   setPageSize,
   currentPage,
   setCurrentPage,
+  tool = null, // Optional tool prop for future use
+  repoName = null, // Optional repoName prop for future use
 }) => {
   if (!issues || issues.length === 0) {
     return (
@@ -51,6 +53,7 @@ export const IssueListTab = ({
 
   return (
     <>
+      <Text>{repoName}</Text>
       {showDateInfo && (
         <Box mb={4} p={2}>
           <Flex align="center">
@@ -64,7 +67,7 @@ export const IssueListTab = ({
       )}
       <VStack spacing={4} align="stretch" mt={4}>
         {currentPageData.map((issue) => (
-          <IssueCard key={issue.id} issue={issue} />
+          <IssueCard key={issue.id} issue={issue} tool={tool} repoName={repoName} />
         ))}
       </VStack>
       {shouldShowPagination && (

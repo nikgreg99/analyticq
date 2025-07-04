@@ -50,7 +50,7 @@ const MAX_SCORE_IMPACT = 100; // Maximum score impact from issues
  * @param {Object} props.scanData.issues - Array or collection of issues found in scan
  * @returns {JSX.Element} An accessible Box component containing scan summary information
  */
-export const ScanSummary = ({ scanData }) => {
+export const ScanSummary = ({ scanData}) => {
   const issueCounts = getIssueCounts(scanData);
   const totalIssues = Object.values(issueCounts).reduce(
     (sum, count) => sum + count,

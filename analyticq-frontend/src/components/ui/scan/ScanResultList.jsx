@@ -382,7 +382,7 @@ export const ScanResultList = ({ repoName }) => {
               data={currentPageData}
               rowKey={(row) => row.id}
               onRowClick={(row) =>
-                navigate(`/contexts/${row.context_id}/scans/${row.id}`)
+                navigate(`/contexts/${row.context_id}/scans/${row.id}/?reponame=${repoName}`)
               }
               emptyText="No scan results available for this context."
               columns={[

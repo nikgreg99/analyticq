@@ -32,12 +32,12 @@ import { capitalizeFirstLetter } from "components/utils/strings";
  *
  * @returns {JSX.Element} A card component displaying the issue information
  */
-export const IssueCard = ({ issue, showCreationDate = true }) => {
+export const IssueCard = ({ issue, showCreationDate = true, tool, repoName }) => {
   const navigate = useNavigate();
 
   const handleNavigate = useCallback(() => {
-    navigate(`/issues/${issue.id}`);
-  }, [navigate, issue.id]);
+    navigate(`/issues/${issue.id}/?tool=${tool}&reponame=${repoName}`);
+  }, [navigate, issue.id, repoName, tool]);
 
   const handleKeyDown = useCallback((event) => {
     if (event.key === 'Enter' || event.key === ' ') {

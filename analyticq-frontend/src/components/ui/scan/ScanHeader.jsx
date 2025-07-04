@@ -28,7 +28,7 @@ import DeleteConfirmationDialog from "../general/DeleteConfirmationDialog";
  * @param {Object} props.scanData - The scan data to display in the header
  * @returns {JSX.Element} A header section with scan information
  */
-export const ScanHeader = ({ scanData }) => {
+export const ScanHeader = ({ scanData, repoName }) => {
   const cancelRef = useRef();
   const {
     isDeleting,
@@ -70,7 +70,7 @@ export const ScanHeader = ({ scanData }) => {
                 wordBreak="break-word"
                 fontWeight="600"
               >
-                SAST Scan Results #{scanData.id}
+                SAST Scan Results #{repoName ? `f${repoName}` : ""}
               </Heading>
               <Badge
                 colorScheme="blue"

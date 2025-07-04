@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import LoadingSpinner from "components/ui/general/LoadingSpinner";
 import ErrorDisplay from "components/layout/ErrorDisplay";
 import DeleteConfirmationDialog from "components/ui/general/DeleteConfirmationDialog";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import BackButton from "components/ui/general/BackButton";
 import { Toaster } from "components/ui/general/Toaster";
 import {
@@ -30,9 +30,12 @@ import { useIssueDetails } from "hooks/useIssueDetails";
 export const IssueDetailPage = ({ initialIssueData = null }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const { issueId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const headingRef = useRef(null);
   const cancelRef = useRef();
+  const tool = searchParams.get("tool") || null;
+  const repoName = searchParams.get("reponame") || null;
 
   const { issueData, loading, error, deleting, handleDelete } = useIssueDetails(
     issueId,
@@ -51,7 +54,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
   }, [issueData, issueId]);
 
   useEffect(() => {
-    if(issueData && headingRef.current){
+    if (issueData && headingRef.current) {
       headingRef.current.focus();
     }
   }, [issueData]);
@@ -84,7 +87,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
         wrap="wrap"
         gap={4}
         aria-labelledby="issue-detail-heading"
-        >
+      >
         <Heading
           ref={headingRef}
           tabIndex={-1}
@@ -183,7 +186,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   />
                 </Flex>
               </Box>
-              <Box gridColumn={{ lg: "span 2" }}>
+              <Box gridColumn={{ lg: "span 1" }}>
                 <Text fontWeight="medium" fontSize="md" mb={1}>
                   File Path
                 </Text>
@@ -202,9 +205,9 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 <Code fontSize="sm" fontFamily="mono">
                   Line {issueData.start_line}
                   {issueData.end_line !== issueData.start_line &&
-                    issueData.end_line !== 0 &&
-                    `-${issueData.end_line}`}
-                  {issueData.column && `, Column ${issueData.column}`}
+                    issueData.end_line !== 0 ?
+                    `-${issueData.end_line}` : ''}
+                  {issueData.column != 0 && `, Column ${issueData.column}`}
                 </Code>
               </Box>
               <Box>
@@ -213,6 +216,22 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 </Text>
                 <Code fontSize="sm" fontFamily="mono">
                   {new Date(issueData.created_at).toLocaleDateString()}
+                </Code>
+              </Box>
+              <Box>
+                <Text fontWeight="medium" mb={1}>
+                  Codebase
+                </Text>
+                <Code fontSize={"sm"} fontFamily="mono">
+                  {repoName ? repoName: "Unknown"}
+                </Code>
+              </Box>
+              <Box>
+                <Text fontWeight="medium" mb={1}>
+                  Tool
+                </Text>
+                <Code fontSize="sm" fontFamily="mono">
+                  {tool ? tool : "Unknown"}
                 </Code>
               </Box>
             </SimpleGrid>

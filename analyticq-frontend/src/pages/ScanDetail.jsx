@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Box } from "@chakra-ui/react";
 import LoadingSpinner from "components/ui/general/LoadingSpinner";
 import ErrorDisplay from "components/layout/ErrorDisplay";
@@ -27,6 +27,8 @@ import { useScanDetails } from "hooks/useScanDetails";
  */
 export const ScanDetailsPage = ({ initialScanData = null }) => {
   const { contextId, scanId } = useParams();
+  const [searchParams] = useSearchParams();
+  const repoName = searchParams.get("reponame") || null;
   const navigate = useNavigate();
   const { scanData, status } = useScanDetails(scanId, initialScanData);
 
@@ -80,9 +82,10 @@ export const ScanDetailsPage = ({ initialScanData = null }) => {
   // Render main content
   return (
     <Box p={6} mx="auto" maxWidth="1200px">
-      <ScanHeader scanData={scanData} />
+      {scanData.context_id.repo_name}
+      <ScanHeader scanData={scanData}  repoName={repoName}/>
       <ScanSummary scanData={scanData} />
-      {hasIssues && <IssueTabs scanData={scanData} />}
+      {hasIssues && <IssueTabs scanData={scanData} tool={scanData.tool_name} repoName={repoName} />}
     </Box>
   );
 };

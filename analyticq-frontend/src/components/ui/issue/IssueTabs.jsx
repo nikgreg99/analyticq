@@ -47,7 +47,7 @@ import { useDebounce } from "use-debounce";
  * <IssueTabs scanData={scanData} />
  * ```
  */
-export const IssueTabs = ({ scanData = { issues: [] } }) => {
+export const IssueTabs = ({ scanData = { issues: [] } , tool = null, repoName = null}) => {
   // Memoize static collections to prevent recreating on every render
   const orderingOptions = useMemo(() => createListCollection({
     items: [
@@ -287,6 +287,8 @@ export const IssueTabs = ({ scanData = { issues: [] } }) => {
                   _closed={tabContentClosedStyles}
                 >
                   <IssueListTab
+                    tool={tool}
+                    repoName={repoName}
                     issues={filteredSortedTabIssues[tab.id]}
                     sortOrder={sortOrder}
                     pageSizeOptions={pageSizeOptions}
