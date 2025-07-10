@@ -8,6 +8,7 @@ import {
   Grid,
   Stat,
   VisuallyHidden,
+  HStack,
 } from "@chakra-ui/react";
 import { IssueSeverityCounter } from "../issue/IssueSeverityCounter";
 import { getIssueCounts } from "components/utils/issues";
@@ -50,7 +51,7 @@ const MAX_SCORE_IMPACT = 100; // Maximum score impact from issues
  * @param {Object} props.scanData.issues - Array or collection of issues found in scan
  * @returns {JSX.Element} An accessible Box component containing scan summary information
  */
-export const ScanSummary = ({ scanData}) => {
+export const ScanSummary = ({ scanData }) => {
   const issueCounts = getIssueCounts(scanData);
   const totalIssues = Object.values(issueCounts).reduce(
     (sum, count) => sum + count,
@@ -154,7 +155,7 @@ export const ScanSummary = ({ scanData}) => {
               showArrow
               aria-describedby="health-score-label"
             >
-              <Box
+              <HStack
                 as="span"
                 tabIndex={0}
                 aria-label="Health score information"
@@ -165,7 +166,17 @@ export const ScanSummary = ({ scanData}) => {
                   focusable="false"
                   aria-hidden="true"
                 />
-              </Box>
+                <Badge
+                  colorPalette={healthScoreInfo.color}
+                  fontSize="sm"
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                  aria-live="polite"
+                >
+                  {healthScoreInfo.label}
+                </Badge>
+              </HStack>
             </Tooltip>
           </Flex>
           <Stat.ValueText
@@ -191,7 +202,6 @@ export const ScanSummary = ({ scanData}) => {
               : "Based on issue severity distribution"}
           </Stat.HelpText>
         </Stat.Root>
-
         <Box role="region" aria-label="Issues by Severity">
           <Text
             fontSize="sm"

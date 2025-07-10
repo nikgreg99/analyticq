@@ -45,6 +45,11 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const optimalChars = useOptimalCharEstimate();
 
+  const filterCodePath = (path) => {
+    if (!path) return path;
+    return path.startsWith('/code') ? path.substring(5) : path;
+  };
+
   useEffect(() => {
     updatePageMetadata(
       issueData ? `Issue ${issueId}` : "Issue loading...",
@@ -125,7 +130,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                     <ExpandableText
                       text={issueData.message}
                       expansableTextColorr="blackAlpha.800"
-                      texmaxChars={optimalChars}
+                      maxChars={optimalChars}
                     />
                   </Flex>
                 </Box>
@@ -192,9 +197,10 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 </Text>
                 <Code>
                   <ExpandableText
-                    text={issueData.path}
+                    text={filterCodePath(issueData.path)}
                     expansableTextcolor="whiteAlpha.800"
                     maxChars={optimalChars}
+
                   />
                 </Code>
               </Box>

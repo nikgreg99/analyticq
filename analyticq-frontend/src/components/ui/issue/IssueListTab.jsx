@@ -53,7 +53,7 @@ export const IssueListTab = ({
 
   return (
     <>
-      <Text>{repoName}</Text>
+
       {showDateInfo && (
         <Box mb={4} p={2}>
           <Flex align="center">

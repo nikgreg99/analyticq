@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from analyticq.engine.core import AnalyticQResultParser
 from analyticq.engine.core.models import (AnalyticQConfidence,
@@ -19,9 +19,7 @@ class PylintParser(AnalyticQResultParser):
             "path": "path",
             "end_line": "endLine",
             "severity": "type",
-            "confidence": None,
             "column": "column",
-            "issue_metadata": None
         }
 
         self.severity_mapping = {
@@ -35,21 +33,6 @@ class PylintParser(AnalyticQResultParser):
         }
 
         super().__init__(tool_name="Pylint", field_mapping=field_mapping)
-
-    def _preprocess_raw_result(self, raw_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Preprocesses the raw result from pylint analysis.
-        Args:
-            raw_result (Dict[str, Any]): Dictionary containing the raw pylint analysis results.
-        Returns:
-            Dict[str, Any]: A processed copy of the input dictionary with standardized format.
-        """
-        if isinstance(raw_result, dict):
-            for result in raw_result:
-                if result.get("message-id") is None:
-                    result["message-id"] = "unknown"
-
-        return raw_result
 
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         """
@@ -87,9 +70,7 @@ class PylintParser(AnalyticQResultParser):
         if not raw_result:
             raise ScanParserException("Empty raw result provided")
 
-        processed_result = self._preprocess_raw_result(raw_result)
-
         try:
-            return super().parse_scan_result(processed_result)
+            return super().parse_scan_result(raw_result)
         except Exception as e:
             raise ScanParserException(f"Unexpected error parsing Pylint results: {str(e)}") from e

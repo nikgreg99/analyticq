@@ -16,7 +16,7 @@ class GoSecParser(AnalyticQResultParser):
             "confidence": "confidence",
             "path": "file",
             "message": "details",
-            "start_line": "line_number",
+            "start_line": "line",
             "column": "column",
             "code": "code",
             "issue_metadata": "cwe"
@@ -68,7 +68,7 @@ class GoSecParser(AnalyticQResultParser):
         try:
             gosec_issues = raw_result["Issues"]
             if not isinstance(gosec_issues, list):
-                raise ScanParserException("Invalid Gosec scan format: 'Issues' should be a list.")
+                raise ScanParserException("Invalid Gosec scan format: 'Issues  should be a list.")
             scan = super().parse_scan_result(gosec_issues)
             scan.scan_metadata["GosecVersion"] = raw_result["GosecVersion"]
             scan.scan_metadata["metrics"] = raw_result["Stats"]

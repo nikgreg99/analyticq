@@ -52,8 +52,6 @@ def test_init_pylint_parser(pylint_parser):
         "end_line": "endLine",
         "severity": "type",
         'column': 'column',
-        'confidence': None,
-        'issue_metadata': None
     }
 
 

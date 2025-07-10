@@ -70,7 +70,7 @@ export const ScanHeader = ({ scanData, repoName }) => {
                 wordBreak="break-word"
                 fontWeight="600"
               >
-                SAST Scan Results #{repoName ? `f${repoName}` : ""}
+                SAST Scan Results {repoName ? `${repoName}` : ""}
               </Heading>
               <Badge
                 colorScheme="blue"
@@ -94,9 +94,6 @@ export const ScanHeader = ({ scanData, repoName }) => {
             </Text>
           </HStack>
 
-          <Text fontSize="sm" color="gray.600" mt={1}>
-            {scanData.description || "No description provided for this scan."}
-          </Text>
         </VStack>
 
         {/* Right Section - Scan Info Card */}

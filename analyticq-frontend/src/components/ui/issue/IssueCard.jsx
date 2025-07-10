@@ -96,7 +96,7 @@ export const IssueCard = ({ issue, showCreationDate = true, tool, repoName }) =>
 
           <Text fontSize="xs" color="gray.700" isTruncated>
             {getFileNameFromPath(issue?.path) ?? "Unknown"}:
-            {issue?.start_line ?? "?"}
+            {issue?.start_line ?? "0"}
           </Text>
         </Flex>
 
