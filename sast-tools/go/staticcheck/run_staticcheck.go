@@ -36,39 +36,11 @@ func main() {
 		log.Fatal("Directory /code is empty")
 	}
 
-	// Find all Go files
-	var filesToScan []string
-	err = filepath.Walk(codePath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && strings.HasSuffix(path, ".go") {
-			// Convert absolute path to relative path for better staticcheck output
-			relPath, err := filepath.Rel(codePath, path)
-			if err == nil {
-				filesToScan = append(filesToScan, relPath)
-			} else {
-				filesToScan = append(filesToScan, path)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("Error walking directory: %v", err)
-	}
-
-	if len(filesToScan) == 0 {
-		log.Fatal("No valid Go files found in the directory")
-	}
-
-	log.Printf("Found %d Go files to scan", len(filesToScan))
-
-	// Check if it's a Go module
+	// Check if it's a Go module first
 	goModPath := filepath.Join(codePath, "go.mod")
 	_, err = os.Stat(goModPath)
 	isModule := !os.IsNotExist(err)
 
-	// Prepare command
 	var args []string
 	if isModule {
 		log.Println("go.mod file found, scanning as Go module")
@@ -76,8 +48,19 @@ func main() {
 		// Explicitly set GO111MODULE for consistent behavior
 		os.Setenv("GO111MODULE", "on")
 	} else {
-		log.Println("No go.mod file found, scanning individual files")
-		args = append([]string{"-f", "json"}, filesToScan...)
+		log.Println("No go.mod file found, scanning by packages")
+		// Find all unique packages instead of individual files
+		packages, err := findGoPackages(codePath)
+		if err != nil {
+			log.Fatalf("Error finding Go packages: %v", err)
+		}
+
+		if len(packages) == 0 {
+			log.Fatal("No valid Go packages found in the directory")
+		}
+
+		log.Printf("Found %d Go packages to scan: %v", len(packages), packages)
+		args = append([]string{"-f", "json"}, packages...)
 	}
 
 	// Run staticcheck
@@ -94,6 +77,7 @@ func main() {
 	if err != nil {
 		log.Printf("Staticcheck command error: %v", err)
 		log.Printf("Stderr: %s", stderr.String())
+		// Don't exit here - staticcheck returns non-zero when issues are found
 	}
 
 	// Ensure output directory exists
@@ -138,6 +122,9 @@ func main() {
 			// Skip to next line to try to recover
 			buffer := make([]byte, 1024)
 			_, err = decoder.Buffered().Read(buffer)
+			if err != nil {
+				break
+			}
 			decoder = json.NewDecoder(strings.NewReader(stdoutStr[decoder.InputOffset():]))
 			continue
 		}
@@ -176,4 +163,59 @@ func main() {
 
 	// Always exit with 0 regardless of staticcheck findings
 	os.Exit(0)
+}
+
+// findGoPackages discovers all Go packages in the directory tree
+func findGoPackages(rootPath string) ([]string, error) {
+	packageMap := make(map[string]bool)
+
+	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip hidden directories and common non-Go directories
+		if info.IsDir() {
+			name := info.Name()
+			if strings.HasPrefix(name, ".") || name == "vendor" || name == "node_modules" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Only process .go files
+		if !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+
+		// Get the directory containing this .go file
+		dir := filepath.Dir(path)
+
+		// Convert to relative path from root
+		relDir, err := filepath.Rel(rootPath, dir)
+		if err != nil {
+			return err
+		}
+
+		// Use "." for root directory, otherwise use the relative path
+		if relDir == "." {
+			packageMap["."] = true
+		} else {
+			packageMap["./"+relDir] = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert map to slice
+	packages := make([]string, 0, len(packageMap))
+	for pkg := range packageMap {
+		packages = append(packages, pkg)
+	}
+
+	return packages, nil
 }

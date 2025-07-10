@@ -110,13 +110,13 @@ const StringsWithLinks = ({ value }) => {
           return (
             <Link
               key={index}
-              href={part}
+              href={part.slice(0, -1)} // Remove trailing quote
               color="blue.500"
               external
               _hover={{ textDecoration: "underline" }}
               aria-label={`Visit link: ${part}`}
             >
-              {part}
+             {part}
               <Icon
                 as={FaExternalLinkAlt}
                 boxSize={2}
@@ -129,7 +129,7 @@ const StringsWithLinks = ({ value }) => {
         }
         // Regular text
         return part;
-      })}
+      }) }
       "
     </Text>
   );
@@ -200,7 +200,7 @@ const JsonNode = ({ nodeKey, value, indentLevel, isLastItem }) => {
       if (keys.length === 0)
         return (
           <Text as="span" color="blackAlpha.800">
-            {"{}"}
+            {"{  }"}
           </Text>
         );
 
