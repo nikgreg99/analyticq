@@ -110,7 +110,7 @@ const StringsWithLinks = ({ value }) => {
           return (
             <Link
               key={index}
-              href={part.slice(0, -1)} // Remove trailing quote
+              href={part}
               color="blue.500"
               external
               _hover={{ textDecoration: "underline" }}

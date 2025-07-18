@@ -30,6 +30,7 @@ class StaticcheckTool(AnalyticQSASTTool):
         )
         image_name = "staticcheck"
         image_tag = "latest"
+        container_manager.runtime_config.network.mode = "host"
         analyzer = StaticCheckAnalyzer(container_manager, image_name, image_tag)
         parser = StaticCheckParser()
         super().__init__(analyzer, parser, container_manager, image_name, image_tag)

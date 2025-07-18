@@ -42,13 +42,19 @@ class PyrightParser(AnalyticQResultParser):
 
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
+            if not isinstance(raw_result, dict):
+                raise ScanParserException("Invalid Pyright result format: expected dictionary")
             # Normalize the raw_result into a list of issues
             pyright_issues = raw_result["generalDiagnostics"]
+            if not isinstance(pyright_issues, list):
+                raise ScanParserException("Invalid Pyright result format: generalDiagnostics must be a list")
 
             # Use the parent class to parse normalized issues
             scan = super().parse_scan_result(pyright_issues)
 
-            raw_summary = raw_result["summary"]
+            raw_summary = raw_result.get("summary", {})
+            if not isinstance(raw_summary, dict):
+                raw_summary = {}
 
             scan.scan_metadata.update({
                 "version": raw_result["version"],

@@ -28,6 +28,7 @@ import {
 } from "components/utils/pagination";
 import { DataTable } from "../general/DataTable";
 import { IoIosRefresh, IoIosStats, IoIosSearch } from "react-icons/io";
+import { capitalizeFirstLetter } from "components/utils/strings";
 
 export const ScanResultList = ({ repoName }) => {
   const [scansData, setScanData] = useState([]);
@@ -76,6 +77,7 @@ export const ScanResultList = ({ repoName }) => {
       { label: "High", color: "orange", level: "HIGH" },
       { label: "Medium", color: "yellow", level: "MEDIUM" },
       { label: "Low", color: "green", level: "LOW" },
+      { label: "Warning", color: "teal", level: "WARNING" },
       { label: "Info", color: "blue", level: "INFO" },
       { label: "Unknown", color: "blue", level: "UNKNOWN" },
     ];
@@ -423,7 +425,7 @@ export const ScanResultList = ({ repoName }) => {
                       fontWeight="semibold"
                       boxShadow="sm"
                     >
-                      {row.tool_name}
+                      {capitalizeFirstLetter(row.tool_name)}
                     </Badge>
                   )
                 },

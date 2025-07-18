@@ -13,6 +13,7 @@ import {
   FaInfoCircle,
   FaBell,
   FaCheckCircle,
+  FaExclamationCircle
 } from "react-icons/fa";
 
 const SEVERITY_ICONS = {
@@ -21,6 +22,7 @@ const SEVERITY_ICONS = {
   medium: FaBell,
   low: FaCheckCircle,
   info: FaInfoCircle,
+  warning: FaExclamationCircle
 };
 
 const SEVERITY_STYLES = {

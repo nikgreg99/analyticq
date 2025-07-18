@@ -17,6 +17,8 @@ import {
   Text,
   Spacer,
   useBreakpointValue,
+  Button,
+  IconButton,
 } from "@chakra-ui/react";
 import { Tooltip } from "components/ui/general/Tooltip";
 import { updatePageMetadata } from "components/utils/metadata";
@@ -26,6 +28,130 @@ import { IssueMetadataDisplay } from "components/ui/issue/IssueMetadataDisplay";
 import { CopyButton } from "components/ui/general/CopyButton";
 import ExpandableText from "components/ui/general/ExpandableText";
 import { useIssueDetails } from "hooks/useIssueDetails";
+
+// Helper component for handling long code snippets
+const CodeSnippetDisplay = ({ code, maxLines = 20 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+
+
+  const lines = code.split('\n');
+  const shouldTruncate = lines.length > maxLines;
+  const displayCode = shouldTruncate && !isExpanded
+    ? lines.slice(0, maxLines).join('\n') + '\n...'
+    : code;
+
+  return (
+    <Box>
+      <Box
+        borderRadius="lg"
+        overflowX="auto"
+        border="1px solid"
+        borderColor="gray.200"
+        bg="gray.50"
+        role="region"
+        aria-label="Code snippet"
+        position="relative"
+      >
+        <Code
+          display="block"
+          p={4}
+          whiteSpace="pre"
+          fontSize="sm"
+          fontFamily="mono"
+          maxHeight={isExpanded ? "none" : "400px"}
+          overflow="hidden"
+          scrollBehavior="auto"
+        >
+          {displayCode || "No code available"}
+        </Code>
+
+        {shouldTruncate && (
+          <Flex
+            position="absolute"
+            bottom={0}
+            right={0}
+            left={0}
+            bg="linear-gradient(transparent, gray.50)"
+            p={2}
+            justify="center"
+          >
+            <Button
+              size="sm"
+              margin="-1"
+              variant="plain"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded
+                ? `Show Less (${lines.length} lines)`
+                : `Show All (${lines.length} lines)`
+              }
+            </Button>
+          </Flex>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+// Enhanced path display with better truncation
+const PathDisplay = ({ path, maxLength = 30 }) => {
+  const [showFull, setShowFull] = useState(false);
+
+  const shouldTruncate = path.length > maxLength;
+
+  if (!shouldTruncate) {
+    return (
+      <Flex align="center" gap={2}>
+        <Code fontSize="sm" fontFamily="mono">
+          {path || "No path available"}
+        </Code>
+        <CopyButton
+          value={path}
+          size="sm"
+          aria-label="Copy file path to clipboard"
+        />
+      </Flex>
+    );
+  }
+
+  // Smart truncation - show beginning and end of path
+  const truncatedPath = showFull
+    ? path
+    : `${path.substring(0, maxLength / 2)}...${path.substring(path.length - maxLength / 2)}`;
+
+  return (
+    <Box>
+      <Flex align="center" gap={2} wrap="wrap">
+        <Code
+          fontSize="sm"
+          fontFamily="mono"
+          maxWidth={showFull ? "none" : "300px"}
+          truncated={!showFull}
+          title={path}
+          whiteSpace={showFull ? "pre-wrap" : "nowrap"}
+          wordBreak={showFull ? "break-all" : "normal"}
+          overflowWrap={showFull ? "break-word" : "normal"}
+          flex="1"
+          p={2}
+        >
+          {truncatedPath}
+        </Code>
+        <Flex gap={2} flexShrink={0}>
+          <Button
+            size="xs"
+            variant=""
+            onClick={() => setShowFull(!showFull)}
+            color="blue.500"
+          >
+            {showFull ? "Show Less" : "Show Full"}
+          </Button>
+        </Flex>
+
+      </Flex>
+    </Box>
+  );
+};
 
 export const IssueDetailPage = ({ initialIssueData = null }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -195,14 +321,10 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 <Text fontWeight="medium" fontSize="md" mb={1}>
                   File Path
                 </Text>
-                <Code>
-                  <ExpandableText
-                    text={filterCodePath(issueData.path)}
-                    expansableTextcolor="whiteAlpha.800"
-                    maxChars={optimalChars}
-
-                  />
-                </Code>
+                <PathDisplay
+                  path={filterCodePath(issueData.path)}
+                  maxLength={isMobile ? 30 : 50}
+                />
               </Box>
               <Box>
                 <Text fontWeight="medium" mb={1}>
@@ -229,7 +351,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   Codebase
                 </Text>
                 <Code fontSize={"sm"} fontFamily="mono">
-                  {repoName ? repoName: "Unknown"}
+                  {repoName ? repoName : "Unknown"}
                 </Code>
               </Box>
               <Box>
@@ -247,25 +369,10 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
             <Heading size="md" mb={4}>
               Code Snippet
             </Heading>
-            <Box
-              borderRadius="lg"
-              overflowX="auto"
-              border="1px solid"
-              borderColor="gray.200"
-              bg="gray.50"
-              role="region"
-              aria-label="Code snippet"
-            >
-              <Code
-                display="block"
-                p={4}
-                whiteSpace="pre"
-                fontSize="sm"
-                fontFamily="mono"
-              >
-                {issueData.code || "No code available"}
-              </Code>
-            </Box>
+            <CodeSnippetDisplay
+              code={issueData.code}
+              maxLines={isMobile ? 15 : 20}
+            />
           </Box>
 
           {issueData.issue_metadata && (

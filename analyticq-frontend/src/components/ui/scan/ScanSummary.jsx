@@ -20,6 +20,7 @@ const SEVERITY_WEIGHTS = {
   critical: 10,
   high: 5,
   medium: 2,
+  warning: 1,
   low: 1,
   info: 0,
   unknown: 0,
@@ -36,6 +37,7 @@ const SEVERITY_LEVELS = [
   { label: "High", key: "high" },
   { label: "Medium", key: "medium" },
   { label: "Low", key: "low" },
+  { label: "Warning", key: "warning" },
   { label: "Info", key: "info" },
   { label: "Unknown", key: "unknown" },
 ];
