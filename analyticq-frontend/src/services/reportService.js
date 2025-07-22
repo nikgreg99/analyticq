@@ -13,13 +13,13 @@ const report_api = axios.create({
  * @param {string} format - The file format extension
  * @returns {string} The extracted filename from Content-Disposition or a generated filename in the format "analyticq_report_[scanId]_[date].[format]"
  */
-const getFileName = (contentDisposition, scanId, format) => {
+const getFileName = (contentDisposition, scanId, repoName, format) => {
   if (contentDisposition) {
     const filenameMatch = contentDisposition.match(/filename=([^;]+)/);
     if (filenameMatch) return filenameMatch[1].trim();
   }
 
-  return `analyticq_report_${scanId}_${new Date()
+  return `${repoName}_${scanId}_${new Date()
     .toISOString()
     .slice(0, 10)
     .replace(/-/g, "")}.${format}`;
@@ -34,15 +34,18 @@ const getFileName = (contentDisposition, scanId, format) => {
  * @returns {Promise<{data: Blob, fileName: string}>} An object containing the report data as a Blob and the generated filename.
  * @throws {Error} If the API request fails.
  */
-export const downloadScanReportService = async (scanId, format) => {
+export const downloadScanReportService = async (scanId, repoName, format) => {
   const response = await report_api.get(`/download/${scanId}`, {
     params: { format },
     responseType: "blob",
   });
 
+  console.log(response.headers);
+
   const fileName = getFileName(
     response.headers["content-disposition"],
     scanId,
+    repoName,
     format,
   );
   return { data: response.data, fileName };

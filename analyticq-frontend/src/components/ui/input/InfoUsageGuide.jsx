@@ -15,17 +15,26 @@ import { UsageItem } from "./UsageItem";
  * @returns {JSX.Element} A box containing a grid with usage instructions
  */
 const InfoUsageGuide = () => (
-  <Box p={4} borderRadius="md" borderWidth="1px" borderColor="gray.200">
-    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+  <Box
+    p={4}
+    borderRadius="md"
+    borderWidth="1px"
+    borderColor="gray.200"
+    role="region"
+    aria-labelledby="usage-guide-heading"
+  >
+    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} aria-describedby="git-instructions">
       <UsageItem
         icon={FaGit}
         label="Git Repository"
         description="Enter Git URL, specify branch (optional), click Start"
+        aria-describedby="git-instructions"
       />
       <UsageItem
         icon={FaFileArchive}
         label="Local Files"
         description="Upload .zip/.tar/.gz files, click Start"
+        aria-describedby="file-instructions"
       />
     </SimpleGrid>
   </Box>

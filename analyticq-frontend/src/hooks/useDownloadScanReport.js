@@ -16,13 +16,14 @@ export const useDownloadScanReport = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState(null);
 
-  const downloadReport = async (scanId, format = "pdf") => {
+  const downloadReport = async (scanId, repoName, format = "pdf") => {
     setIsDownloading(true);
     setError(null);
 
     try {
       const { data, fileName } = await downloadScanReportService(
         scanId,
+        repoName,
         format,
       );
 

@@ -8,8 +8,16 @@ export const useIssueTabs = (issues, severityConfig) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState([10]);
 
+ const searchFilteredIssues = useMemo(() => {
+    if (!searchTerm.trim()) return issues;
+
+    // Use the same filtering logic as filterAndSortIssues for consistency
+    return filterAndSortIssues(issues, searchTerm, ["severity"], severityConfig);
+  }, [issues, searchTerm, severityConfig]);
+
+
   const issueCounts = useMemo(() => {
-    return issues.reduce(
+    return searchFilteredIssues.reduce(
       (acc, issue) => {
         const sev = issue.severity || "UNKNOWN";
         acc[sev.toLowerCase()] = (acc[sev.toLowerCase()] || 0) + 1;
@@ -19,16 +27,16 @@ export const useIssueTabs = (issues, severityConfig) => {
         Object.keys(severityConfig).map((k) => [k.toLowerCase(), 0]),
       ),
     );
-  }, [issues, severityConfig]);
+  }, [searchFilteredIssues, severityConfig]);
 
   const tabsConfig = useMemo(() => {
     return [
       {
         id: "all",
         label: "All Issues",
-        count: issues.length || 0,
+        count: searchFilteredIssues.length || 0,
         color: "blue",
-        filter: () => issues,
+        filter: () => searchFilteredIssues,
       },
       ...Object.entries(severityConfig)
         .filter(([severity]) => issueCounts[severity.toLowerCase()] > 0)
@@ -38,23 +46,23 @@ export const useIssueTabs = (issues, severityConfig) => {
           label: config.displayName,
           count: issueCounts[k.toLowerCase()],
           color: config.color,
-          filter: () => issues.filter((i) => i.severity === k),
+          filter: () => searchFilteredIssues.filter((i) => i.severity === k),
         })),
     ];
-  }, [issues, issueCounts, severityConfig]);
+  }, [searchFilteredIssues, issueCounts, severityConfig]);
 
   const filteredSortedTabIssues = useMemo(() => {
     const result = {};
     for (const tab of tabsConfig) {
       result[tab.id] = filterAndSortIssues(
         tab.filter(),
-        searchTerm,
+        "",
         sortOrder,
         severityConfig,
       );
     }
     return result;
-  }, [tabsConfig, searchTerm, sortOrder, severityConfig]);
+  }, [tabsConfig, sortOrder, severityConfig]);
 
   return {
     searchTerm,

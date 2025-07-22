@@ -59,9 +59,9 @@ class FlawFinderParser(AnalyticQResultParser):
                 "Level": row.get('Level', '1'),
                 "Context": (row.get('Context') or '').strip(),
                 "Metadata": {
-                    "category": row.get('Category'),
+                    "category": row.get('Category', []),
                     "cwes": cwes,
-                    "help_uri": row.get('HelpUri'),
+                    "help_uri": row.get('HelpUri', []),
                 }
             }
             transformed_issues.append(transformed_issue)

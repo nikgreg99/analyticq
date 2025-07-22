@@ -68,3 +68,19 @@ class AnalyticQReportService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error getting reports by tool {tool_name}: {str(e)}"
             )
+
+    async def get_codebase_name_by_scan(self, id: int) -> str:
+        try:
+            codebase_name = await self.scan_repo.get_codebase_name_from_scan(id)
+            if not codebase_name:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Scan with ID {id} not found."
+                )
+            return codebase_name
+        except Exception as e:
+            logger.error(f"Error retrieving codebase name for scan {id}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error retrieving codebase name for scan {id}: {str(e)}"
+            )

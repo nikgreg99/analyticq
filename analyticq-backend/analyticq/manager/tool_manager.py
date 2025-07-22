@@ -142,14 +142,21 @@ class AnalyticQSASTManager:
             return tool_name, {"error": str(e)}
 
     def identify_root_folders(self, file_data: Dict[str, Any]) -> Dict[str, List[str]]:
-        language_to_folders = defaultdict(set)
+        language_to_folders: Dict[str, Set[str]] = defaultdict(set)
+
         for language, files in file_data.get("files", {}).items():
             for file_info in files:
                 folder = os.path.dirname(file_info["file_path"])
                 language_to_folders[language].add(folder)
 
-        language_to_root_folders = {}
+        language_to_root_folders : Dict[str, List[str]] = {}
+
+        # Compute common root folder for each language
         for language, folders in language_to_folders.items():
+            if not folders:
+                language_to_root_folders[language] = []
+                continue
+
             common_parent = os.path.commonpath(folders) if folders else ""
             language_to_root_folders[language] = [common_parent] if common_parent else list(folders)
 

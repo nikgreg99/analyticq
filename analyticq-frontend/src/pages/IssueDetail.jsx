@@ -18,7 +18,7 @@ import {
   Spacer,
   useBreakpointValue,
   Button,
-  IconButton,
+  VStack
 } from "@chakra-ui/react";
 import { Tooltip } from "components/ui/general/Tooltip";
 import { updatePageMetadata } from "components/utils/metadata";
@@ -32,7 +32,6 @@ import { useIssueDetails } from "hooks/useIssueDetails";
 // Helper component for handling long code snippets
 const CodeSnippetDisplay = ({ code, maxLines = 20 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
 
 
   const lines = code.split('\n');
@@ -79,7 +78,7 @@ const CodeSnippetDisplay = ({ code, maxLines = 20 }) => {
             <Button
               size="sm"
               margin="-1"
-              variant="plain"
+              variant="outline"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded
@@ -99,19 +98,20 @@ const PathDisplay = ({ path, maxLength = 30 }) => {
   const [showFull, setShowFull] = useState(false);
 
   const shouldTruncate = path.length > maxLength;
+  const displayPath = path || "No path available";
 
   if (!shouldTruncate) {
     return (
-      <Flex align="center" gap={2}>
-        <Code fontSize="sm" fontFamily="mono">
-          {path || "No path available"}
+      <>
+        <Code
+          fontSize="sm"
+          fontFamily="mono"
+          aria-label={`File path: ${displayPath}`}
+          role="text"
+        >
+          {displayPath}
         </Code>
-        <CopyButton
-          value={path}
-          size="sm"
-          aria-label="Copy file path to clipboard"
-        />
-      </Flex>
+      </>
     );
   }
 
@@ -121,35 +121,37 @@ const PathDisplay = ({ path, maxLength = 30 }) => {
     : `${path.substring(0, maxLength / 2)}...${path.substring(path.length - maxLength / 2)}`;
 
   return (
-    <Box>
-      <Flex align="center" gap={2} wrap="wrap">
-        <Code
-          fontSize="sm"
-          fontFamily="mono"
-          maxWidth={showFull ? "none" : "300px"}
-          truncated={!showFull}
-          title={path}
-          whiteSpace={showFull ? "pre-wrap" : "nowrap"}
-          wordBreak={showFull ? "break-all" : "normal"}
-          overflowWrap={showFull ? "break-word" : "normal"}
-          flex="1"
-          p={2}
+    <>
+      <Code
+        fontSize="sm"
+        fontFamily="mono"
+        aria-label={`File path: ${path}`}
+        wordBreak={showFull ? "break-all" : "normal"}
+        overflowWrap={showFull ? "break-word" : "normal"}
+        overflow={showFull ? "visible" : "hidden"}
+        role="text"
+        aria-expanded={showFull}
+        flex={showFull ? 1 : "none"}
+        minWidth="0"
+        minHeight="1.1em"
+        py={1}
+      >
+        {truncatedPath}
+      </Code>
+      <Flex >
+        <Button
+          size="xs"
+          bg="transparent"
+          variant="ghost"
+          onClick={() => setShowFull(!showFull)}
+          aria-expanded={showFull}
+          aria-label={showFull ? "Collapse path display" : "Expand path display"}
+          color="blue.500"
         >
-          {truncatedPath}
-        </Code>
-        <Flex gap={2} flexShrink={0}>
-          <Button
-            size="xs"
-            variant=""
-            onClick={() => setShowFull(!showFull)}
-            color="blue.500"
-          >
-            {showFull ? "Show Less" : "Show Full"}
-          </Button>
-        </Flex>
-
+          {showFull ? "Show Less" : "Show Full"}
+        </Button>
       </Flex>
-    </Box>
+    </>
   );
 };
 
@@ -307,7 +309,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   Rule ID
                 </Text>
                 <Flex align="center" gap={2} wrap="wrap">
-                  <Code fontSize="sm" fontFamily="mono" isTruncated>
+                  <Code fontSize="sm" fontFamily="mono" truncate>
                     {issueData.rule_id}
                   </Code>
                   <CopyButton
@@ -317,14 +319,16 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   />
                 </Flex>
               </Box>
-              <Box gridColumn={{ lg: "span 1" }}>
-                <Text fontWeight="medium" fontSize="md" mb={1}>
+              <Box>
+                <Text fontWeight="medium" mb={1}>
                   File Path
                 </Text>
-                <PathDisplay
-                  path={filterCodePath(issueData.path)}
-                  maxLength={isMobile ? 30 : 50}
-                />
+                <Flex align="center" gap={2} wrap="wrap">
+                  <PathDisplay
+                    path={filterCodePath(issueData.path)}
+                    maxLength={isMobile ? 25 : 30}
+                  />
+                </Flex>
               </Box>
               <Box>
                 <Text fontWeight="medium" mb={1}>
@@ -350,7 +354,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                 <Text fontWeight="medium" mb={1}>
                   Codebase
                 </Text>
-                <Code fontSize={"sm"} fontFamily="mono">
+                <Code fontSize="sm" fontFamily="mono">
                   {repoName ? repoName : "Unknown"}
                 </Code>
               </Box>

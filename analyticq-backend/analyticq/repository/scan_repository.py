@@ -240,3 +240,29 @@ class AnalyticQScanResultRepository:
             stmt = delete(AnalyticQSASTScanResult).where(AnalyticQSASTScanResult.id == id)
             result = await session.execute(stmt)
             return result.rowcount > 0
+
+    async def get_codebase_name_from_scan(self, id: int) -> Optional[str]:
+        """
+        Retrieves the codebase name associated with a specific scan ID.
+
+        Args:
+            id (int): The unique identifier of the scan.
+
+        Returns:
+            Optional[str]: The name of the codebase if found, None otherwise.
+        """
+        async with AnalyticQDatabaseManager().get_db_session() as session:
+            stmt = select(AnalyticQSASTScanResult).where(
+                AnalyticQSASTScanResult.scan_id == id
+            ).options(selectinload(AnalyticQSASTScanResult.context))
+
+            result = await session.execute(stmt)
+            scan_result = result.scalars().first()
+
+            if not scan_result:
+                return None
+
+            if hasattr(scan_result, 'context'):
+                context_obj = scan_result.context
+
+                return context_obj.repo_name

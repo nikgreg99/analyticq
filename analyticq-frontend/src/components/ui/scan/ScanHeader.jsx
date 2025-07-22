@@ -140,8 +140,11 @@ export const ScanHeader = ({ scanData, repoName }) => {
 
           <Box mt={4}>
             <HStack>
-              <ScanExportReport scanId={scanData.scan_id} isCompact={true} />
-
+              <ScanExportReport
+                scanId={scanData.scan_id}
+                repoName={repoName}
+                isCompact={true}
+              />
               <DeleteConfirmationDialog
                 isOpenModal={deleteDialogOpened}
                 setIsOpenModal={setDeleteDialogOpened}

@@ -34,7 +34,7 @@ def get_report_service(
     return AnalyticQReportService(repo)
 
 
-def get_report_filename(scan_id: str, format: str, include_date: bool = True) -> str:
+def get_report_filename(scan_id: str, codebase_name: str, format: str, include_date: bool = True) -> str:
     """
     Generate a filename for a report based on scan ID and format.
 
@@ -48,13 +48,14 @@ def get_report_filename(scan_id: str, format: str, include_date: bool = True) ->
              or 'analyticq_report_{scan_id}.{format}' if include_date is False
 
     """
+
     if include_date:
-        return f"analyticq_report_{scan_id}_{datetime.now().strftime('%Y%m%d')}.{format.lower()}"
+        return f"{codebase_name}_{scan_id}_{datetime.now().strftime('%Y%m%d')}.{format.lower()}"
     else:
-        return f"analyticq_report_{scan_id}.{format.lower()}"
+        return f"{codebase_name}_{scan_id}.{format.lower()}"
 
 
-def get_report_filepath(scan_id: str, format: str, include_date: bool = True) -> Path:
+def get_report_filepath(scan_id: str, codebase_name: str, format: str, include_date: bool = True) -> Path:
     """
     Generate a file path for a report based on scan ID and format.
 
@@ -64,11 +65,11 @@ def get_report_filepath(scan_id: str, format: str, include_date: bool = True) ->
         include_date (bool, optional): Whether to include current date in filename. Defaults to True.
 
     """
-    filename = get_report_filename(scan_id, format, include_date)
+    filename = get_report_filename(scan_id, codebase_name, format, include_date)
     return REPORT_FOLDER / filename
 
 
-async def save_report_to_file(content, scan_id: str, format: str, include_date: bool = True) -> Path:
+async def save_report_to_file(content, codebase_name: str, scan_id: str, format: str, include_date: bool = True) -> Path:
     """Save report content to a file with specified format.
 
     This async function saves report content to a file in the specified format (json, html, csv, or pdf).
@@ -89,12 +90,12 @@ async def save_report_to_file(content, scan_id: str, format: str, include_date: 
     Raises:
         ValueError: If content type doesn't match the specified format
     """
-    filepath = get_report_filepath(scan_id, format, include_date)
+    filepath = get_report_filepath(scan_id, codebase_name, format, include_date)
 
     if format == "json":
         with open(filepath, "w", encoding="utf-8") as f:
             if isinstance(content, dict):
-                f.write(content)
+                f.write(str(content))
             else:
                 json.dump(content, f, indent=2)
     elif format in ["html", "csv"]:
@@ -110,7 +111,7 @@ async def save_report_to_file(content, scan_id: str, format: str, include_date: 
     return filepath
 
 
-def find_existing_report(scan_id: str, format: str) -> Optional[Path]:
+def find_existing_report(scan_id: str, codebase_name: str, format: str) -> Optional[Path]:
     """
     Check if a report file already exists for the given scan ID and format.
 
@@ -121,15 +122,15 @@ def find_existing_report(scan_id: str, format: str) -> Optional[Path]:
     Returns:
         Optional[Path]: The path to the existing report file if found, otherwise None
     """
-    filepath_with_date = get_report_filepath(scan_id, format, include_date=True)
+    filepath_with_date = get_report_filepath(scan_id, codebase_name, format, include_date=True)
     if filepath_with_date.exists():
         return filepath_with_date
 
-    filepath_without_date = get_report_filepath(scan_id, format, include_date=False)
+    filepath_without_date = get_report_filepath(scan_id, codebase_name, format, include_date=False)
     if filepath_without_date.exists():
         return filepath_without_date
 
-    pattern = f"analyticq_report_{scan_id}_*.{format}"
+    pattern = f"{codebase_name}_{scan_id}_*.{format}"
     matching_files = list(REPORT_FOLDER.glob(pattern))
 
     if matching_files:
@@ -145,8 +146,10 @@ async def download_report(
     force_regenerate: bool = Query(False, description="Force regenerate report even if it exists"),
     report_service: AnalyticQReportService = Depends(get_report_service)
 ):
+    codebase_name = await report_service.get_codebase_name_by_scan(scan_id)
+    logger.info(f"Generating report for scan_id: {scan_id}, codebase_name: {codebase_name}, format: {format}")
     if not force_regenerate:
-        existing_report = find_existing_report(scan_id, format)
+        existing_report = find_existing_report(scan_id, codebase_name, format)
         if existing_report:
             media_types = {
                 "pdf": "application/pdf",
@@ -158,7 +161,8 @@ async def download_report(
             return FileResponse(
                 path=existing_report,
                 media_type=media_types[format],
-                filename=existing_report.name
+                filename=existing_report.name,
+                headers={"Content-Disposition": f"attachment; filename={existing_report.name}"}
             )
 
     try:
@@ -167,11 +171,13 @@ async def download_report(
         raise HTTPException(status_code=404, detail=f"Report not found for scan_id: {scan_id}")
 
     try:
-        await save_report_to_file(content, scan_id, format)
+        await save_report_to_file(content, codebase_name, scan_id, format)
     except Exception as e:
         logger.error(f"Error saving report for scan_id {scan_id} in format {format}: {e}")
 
-    report_filename = get_report_filename(scan_id, format)
+    report_filename = get_report_filename(scan_id, codebase_name, format)
+
+    logger.debug(f"Returning report file: {report_filename} in format {format}")
 
     if format == "json":
         return Response(

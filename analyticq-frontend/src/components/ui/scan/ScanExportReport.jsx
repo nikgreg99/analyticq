@@ -89,6 +89,7 @@ const isMacPlatform = () => {
 export const ScanExportReport = ({
   scanId,
   isCompact = false,
+  repoName = '',
   enabledFormats = EXPORT_FORMATS.map(f => f.id),
   enableKeyboardShortcuts = true,
   showShortcutHints = true
@@ -131,7 +132,7 @@ export const ScanExportReport = ({
       }
 
       try {
-        await downloadReport(scanId, formatId);
+        await downloadReport(scanId, repoName, formatId);
         toaster.create({
           title: "Export successful",
           description: `Report exported in ${format.label} format${triggeredBy === 'keyboard' ? ' (via shortcut)' : ''}`,

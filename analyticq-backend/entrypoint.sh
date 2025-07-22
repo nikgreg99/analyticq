@@ -152,9 +152,9 @@ pull_and_rename_sast_images() {
     for full_image in "${!SAST_IMAGES[@]}"; do
         simple_name=$(get_simple_name "$full_image")
         if docker image inspect "$simple_name" >/dev/null 2>&1; then
-            echo "  ✅ $simple_name"
+            echo " $simple_name"
         else
-            echo "  ❌ $simple_name (failed)"
+            echo " $simple_name (failed)"
         fi
     done
 }

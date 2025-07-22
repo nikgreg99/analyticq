@@ -12,7 +12,6 @@ from .jinja import setup_jinja
 if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-from analyticq.celery_app import get_celery_app
 from analyticq.config.di import AnalyticQContainer
 from analyticq.engine.core import AnalyticQToolDiscoverer
 from analyticq.manager import AnalyticQDatabaseManager, DockerImageManager
@@ -161,11 +160,6 @@ async def backend_context(app: FastAPI):
 
         logger.info("Verify Docker installation...")
         await DockerImageManager.check_docker_availability()
-
-        logger.info("Init Celery backend and related tasks")
-        # Init Celery tasks
-        celery_app = get_celery_app()
-        app.state.celery = celery_app
 
         logger.info("Init Jinja for templating engine...")
         setup_jinja(app)

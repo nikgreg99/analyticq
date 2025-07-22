@@ -307,7 +307,7 @@ export const GitRepoInput = React.memo(({
               Repository URL <Field.RequiredIndicator />
             </Field.Label>
             <Box id="url-help" fontSize="sm" color="blackAlpha.600" mb={2}>
-              Enter a GitHub, GitLab, or Bitbucket repository URL
+              Enter a GitHub, GitLab, or BitBucket repository URL
             </Box>
             <InputGroup
               startElement={<Icon as={FiLink} color="black" aria-hidden="true" />}

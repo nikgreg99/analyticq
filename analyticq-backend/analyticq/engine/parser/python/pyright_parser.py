@@ -40,6 +40,13 @@ class PyrightParser(AnalyticQResultParser):
     def _map_confidence(self, confidence_level: str) -> AnalyticQConfidence:
         return AnalyticQConfidence.UNKNOWN
 
+    def _preprocess_issue(self, issues: Dict[str, Any]) -> Dict[str, Any]:
+        for issue in issues:
+            rule_id = issue.get("rule", "")
+            if not rule_id:
+                issue["rule"] = "N/A"
+        return issues
+
     def parse_scan_result(self, raw_result: Dict[str, Any]) -> AnalyticQSASTScanResultModel:
         try:
             if not isinstance(raw_result, dict):
@@ -49,6 +56,7 @@ class PyrightParser(AnalyticQResultParser):
             if not isinstance(pyright_issues, list):
                 raise ScanParserException("Invalid Pyright result format: generalDiagnostics must be a list")
 
+            pyright_issues = self._preprocess_issue(pyright_issues)
             # Use the parent class to parse normalized issues
             scan = super().parse_scan_result(pyright_issues)
 
