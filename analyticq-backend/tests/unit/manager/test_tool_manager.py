@@ -20,7 +20,7 @@ def sast_manager():
         manager = AnalyticQSASTManager()
         mock_config.return_value = {"default_branch": "main"}
         manager.registry = MagicMock(spec=AnalyticQSASToolRegistry)
-        manager.codebase_preprocesseor = MagicMock(spec=CodebasePreprocessor)
+        manager.codebase_preprocessor = MagicMock(spec=CodebasePreprocessor)
     return manager
 
 

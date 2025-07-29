@@ -31,7 +31,7 @@ COMMON_MAPPINGS = {
 class AnalyticQSASTManager:
     def __init__(self):
         self.registry = AnalyticQSASToolRegistry()
-        self.codebase_preprocesseor = CodebasePreprocessor()
+        self.codebase_preprocessor = CodebasePreprocessor()
         self.context_service = AnalyticQContextService(AnalyticQContextRepository())
         self.scan_service = AnalyticQScanService(AnalyticQScanResultRepository())
 
@@ -58,9 +58,9 @@ class AnalyticQSASTManager:
         branch="main",
         original_path: Optional[str] = None
     ) -> Dict[str, Any]:
-        logger.info("Original path: %s", original_path)
+        logger.info(f"Starting scan for codebase path: {codebase_path}, original_path: {original_path}")
 
-        codebase_data = await self.codebase_preprocesseor.preprocess_codebase(
+        codebase_data = await self.codebase_preprocessor.preprocess_codebase(
             codebase_url=codebase_path,
             branch=branch,
             original_path=original_path
@@ -68,8 +68,13 @@ class AnalyticQSASTManager:
 
         language_to_root_folders = self.identify_root_folders(codebase_data)
         supported_languages = self.registry.get_supported_languages()
-        scan_results = {}
 
+        # Map tool -> set of folders it should scan (merged from all languages it supports)
+        tool_to_folders: Dict[str, Set[str]] = defaultdict(set)
+        # Map tool -> languages it is running for (for reporting)
+        tool_to_languages: Dict[str, Set[str]] = defaultdict(set)
+
+        # Collect all folders per tool, and languages they correspond to
         for language, root_folders in language_to_root_folders.items():
             tool_language = self.map_lang_to_supported(language, supported_languages)
             if not tool_language:
@@ -81,30 +86,41 @@ class AnalyticQSASTManager:
                 logger.info(f"No tools found for language {language}")
                 continue
 
-            language_stats = codebase_data.get("language_statistics", {}).get(language, {})
-            files_for_lang = codebase_data["files"].get(language, [])
+            for tool_name in tools_for_language:
+                tool_to_languages[tool_name].add(language)
+                for folder in root_folders:
+                    tool_to_folders[tool_name].add(folder)
 
-            results = await asyncio.gather(*[
-                self.run_tools_concurrently(
-                    tool_name=tool_name,
-                    root_folders=root_folders,
-                    codebase_path=codebase_path,
-                    timeout=timeout,
-                    config_paths=config_paths,
-                    original_path=original_path
-                )
-                for tool_name in tools_for_language
-            ])
+        # Run each tool once on all its folders
+        scan_results: Dict[str, Any] = {}
+        tasks = []
+        for tool_name, folders_set in tool_to_folders.items():
+            folders_list = list(folders_set)
+            tasks.append(self.run_tools_concurrently(
+                tool_name=tool_name,
+                root_folders=folders_list,
+                codebase_path=codebase_path,
+                timeout=timeout,
+                config_paths=config_paths,
+                original_path=original_path
+            ))
 
-            tool_results = {tool_name: res for tool_name, res in results}
+        results = await asyncio.gather(*tasks)
 
-            scan_results[language] = {
-                "tools_run": tools_for_language,
-                "root_folders": root_folders,
-                "file_count": len(files_for_lang),
-                "statistics": language_stats,
-                "results": tool_results,
-            }
+        # Assign results back per language for reporting
+        for tool_name, res in results:
+            langs = list(tool_to_languages.get(tool_name, []))
+            for lang in langs:
+                if lang not in scan_results:
+                    scan_results[lang] = {
+                        "tools_run": [],
+                        "root_folders": language_to_root_folders.get(lang, []),
+                        "file_count": len(codebase_data["files"].get(lang, [])),
+                        "statistics": codebase_data.get("language_statistics", {}).get(lang, {}),
+                        "results": {},
+                    }
+                scan_results[lang]["tools_run"].append(tool_name)
+                scan_results[lang]["results"][tool_name] = res
 
         return scan_results
 

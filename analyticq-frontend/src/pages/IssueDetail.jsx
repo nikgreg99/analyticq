@@ -78,11 +78,11 @@ const CodeSnippetDisplay = ({ code, maxLines = 20 }) => {
             <Button
               size="sm"
               margin="-1"
-              variant="outline"
+              variant="plain"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded
-                ? `Show Less (${lines.length} lines)`
+                ? `Show Less (${maxLines} lines)`
                 : `Show All (${lines.length} lines)`
               }
             </Button>

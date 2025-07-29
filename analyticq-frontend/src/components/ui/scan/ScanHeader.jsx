@@ -17,6 +17,7 @@ import { Toaster } from "../general/Toaster";
 import { FaCalendar, FaClock, FaInfoCircle, FaTag } from "react-icons/fa";
 import { ScanExportReport } from "./ScanExportReport";
 import { useDeleteScan } from "hooks/useDeleteScan";
+import { capitalizeFirstLetter } from "components/utils/strings";
 import DeleteConfirmationDialog from "../general/DeleteConfirmationDialog";
 
 /**
@@ -81,7 +82,7 @@ export const ScanHeader = ({ scanData, repoName }) => {
               >
                 <HStack spacing={1}>
                   <FaTag />
-                  <Text>{scanData.tool_name}</Text>
+                  <Text>{capitalizeFirstLetter(scanData.tool_name)}</Text>
                 </HStack>
               </Badge>
             </HStack>
