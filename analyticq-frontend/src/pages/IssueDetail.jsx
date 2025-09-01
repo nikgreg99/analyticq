@@ -17,8 +17,7 @@ import {
   Text,
   Spacer,
   useBreakpointValue,
-  Button,
-  VStack
+  Button
 } from "@chakra-ui/react";
 import { Tooltip } from "components/ui/general/Tooltip";
 import { updatePageMetadata } from "components/utils/metadata";
@@ -28,6 +27,7 @@ import { IssueMetadataDisplay } from "components/ui/issue/IssueMetadataDisplay";
 import { CopyButton } from "components/ui/general/CopyButton";
 import ExpandableText from "components/ui/general/ExpandableText";
 import { useIssueDetails } from "hooks/useIssueDetails";
+import { capitalizeFirstLetter } from "components/utils/strings";
 
 // Helper component for handling long code snippets
 const CodeSnippetDisplay = ({ code, maxLines = 20 }) => {
@@ -230,7 +230,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
           color="blackAlpha.800"
           textAlign="center"
         >
-          Issue #{issueData.id} Details
+          Issue #{issueData.id}
         </Heading>
         <DeleteConfirmationDialog
           isOpenModal={deleteModalOpen}
@@ -363,7 +363,7 @@ export const IssueDetailPage = ({ initialIssueData = null }) => {
                   Tool
                 </Text>
                 <Code fontSize="sm" fontFamily="mono">
-                  {tool ? tool : "Unknown"}
+                  {tool ? capitalizeFirstLetter(tool) : "Unknown"}
                 </Code>
               </Box>
             </SimpleGrid>
