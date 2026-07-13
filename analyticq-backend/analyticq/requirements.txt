@@ -14,4 +14,4 @@ python-dotenv==1.0.1
 PyYAML==6.0.2
 PyYAML==6.0.2
 SQLAlchemy==2.0.37
-tqdm==4.67.1
+tqdm==4.68.4
