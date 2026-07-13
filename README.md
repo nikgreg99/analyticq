@@ -1,4 +1,4 @@
- AnalyticQ
+# AnalyticQ
  
 **AnalyticQ** è una piattaforma per l'esecuzione automatizzata di analisi **SAST** (Static Application Security Testing) su repository Git o archivi di codice caricati manualmente. Orchestra diversi tool di analisi statica (uno o più per linguaggio) all'interno di container Docker isolati, normalizza i risultati in un formato comune e li espone tramite API REST e una dashboard web, con possibilità di esportare i report in PDF, CSV, JSON e HTML.
  
