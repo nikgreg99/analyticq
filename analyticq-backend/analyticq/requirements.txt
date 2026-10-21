@@ -11,7 +11,7 @@ pydantic==2.10.6
 pydantic_settings==2.7.1
 Pygments==2.19.1
 python-dotenv==1.0.1
-PyYAML==6.0.2
-PyYAML==6.0.2
+PyYAML==6.0.3
+PyYAML==6.0.3
 SQLAlchemy==2.0.37
 tqdm==4.67.1
