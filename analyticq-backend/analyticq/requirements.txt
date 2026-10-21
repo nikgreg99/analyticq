@@ -1,4 +1,4 @@
-aiodocker==0.24.0
+aiodocker==0.27.0
 aiofiles==24.1.0
 celery==5.4.0
 dependency_injector==4.45.0
