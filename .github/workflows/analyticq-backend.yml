@@ -31,7 +31,7 @@ jobs:
             python-version: ${{matrix.python-version}}
 
         - name: Cache Python dependencies
-          uses: actions/cache@v3
+          uses: actions/cache@v6
           with:
             path: ~/.cache/pip
             key: pip-${{ runner.os }}-${{ hashFiles('analyticq-backend/requirements.txt') }}
