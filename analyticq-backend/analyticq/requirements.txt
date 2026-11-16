@@ -13,5 +13,5 @@ Pygments==2.21.0
 python-dotenv==1.0.1
 PyYAML==6.0.3
 PyYAML==6.0.3
-SQLAlchemy==2.0.37
+SQLAlchemy==2.1.8
 tqdm==4.70.1
