@@ -9,7 +9,7 @@ GitPython==3.2.1
 psutil==6.1.1
 pydantic==2.10.6
 pydantic_settings==2.7.1
-Pygments==2.19.1
+Pygments==2.21.0
 python-dotenv==1.0.1
 PyYAML==6.0.3
 PyYAML==6.0.3
